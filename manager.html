@@ -359,7 +359,7 @@ function renderWorkers() {
     const wd = workers[w] || {};
     const isSel = sel === w, isIn = wd.status === 'in';
     const since = wd.since ? new Date(wd.since).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="_app.selectW('${w}')">
+    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')">
       <div class="wav">${w}</div>
       <div class="wnum">${i+1}</div>
       <div class="wstat${isIn?' in':''}">${isIn ? 'In · '+since : 'Off'}</div>
@@ -986,6 +986,7 @@ renderWorkers();
 setGeoUI('', 'Geolocation ready');
 liveClock(); setInterval(liveClock, 1000);
 // Expose all functions to window so HTML onclicks work
+window.selectW = selectW;
 window.switchTab = switchTab;
 window.doAction = doAction;
 window.setFilter = setFilter;
