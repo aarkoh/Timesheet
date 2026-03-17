@@ -229,6 +229,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, set, push, update, remove, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
@@ -242,10 +243,21 @@ const firebaseConfig = {
 
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
+const auth = getAuth(fbApp);
 
 const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel = null, logTypeFilter = 'all', pinTarget = null, unlocked = {}, settingNew = false;
 let workers = {}, log = [], pin = '1234';
+
+// Sign in anonymously first - required for Firebase security rules
+signInAnonymously(auth).catch(e => console.error('Auth failed:', e));
+
+onAuthStateChanged(auth, user => {
+  if (!user) return;
+  initApp();
+});
+
+function initApp() {
 
 // Connection status
 onValue(ref(db, '.info/connected'), snap => {
@@ -959,6 +971,8 @@ function toast(msg) {
 function liveClock() {
   document.getElementById('liveClock').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 }
+
+} // end initApp
 
 // Expose functions called from HTML onclick attributes
 window._app = { selectW, switchTab, doAction, setFilter, renderSummary, renderLog, exportCSV, openPin, closePinModal, pinInput, submitPin, saveNewPin };

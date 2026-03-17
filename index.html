@@ -79,6 +79,7 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, set, push, update, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 const firebaseConfig = {
   apiKey: "AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
   authDomain: "attendance-20d6a.firebaseapp.com",
@@ -90,22 +91,33 @@ const firebaseConfig = {
 };
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
+const auth = getAuth(fbApp);
 const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel = null, workers = {};
 
-onValue(ref(db,'.info/connected'), snap => {
-  const online = snap.val();
-  const b = document.getElementById('connBadge');
-  b.textContent = online?'Live':'Offline';
-  b.className = 'conn '+(online?'online':'offline');
+// Sign in anonymously — required by Firebase security rules
+signInAnonymously(auth).catch(e => {
+  console.error('Auth failed:', e);
+  document.getElementById('loadingScreen').innerHTML = '<p style="color:#A32D2D;padding:1rem">Connection failed. Please refresh.</p>';
 });
 
-onValue(ref(db,'workers'), snap => {
-  workers = snap.val()||{};
-  WORKERS.forEach(w=>{ if(!workers[w]) workers[w]={status:'out',since:null,loc:'',lastTime:null}; });
-  renderWorkers();
-  if(sel) selectW(sel);
-  document.getElementById('loadingScreen').classList.add('hide');
+onAuthStateChanged(auth, user => {
+  if (!user) return;
+
+  onValue(ref(db,'.info/connected'), snap => {
+    const online = snap.val();
+    const b = document.getElementById('connBadge');
+    b.textContent = online?'Live':'Offline';
+    b.className = 'conn '+(online?'online':'offline');
+  });
+
+  onValue(ref(db,'workers'), snap => {
+    workers = snap.val()||{};
+    WORKERS.forEach(w=>{ if(!workers[w]) workers[w]={status:'out',since:null,loc:'',lastTime:null}; });
+    renderWorkers();
+    if(sel) selectW(sel);
+    document.getElementById('loadingScreen').classList.add('hide');
+  });
 });
 
 function renderWorkers() {
@@ -210,6 +222,19 @@ function revGeo(lat, lon, cb) {
   }
 }
 
+function debug(msg) {
+  const d = document.getElementById('debugPanel'); if (!d) return;
+  const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.innerHTML = `[${t}] ${msg}<br>` + d.innerHTML;
+  const lines = d.innerHTML.split('<br>'); if (lines.length > 5) d.innerHTML = lines.slice(0,5).join('<br>');
+}
+function resetPanel() {
+  sel = null; renderWorkers();
+  document.getElementById('panelTitle').textContent = 'Select your name';
+  document.getElementById('panelSub').textContent = 'Tap your initials above, then clock in or out';
+  document.getElementById('btnIn').disabled = true;
+  document.getElementById('btnOut').disabled = true;
+}
 window.doAction = async function(type) {
   if(!sel)return;
   const w=sel;
@@ -246,27 +271,6 @@ window.doAction = async function(type) {
 
 function liveClock(){
   document.getElementById('liveClock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
-function debug(msg){
-  const d=document.getElementById('debugPanel');
-  if(!d)return;
-  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  d.innerHTML=`[${t}] ${msg}<br>`+d.innerHTML;
-  const lines=d.innerHTML.split('<br>');
-  if(lines.length>6)d.innerHTML=lines.slice(0,6).join('<br>');
-}
-function toast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2200);
-}
-function resetPanel(){
-  sel=null;
-  document.getElementById('panelTitle').textContent='Select your name';
-  document.getElementById('panelSub').textContent='Tap your initials above, then clock in or out';
-  document.getElementById('btnIn').disabled=true;
-  document.getElementById('btnOut').disabled=true;
-  renderWorkers();
 }
 WORKERS.forEach(async w=>{
   const snap=await get(ref(db,'workers/'+w));
