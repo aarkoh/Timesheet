@@ -239,7 +239,6 @@ async function initData() {
   function checkReady() {
     if (workersReady && logReady) {
       document.getElementById('loadingScreen').classList.add('hide');
-      backfillMissingLogEntries();
     }
   }
   setTimeout(() => document.getElementById('loadingScreen').classList.add('hide'), 5000);
@@ -256,7 +255,7 @@ async function initData() {
     if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
   });
 
-  onValue(ref(db, 'entries2'), snap => {
+  onValue(ref(db, 'log'), snap => {
     log = [];
     if (snap.exists()) snap.forEach(child => log.unshift({id: child.key, ...child.val()}));
     log.sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -278,7 +277,7 @@ function backfillMissingLogEntries() {
     if (wd.status !== 'in' || !wd.since) return;
     const hasEntry = log.find(e => e.worker === w && e.type === 'in');
     if (!hasEntry) {
-      push(ref(db, 'entries2'), {
+      push(ref(db, 'log'), {
         worker: w, type: 'in', time: wd.since,
         lat: null, lon: null, acc: null, loc: wd.loc || ''
       });
@@ -350,7 +349,7 @@ function doAction(type) {
     const now = new Date().toISOString();
     update(ref(db, 'workers/' + w), {status: type, since: type==='in' ? now : null, lastTime: now});
     const entry = {worker: w, type, time: now, lat: geo ? geo.lat : null, lon: geo ? geo.lon : null, acc: geo ? geo.acc : null, loc: ''};
-    const newRef = push(ref(db, 'entries2'), entry);
+    const newRef = push(ref(db, 'log'), entry);
     if (geo) {
       setGeoUI('ok', `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
       // Immediately save coordinates as placeholder so something shows right away
@@ -499,14 +498,14 @@ async function clearAndRebuildLog() {
   btn.disabled = true; btn.textContent = 'Clearing…';
   try {
     // Use REST API DELETE to force-delete the log node regardless of size
-    const dbUrl = 'https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/entries2.json';
+    const dbUrl = 'https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json';
     const res = await fetch(dbUrl, {method: 'DELETE'});
     if (!res.ok) throw new Error('REST delete failed: ' + res.status);
     // Rebuild one clean entry per worker currently clocked in
     const rebuilds = WORKERS.map(w => {
       const wd = workers[w] || {};
       if (wd.status !== 'in' || !wd.since) return Promise.resolve();
-      return push(ref(db, 'entries2'), {
+      return push(ref(db, 'log'), {
         worker: w, type: 'in', time: wd.since,
         lat: null, lon: null, acc: null, loc: wd.loc || ''
       });
@@ -518,7 +517,7 @@ async function clearAndRebuildLog() {
   } catch(err) {
     // Fallback: try SDK remove
     try {
-      await remove(ref(db, 'entries2'));
+      await remove(ref(db, 'log'));
       btn.disabled = false; btn.textContent = 'Clear duplicate logs';
       toast('Log cleared ✓');
     } catch(e) {
