@@ -347,20 +347,70 @@ function setGeoUI(cls, msg) {
   document.getElementById('geoDot').className = 'gdot ' + cls;
   document.getElementById('geoText').textContent = msg;
 }
-function revGeo(lat, lon, cb) {
+function isInChina(lat, lon) {
+  return lat >= 18 && lat <= 53 && lon >= 73 && lon <= 135;
+}
+function revGeoOSM(lat, lon, cb) {
   fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`)
     .then(r => r.json()).then(d => {
       const a = d.address || {};
-      // Build full street address: unit/house number + road + suburb + city + postcode + country
       const parts = [
         a.house_number && a.road ? `${a.house_number} ${a.road}` : (a.road || a.pedestrian || a.footway || ''),
         a.suburb || a.neighbourhood || a.quarter || '',
-        a.city || a.town || a.village || a.county || a.state_district || '',
+        a.city || a.town || a.village || a.county || '',
         a.postcode || '',
         a.country || ''
       ].filter(Boolean);
       cb(parts.length ? parts.join(', ') : `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
     }).catch(() => cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));
+}
+function wgs84ToGcj02(lat, lon) {
+  const PI = Math.PI, a = 6378245.0, ee = 0.00669342162296594323;
+  function transformLat(x, y) {
+    let r = -100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+    r += (20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;
+    r += (160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3;
+    return r;
+  }
+  function transformLon(x, y) {
+    let r = 300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));
+    r += (20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;
+    r += (20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;
+    r += (150*Math.sin(x/12*PI)+300*Math.sin(x*PI/30))*2/3;
+    return r;
+  }
+  let dLat = transformLat(lon-105, lat-35);
+  let dLon = transformLon(lon-105, lat-35);
+  const radLat = lat/180*PI;
+  let magic = Math.sin(radLat);
+  magic = 1 - ee*magic*magic;
+  const sqrtMagic = Math.sqrt(magic);
+  dLat = dLat*180/((a*(1-ee))/(magic*sqrtMagic)*PI);
+  dLon = dLon*180/(a/sqrtMagic*Math.cos(radLat)*PI);
+  return [lat+dLat, lon+dLon];
+}
+function revGeoAmap(lat, lon, cb) {
+  const [gcjLat, gcjLon] = wgs84ToGcj02(lat, lon);
+  const ak = '4d33a38d9bf129094b75c1a267c82370';
+  fetch(`https://restapi.amap.com/v3/geocode/regeo?key=${ak}&location=${gcjLon.toFixed(6)},${gcjLat.toFixed(6)}&extensions=base`)
+    .then(r => r.json()).then(d => {
+      if (d.status === '1' && d.regeocode) {
+        cb(d.regeocode.formatted_address || `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      } else {
+        cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+      }
+    }).catch(() => cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));
+}
+function revGeo(lat, lon, cb) {
+  if (isInChina(lat, lon)) {
+    revGeoAmap(lat, lon, result => {
+      if (result === `${lat.toFixed(5)}, ${lon.toFixed(5)}`) revGeoOSM(lat, lon, cb);
+      else cb(result);
+    });
+  } else {
+    revGeoOSM(lat, lon, cb);
+  }
 }
 
 async function doAction(type) {
