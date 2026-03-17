@@ -238,6 +238,26 @@ function debug(msg) {
   if (lines.length > 6) d.innerHTML = lines.slice(0, 6).join('<br>');
 }
 
+async function fetchLog() {
+  try {
+    const res = await fetch('https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json');
+    const data = await res.json();
+    log = [];
+    if (data) {
+      Object.entries(data).forEach(([key, val]) => log.push({id: key, ...val}));
+      log.sort((a, b) => new Date(b.time) - new Date(a.time));
+    }
+    debug(`Log: ${log.length} entries`);
+    logReady = true;
+    if (typeof checkReady === 'function') checkReady();
+    renderLog();
+    if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+  } catch(e) {
+    debug(`Fetch error: ${e.message}`);
+    logReady = true;
+  }
+}
+
 async function initData() {
   for (const w of WORKERS) {
     const snap = await get(ref(db, 'workers/' + w));
@@ -266,15 +286,8 @@ async function initData() {
     if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
   });
 
-  onValue(ref(db, 'log'), snap => {
-    log = [];
-    if (snap.exists()) snap.forEach(child => log.unshift({id: child.key, ...child.val()}));
-    log.sort((a, b) => new Date(b.time) - new Date(a.time));
-    debug(`Firebase log update: ${log.length} entries`);
-    logReady = true; checkReady();
-    renderLog();
-    if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
-  });
+  fetchLog();
+  setInterval(fetchLog, 10000);
 
   onValue(ref(db, 'config/pin'), snap => { if (snap.exists()) pin = snap.val(); });
 }
@@ -390,6 +403,8 @@ async function doAction(type) {
         setGeoUI('err', 'No location captured');
       }
       toast(`${w} clocked ${type === 'in' ? 'in' : 'out'}`);
+      // Refresh log immediately after action
+      setTimeout(fetchLog, 1500);
     } catch(e) {
       console.error('Log write failed:', e);
       debug(`✗ WRITE FAILED: ${e.message}`);
