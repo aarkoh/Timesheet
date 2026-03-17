@@ -15,10 +15,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .conn.online{background:#EAF3DE;color:#3B6D11}
 .conn.offline{background:#FCEBEB;color:#A32D2D}
 .conn.syncing{background:#FAEEDA;color:#854F0B}
-.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
-.tab{font-family:inherit;font-size:12px;padding:6px 14px;border:none;background:transparent;cursor:pointer;color:#666;transition:background 0.12s}
-.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
-.panel{display:none}.panel.active{display:block}
 .worker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
 @media(max-width:420px){.worker-grid{grid-template-columns:repeat(2,1fr)}}
 .wcard{border:1px solid #ddd;border-radius:12px;padding:1rem 0.5rem;cursor:pointer;background:#fff;text-align:center;transition:border-color 0.12s,background 0.12s;-webkit-tap-highlight-color:transparent;user-select:none}
@@ -43,53 +39,10 @@ button:active{transform:scale(0.97)}
 button:disabled{opacity:0.35;cursor:default;transform:none}
 .btn-in{border-color:#185FA5;color:#185FA5;font-weight:500}.btn-in:hover{background:#E6F1FB}
 .btn-out{border-color:#A32D2D;color:#A32D2D;font-weight:500}.btn-out:hover{background:#FCEBEB}
-.btn-exp{border-color:#3B6D11;color:#3B6D11;font-weight:500}.btn-exp:hover{background:#EAF3DE}
 .geost{font-size:12px;color:#888;margin-top:10px;display:flex;align-items:center;gap:6px;min-height:18px}
 .gdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
 .gdot.ok{background:#639922}.gdot.err{background:#E24B4A}.gdot.pulse{background:#BA7517;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:1.25rem}
-.mcard{border:1px solid #e0ddd6;border-radius:12px;padding:1rem;background:#fff}
-.mcard.in{border-left:3px solid #3B6D11}
-.mc-name{font-size:15px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
-.mc-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin-bottom:8px;font-weight:500}
-.mc-badge.in{background:#EAF3DE;color:#3B6D11}
-.mc-badge.out{background:#eee;color:#888}
-.mc-detail{font-size:12px;color:#888;line-height:1.7}
-.scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:1.25rem}
-.scard{background:#efefed;border-radius:8px;padding:1rem}
-.sc-label{font-size:12px;color:#888;margin-bottom:4px}
-.sc-val{font-size:22px;font-weight:600;color:#1a1a1a}
-.sc-sub{font-size:11px;color:#aaa;margin-top:2px}
-.sec-title{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:0.75rem;margin-top:1.25rem}
-.wtable{width:100%;border-collapse:collapse;font-size:13px}
-.wtable th{text-align:left;font-weight:600;font-size:12px;color:#888;padding:6px 10px;border-bottom:1px solid #e0ddd6}
-.wtable td{padding:8px 10px;border-bottom:1px solid #f0ede6;color:#1a1a1a}
-.wtable tr:last-child td{border:none}
-.period-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
-.period-row label{font-size:13px;color:#888}
-select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer}
-.log-filters{display:flex;gap:6px;margin-bottom:0.75rem;flex-wrap:wrap}
-.fbtn{font-size:12px;padding:4px 10px;border-radius:20px}
-.fbtn.active{background:#efefed;border-color:#aaa;font-weight:500}
-.lempty{font-size:13px;color:#aaa;padding:1.5rem;text-align:center;border:1px solid #e0ddd6;border-radius:8px}
-.lentry{border:1px solid #e0ddd6;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;background:#fff}
-.ltype{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
-.ltype.in{background:#EAF3DE;color:#3B6D11}
-.ltype.out{background:#FCEBEB;color:#A32D2D}
-.lworker{font-size:13px;font-weight:600;color:#1a1a1a}
-.ltime{font-size:12px;color:#888;margin-top:2px}
-.lloc{font-size:11px;color:#aaa;margin-top:2px}
-.lts{font-size:12px;color:#aaa;white-space:nowrap}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;padding:1rem}
-.modal-bg.show{display:flex}
-.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:300px;border:1px solid #e0ddd6}
-.modal h2{font-size:16px;font-weight:600;margin-bottom:6px;color:#1a1a1a}
-.modal p{font-size:13px;color:#888;margin-bottom:1rem}
-.pin-input{display:flex;gap:8px;margin-bottom:1rem}
-.pin-input input{width:100%;height:52px;text-align:center;font-size:22px;font-weight:600;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-family:inherit}
-.pin-err{font-size:12px;color:#A32D2D;margin-bottom:0.75rem;min-height:16px}
-.modal-row{display:flex;gap:8px}
 .loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
 .loading-screen.hide{display:none}
 .spinner{width:32px;height:32px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
@@ -100,108 +53,32 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 </style>
 </head>
 <body>
-
 <div class="loading-screen" id="loadingScreen">
   <div class="spinner"></div>
-  <p>Connecting to database…</p>
+  <p>Connecting…</p>
 </div>
-
 <div class="app">
   <div class="topbar">
     <h1>Work Tracker</h1>
     <span class="conn syncing" id="connBadge">Connecting…</span>
     <span class="liveclock" id="liveClock"></span>
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('clock',this)">Clock in/out</button>
-      <button class="tab" onclick="switchTab('manager',this)">Manager</button>
-      <button class="tab" onclick="switchTab('summary',this)">Summary</button>
-      <button class="tab" onclick="switchTab('log',this)">Log</button>
-    </div>
   </div>
-
-  <div class="panel active" id="tab-clock">
-    <div class="worker-grid" id="workerGrid"></div>
-    <div class="apanel">
-      <h2 id="panelTitle">Select your name</h2>
-      <p class="sub" id="panelSub">Tap your initials above, then clock in or out</p>
-      <div class="brow">
-        <button class="btn-in" id="btnIn" disabled onclick="doAction('in')">Clock in</button>
-        <button class="btn-out" id="btnOut" disabled onclick="doAction('out')">Clock out</button>
-      </div>
-      <div class="geost"><span class="gdot" id="geoDot"></span><span id="geoText">Geolocation ready</span></div>
-      <div id="debugPanel" style="margin-top:10px;font-size:11px;color:#aaa;font-family:monospace;line-height:1.6"></div>
+  <div class="worker-grid" id="workerGrid"></div>
+  <div class="apanel">
+    <h2 id="panelTitle">Select your name</h2>
+    <p class="sub" id="panelSub">Tap your initials above, then clock in or out</p>
+    <div class="brow">
+      <button class="btn-in" id="btnIn" disabled onclick="doAction('in')">Clock in</button>
+      <button class="btn-out" id="btnOut" disabled onclick="doAction('out')">Clock out</button>
     </div>
-  </div>
-
-  <div class="panel" id="tab-manager">
-    <div class="scard-grid" id="mStats"></div>
-    <div class="sec-title">Current status</div>
-    <div class="mgrid" id="managerGrid"></div>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6;display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="openPin('change')">Change PIN</button>
-      <button onclick="clearAndRebuildLog()" style="border-color:#A32D2D;color:#A32D2D" id="clearLogBtn">Clear duplicate logs</button>
-    </div>
-  </div>
-
-  <div class="panel" id="tab-summary">
-    <div class="period-row">
-      <label>Period</label>
-      <select id="periodSel" onchange="renderSummary()">
-        <option value="today">Today</option>
-        <option value="week">This week</option>
-        <option value="month">This month</option>
-        <option value="all">All time</option>
-      </select>
-      <button class="btn-exp" onclick="exportCSV()">Export CSV</button>
-    </div>
-    <div id="summaryContent"></div>
-  </div>
-
-  <div class="panel" id="tab-log">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
-      <div class="log-filters">
-        <button class="fbtn active" onclick="setFilter('all',this)">All</button>
-        <button class="fbtn" onclick="setFilter('in',this)">In</button>
-        <button class="fbtn" onclick="setFilter('out',this)">Out</button>
-      </div>
-      <div style="display:flex;gap:8px">
-        <select id="logWFilter" onchange="renderLog()">
-          <option value="all">All workers</option>
-        </select>
-        <button class="btn-exp" onclick="exportCSV()">Export CSV</button>
-      </div>
-    </div>
-    <div id="logList"></div>
-  </div>
-</div>
-
-<div class="modal-bg" id="pinModal">
-  <div class="modal">
-    <h2 id="pinTitle">Manager PIN</h2>
-    <p id="pinSub">Enter 4-digit PIN to continue</p>
-    <div class="pin-input">
-      <input type="password" maxlength="1" inputmode="numeric" id="p0" oninput="pinInput(0)">
-      <input type="password" maxlength="1" inputmode="numeric" id="p1" oninput="pinInput(1)">
-      <input type="password" maxlength="1" inputmode="numeric" id="p2" oninput="pinInput(2)">
-      <input type="password" maxlength="1" inputmode="numeric" id="p3" oninput="pinInput(3)">
-    </div>
-    <div class="pin-err" id="pinErr"></div>
-    <div class="modal-row">
-      <button onclick="closePinModal()">Cancel</button>
-      <button id="pinSubmitBtn" onclick="submitPin()">Unlock</button>
-    </div>
-    <div id="newPinArea" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6">
-      <p style="font-size:12px;color:#888;margin-bottom:8px">Verify current PIN first, then enter new PIN above</p>
-      <button onclick="saveNewPin()">Set new PIN</button>
-    </div>
+    <div class="geost"><span class="gdot" id="geoDot"></span><span id="geoText">Geolocation ready</span></div>
+    <div id="debugPanel" style="margin-top:10px;font-size:11px;color:#aaa;font-family:monospace;line-height:1.6"></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
-
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, push, update, remove, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
+import { getDatabase, ref, set, push, update, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 const firebaseConfig = {
   apiKey: "AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
   authDomain: "attendance-20d6a.firebaseapp.com",
@@ -211,557 +88,139 @@ const firebaseConfig = {
   messagingSenderId: "597668949951",
   appId: "1:597668949951:web:f7fcc8c3b4450f8f80bb0a"
 };
-
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
-
 const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
-let sel = null, logTypeFilter = 'all', pinTarget = null, unlocked = {}, settingNew = false;
-let workers = {}, log = [], pin = '1234';
+let sel = null, workers = {};
 
-// Connection status
-onValue(ref(db, '.info/connected'), snap => {
+onValue(ref(db,'.info/connected'), snap => {
   const online = snap.val();
-  const badge = document.getElementById('connBadge');
-  badge.textContent = online ? 'Live' : 'Offline';
-  badge.className = 'conn ' + (online ? 'online' : 'offline');
+  const b = document.getElementById('connBadge');
+  b.textContent = online?'Live':'Offline';
+  b.className = 'conn '+(online?'online':'offline');
 });
 
-// Init
-function debug(msg) {
-  const d = document.getElementById('debugPanel');
-  if (!d) return;
-  const t = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-  d.innerHTML = `[${t}] ${msg}<br>` + d.innerHTML;
-  // Keep only last 5 lines
-  const lines = d.innerHTML.split('<br>');
-  if (lines.length > 6) d.innerHTML = lines.slice(0, 6).join('<br>');
-}
-
-async function fetchLog() {
-  try {
-    const res = await fetch('https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json');
-    const data = await res.json();
-    log = [];
-    if (data) {
-      Object.entries(data).forEach(([key, val]) => log.push({id: key, ...val}));
-      log.sort((a, b) => new Date(b.time) - new Date(a.time));
-    }
-    debug(`Log: ${log.length} entries`);
-    logReady = true;
-    if (typeof checkReady === 'function') checkReady();
-    renderLog();
-    if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
-  } catch(e) {
-    debug(`Fetch error: ${e.message}`);
-    logReady = true;
-  }
-}
-
-async function initData() {
-  for (const w of WORKERS) {
-    const snap = await get(ref(db, 'workers/' + w));
-    if (!snap.exists()) await set(ref(db, 'workers/' + w), {status:'out', since:null, loc:'', lastTime:null});
-  }
-  const pinSnap = await get(ref(db, 'config/pin'));
-  if (!pinSnap.exists()) await set(ref(db, 'config/pin'), '1234');
-
-  let workersReady = false, logReady = false;
-  function checkReady() {
-    if (workersReady && logReady) {
-      document.getElementById('loadingScreen').classList.add('hide');
-    }
-  }
-  setTimeout(() => document.getElementById('loadingScreen').classList.add('hide'), 5000);
-
-  onValue(ref(db, 'workers'), snap => {
-    workers = snap.val() || {};
-    WORKERS.forEach(w => { if (!workers[w]) workers[w] = {status:'out', since:null, loc:'', lastTime:null}; });
-    workersReady = true; checkReady();
-    // Backfill log entries for workers clocked in with no log record
-
-    renderWorkers();
-    if (sel) selectW(sel);
-    if (document.getElementById('tab-manager').classList.contains('active')) renderManager();
-    if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
-  });
-
-  fetchLog();
-  setInterval(fetchLog, 10000);
-
-  onValue(ref(db, 'config/pin'), snap => { if (snap.exists()) pin = snap.val(); });
-}
-
-let backfillDone = false;
-async function backfillMissingLogEntries() {
-  if (backfillDone) return;
-  backfillDone = true;
-  for (const w of WORKERS) {
-    const wd = workers[w] || {};
-    if (wd.status !== 'in' || !wd.since) continue;
-    const hasEntry = log.find(e => e.worker === w && e.type === 'in');
-    if (!hasEntry) {
-      try {
-        await push(ref(db, 'log'), {
-          worker: w, type: 'in', time: wd.since,
-          lat: null, lon: null, acc: null, loc: wd.loc || ''
-        });
-      } catch(e) { console.error('backfill failed for', w, e); }
-    }
-  }
-}
+onValue(ref(db,'workers'), snap => {
+  workers = snap.val()||{};
+  WORKERS.forEach(w=>{ if(!workers[w]) workers[w]={status:'out',since:null,loc:'',lastTime:null}; });
+  renderWorkers();
+  if(sel) selectW(sel);
+  document.getElementById('loadingScreen').classList.add('hide');
+});
 
 function renderWorkers() {
-  document.getElementById('workerGrid').innerHTML = WORKERS.map((w, i) => {
-    const wd = workers[w] || {};
-    const isSel = sel === w, isIn = wd.status === 'in';
-    const since = wd.since ? new Date(wd.since).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
-    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="_app.selectW('${w}')">
+  document.getElementById('workerGrid').innerHTML = WORKERS.map((w,i) => {
+    const wd=workers[w]||{}, isSel=sel===w, isIn=wd.status==='in';
+    const since=wd.since?new Date(wd.since).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')">
       <div class="wav">${w}</div>
       <div class="wnum">${i+1}</div>
-      <div class="wstat${isIn?' in':''}">${isIn ? 'In · '+since : 'Off'}</div>
+      <div class="wstat${isIn?' in':''}">${isIn?'In · '+since:'Off'}</div>
     </div>`;
   }).join('');
 }
-
-function selectW(w) {
-  sel = w;
-  const wd = workers[w] || {}, isIn = wd.status === 'in';
-  document.getElementById('panelTitle').textContent = w;
-  document.getElementById('panelSub').textContent = isIn
-    ? `Clocked in at ${new Date(wd.since).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Ready to clock out.`
-    : 'Not clocked in. Ready to clock in.';
-  document.getElementById('btnIn').disabled = isIn;
-  document.getElementById('btnOut').disabled = !isIn;
+window.selectW = function(w) {
+  sel=w;
+  const wd=workers[w]||{}, isIn=wd.status==='in';
+  document.getElementById('panelTitle').textContent=w;
+  document.getElementById('panelSub').textContent=isIn
+    ?`Clocked in at ${new Date(wd.since).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Ready to clock out.`
+    :'Not clocked in. Ready to clock in.';
+  document.getElementById('btnIn').disabled=isIn;
+  document.getElementById('btnOut').disabled=!isIn;
   renderWorkers();
-}
+};
 
 function getGeo(cb) {
-  if (!navigator.geolocation) { cb(null, 'Not supported'); return; }
-  setGeoUI('pulse', 'Getting precise location…');
+  if(!navigator.geolocation){cb(null,'Not supported');return;}
+  setGeoUI('pulse','Getting precise location…');
   navigator.geolocation.getCurrentPosition(
-    p => cb({lat: p.coords.latitude, lon: p.coords.longitude, acc: Math.round(p.coords.accuracy)}, null),
-    () => cb(null, 'Location unavailable'),
-    {timeout: 15000, maximumAge: 0, enableHighAccuracy: true}
+    p=>cb({lat:p.coords.latitude,lon:p.coords.longitude,acc:Math.round(p.coords.accuracy)},null),
+    ()=>cb(null,'Location unavailable'),
+    {timeout:15000,maximumAge:0,enableHighAccuracy:true}
   );
 }
-function setGeoUI(cls, msg) {
-  document.getElementById('geoDot').className = 'gdot ' + cls;
-  document.getElementById('geoText').textContent = msg;
+function setGeoUI(cls,msg){
+  document.getElementById('geoDot').className='gdot '+cls;
+  document.getElementById('geoText').textContent=msg;
 }
-function revGeo(lat, lon, cb) {
+function revGeo(lat,lon,cb){
   fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`)
-    .then(r => r.json()).then(d => {
-      const a = d.address || {};
-      // Build full street address: unit/house number + road + suburb + city + postcode + country
-      const parts = [
-        a.house_number && a.road ? `${a.house_number} ${a.road}` : (a.road || a.pedestrian || a.footway || ''),
-        a.suburb || a.neighbourhood || a.quarter || '',
-        a.city || a.town || a.village || a.county || a.state_district || '',
-        a.postcode || '',
-        a.country || ''
+    .then(r=>r.json()).then(d=>{
+      const a=d.address||{};
+      const parts=[
+        a.house_number&&a.road?`${a.house_number} ${a.road}`:(a.road||a.pedestrian||a.footway||''),
+        a.suburb||a.neighbourhood||a.quarter||'',
+        a.city||a.town||a.village||a.county||'',
+        a.postcode||'',a.country||''
       ].filter(Boolean);
-      cb(parts.length ? parts.join(', ') : `${lat.toFixed(5)}, ${lon.toFixed(5)}`);
-    }).catch(() => cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));
+      cb(parts.length?parts.join(', '):`${lat.toFixed(5)}, ${lon.toFixed(5)}`);
+    }).catch(()=>cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));
+}
+function debug(msg){
+  const d=document.getElementById('debugPanel'); if(!d)return;
+  const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.innerHTML=`[${t}] ${msg}<br>`+d.innerHTML;
+  const lines=d.innerHTML.split('<br>'); if(lines.length>5) d.innerHTML=lines.slice(0,5).join('<br>');
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function resetPanel(){
+  sel=null; renderWorkers();
+  document.getElementById('panelTitle').textContent='Select your name';
+  document.getElementById('panelSub').textContent='Tap your initials above, then clock in or out';
+  document.getElementById('btnIn').disabled=true;
+  document.getElementById('btnOut').disabled=true;
 }
 
-async function doAction(type) {
-  if (!sel) return;
-  const w = sel;
-  document.getElementById('btnIn').disabled = true;
-  document.getElementById('btnOut').disabled = true;
-  getGeo(async (geo, err) => {
-    if (err) setGeoUI('err', err);
-    const now = new Date().toISOString();
-    const coordStr = geo ? `${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}` : '';
-    // Update worker status
-    await update(ref(db, 'workers/' + w), {
-      status: type,
-      since: type === 'in' ? now : null,
-      lastTime: now,
-      loc: type === 'in' ? coordStr : ''
-    });
-    // Write log entry with coordinates immediately
-    const entry = {
-      worker: w, type, time: now,
-      lat: geo ? geo.lat : null,
-      lon: geo ? geo.lon : null,
-      acc: geo ? geo.acc : null,
-      loc: coordStr
-    };
-    try {
-      debug(`Writing ${type} for ${w}...`);
-      const newRef = await push(ref(db, 'log'), entry);
-      debug(`✓ Written to Firebase key: ${newRef.key}`);
-      if (geo) {
-        setGeoUI('ok', `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
-        revGeo(geo.lat, geo.lon, loc => {
-          update(newRef, {loc});
-          if (type === 'in') update(ref(db, 'workers/' + w), {loc});
+window.doAction = async function(type) {
+  if(!sel)return;
+  const w=sel;
+  document.getElementById('btnIn').disabled=true;
+  document.getElementById('btnOut').disabled=true;
+  getGeo(async(geo,err)=>{
+    if(err) setGeoUI('err',err);
+    const now=new Date().toISOString();
+    const coordStr=geo?`${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}`:'';
+    await update(ref(db,'workers/'+w),{status:type,since:type==='in'?now:null,lastTime:now,loc:type==='in'?coordStr:''});
+    const entry={worker:w,type,time:now,lat:geo?geo.lat:null,lon:geo?geo.lon:null,acc:geo?geo.acc:null,loc:coordStr};
+    try{
+      debug(`Writing ${type} for ${w}…`);
+      const newRef=await push(ref(db,'log'),entry);
+      debug(`✓ Saved: ${newRef.key}`);
+      if(geo){
+        setGeoUI('ok',`${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
+        revGeo(geo.lat,geo.lon,loc=>{
+          update(newRef,{loc});
+          if(type==='in') update(ref(db,'workers/'+w),{loc});
         });
-      } else {
-        setGeoUI('err', 'No location captured');
-      }
-      toast(`${w} clocked ${type === 'in' ? 'in' : 'out'}`);
-      // Refresh log immediately after action
-      setTimeout(fetchLog, 1500);
-    } catch(e) {
-      console.error('Log write failed:', e);
-      debug(`✗ WRITE FAILED: ${e.message}`);
-      setGeoUI('err', 'Write failed: ' + e.message);
-      toast('Write failed: ' + e.message);
-      document.getElementById('btnIn').disabled = type === 'in';
-      document.getElementById('btnOut').disabled = type !== 'in';
+      } else setGeoUI('err','No location captured');
+      toast(`${w} clocked ${type==='in'?'in':'out'}`);
+      setTimeout(resetPanel, 2000);
+    }catch(e){
+      debug(`✗ FAILED: ${e.message}`);
+      setGeoUI('err','Write failed: '+e.message);
+      toast('Error: '+e.message);
+      document.getElementById('btnIn').disabled=type==='in';
+      document.getElementById('btnOut').disabled=type!=='in';
     }
   });
-}
+};
 
-function switchTab(tab, el) {
-  if ((tab === 'manager' || tab === 'summary' || tab === 'log') && !unlocked[tab]) { openPin(tab); return; }
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
-  if (tab === 'manager') renderManager();
-  if (tab === 'summary') renderSummary();
-  if (tab === 'log') renderLog();
+function liveClock(){
+  document.getElementById('liveClock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
-
-function renderManager() {
-  const inW = WORKERS.filter(w => (workers[w] || {}).status === 'in');
-  document.getElementById('mStats').innerHTML = `
-    <div class="scard"><div class="sc-label">Clocked in</div><div class="sc-val">${inW.length}</div><div class="sc-sub">of ${WORKERS.length} workers</div></div>
-    <div class="scard"><div class="sc-label">Off shift</div><div class="sc-val">${WORKERS.length - inW.length}</div></div>
-    <div class="scard"><div class="sc-label">Shifts today</div><div class="sc-val">${todayShifts()}</div><div class="sc-sub">clock-ins</div></div>`;
-  document.getElementById('managerGrid').innerHTML = WORKERS.map(w => {
-    const wd = workers[w] || {}, isIn = wd.status === 'in';
-    const since = wd.since ? new Date(wd.since).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '';
-    return `<div class="mcard${isIn ? ' in' : ''}">
-      <div class="mc-name">${w}</div>
-      <span class="mc-badge ${wd.status||'out'}">${isIn ? 'Clocked in' : 'Off shift'}</span>
-      <div class="mc-detail">${isIn ? `Since: ${since}<br>Location: ${wd.loc||'—'}` : `Last seen: ${lastSeen(w)}`}</div>
-    </div>`;
-  }).join('');
-}
-function todayShifts() {
-  const s = new Date(); s.setHours(0,0,0,0);
-  return log.filter(e => e.type === 'in' && new Date(e.time) >= s).length;
-}
-function lastSeen(w) {
-  const e = log.find(e => e.worker === w);
-  return e ? new Date(e.time).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'Never';
-}
-
-function periodRange(p) {
-  const now = new Date();
-  if (p === 'today') { const s = new Date(now); s.setHours(0,0,0,0); return {start:s, end:now}; }
-  if (p === 'week') { const s = new Date(now); s.setDate(s.getDate()-s.getDay()); s.setHours(0,0,0,0); return {start:s, end:now}; }
-  if (p === 'month') return {start: new Date(now.getFullYear(), now.getMonth(), 1), end: now};
-  return {start: new Date(0), end: now};
-}
-
-// Singapore Public Holidays 2025 & 2026 (including observed substitutes)
-const SG_PUBLIC_HOLIDAYS = new Set([
-  // 2025
-  '2025-01-01', // New Year's Day
-  '2025-01-29', // CNY Day 1
-  '2025-01-30', // CNY Day 2
-  '2025-03-31', // Hari Raya Puasa
-  '2025-04-18', // Good Friday
-  '2025-05-01', // Labour Day
-  '2025-05-12', // Vesak Day
-  '2025-06-06', // Hari Raya Haji
-  '2025-08-09', // National Day (Sat) → observed Mon
-  '2025-08-11', // National Day observed
-  '2025-10-20', // Deepavali (Sun) → observed Mon
-  '2025-10-21', // Deepavali observed  
-  '2025-12-25', // Christmas
-  // 2026
-  '2026-01-01', // New Year's Day
-  '2026-02-17', // CNY Day 1
-  '2026-02-18', // CNY Day 2
-  '2026-03-21', // Hari Raya Puasa (Sat) → no sub needed as Sat is already OT
-  '2026-04-03', // Good Friday
-  '2026-05-01', // Labour Day
-  '2026-05-27', // Hari Raya Haji
-  '2026-05-31', // Vesak Day (Sun) → observed Mon
-  '2026-06-01', // Vesak Day observed
-  '2026-08-09', // National Day (Sun) → observed Mon
-  '2026-08-10', // National Day observed
-  '2026-11-08', // Deepavali (Sun) → observed Mon
-  '2026-11-09', // Deepavali observed
-  '2026-12-25', // Christmas
-]);
-
-function dateKey(d) {
-  // Returns 'YYYY-MM-DD' in local time
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-
-function isOTTime(dt) {
-  // Returns true if this moment counts as OT
-  const dow = dt.getDay(); // 0=Sun, 6=Sat
-  const key = dateKey(dt);
-  // Weekend or public holiday = full OT day
-  if (dow === 0 || dow === 6 || SG_PUBLIC_HOLIDAYS.has(key)) return true;
-  // Weekday: OT before 08:00 or from 18:00 onwards
-  const hours = dt.getHours() + dt.getMinutes() / 60;
-  return hours < 8 || hours >= 18;
-}
-
-function calcOTMinutes(inTime, outTime) {
-  // Walk through the shift minute by minute and count OT minutes
-  // Use 5-minute chunks for performance
-  const CHUNK = 5 * 60 * 1000; // 5 minutes in ms
-  let otMins = 0;
-  let t = new Date(inTime);
-  while (t < outTime) {
-    const next = new Date(Math.min(t.getTime() + CHUNK, outTime.getTime()));
-    if (isOTTime(t)) {
-      otMins += (next - t) / 60000;
-    }
-    t = next;
-  }
-  return otMins;
-}
-
-function renderSummary() {
-  const p = document.getElementById('periodSel').value;
-  const {start, end} = periodRange(p);
-  const now = new Date();
-  const entries = log.filter(e => new Date(e.time) >= start && new Date(e.time) <= end);
-  const stats = WORKERS.map(w => {
-    const wd = workers[w] || {};
-    const isIn = wd.status === 'in';
-    // Get ALL events for this worker sorted chronologically
-    const allEvents = log
-      .filter(e => e.worker === w)
-      .sort((a, b) => new Date(a.time) - new Date(b.time));
-    // Build proper shift pairs: each IN paired with the very next OUT
-    const shifts = [];
-    let openIn = null;
-    for (const e of allEvents) {
-      if (e.type === 'in') {
-        openIn = e; // start a new shift
-      } else if (e.type === 'out' && openIn) {
-        shifts.push({ in: openIn, out: e }); // close the shift
-        openIn = null;
-      }
-    }
-    // If still clocked in with no matching out
-    if (openIn) shifts.push({ in: openIn, out: null });
-    // Count shifts and minutes that overlap with the selected period
-    let periodShifts = 0, mins = 0, otMins = 0;
-    for (const s of shifts) {
-      const inTime = new Date(s.in.time);
-      const outTime = s.out ? new Date(s.out.time) : (isIn ? now : null);
-      if (!outTime) continue;
-      if (outTime < start || inTime > end) continue;
-      periodShifts++;
-      const effectiveIn = inTime < start ? start : inTime;
-      const effectiveOut = outTime > end ? end : outTime;
-      mins += (effectiveOut - effectiveIn) / 60000;
-      otMins += calcOTMinutes(effectiveIn, effectiveOut);
-    }
-    // Handle workers clocked in with no log entry
-    const hasNoLogEntry = isIn && wd.since && allEvents.filter(e => e.type === 'in').length === 0;
-    if (hasNoLogEntry && wd.since) {
-      periodShifts++;
-      const sinceTime = new Date(wd.since);
-      const effectiveIn = sinceTime < start ? start : sinceTime;
-      mins += (now - effectiveIn) / 60000;
-      otMins += calcOTMinutes(effectiveIn, now);
-    }
-    // Collect ALL known locations for this worker: from any log entry ever + current workers node
-    const allWorkerLocs = log.filter(e => e.worker === w && e.loc).map(e => e.loc);
-    if (wd.loc) allWorkerLocs.push(wd.loc);
-    const locs = [...new Set(allWorkerLocs)];
-    return {w, shifts: periodShifts, hours: (mins / 60).toFixed(1), otHours: (otMins / 60).toFixed(1), normalHours: ((mins - otMins) / 60).toFixed(1), locs, isIn};
-  });
-  const ts = stats.reduce((a, s) => a + s.shifts, 0);
-  const th = stats.reduce((a, s) => a + parseFloat(s.hours), 0).toFixed(1);
-  const tot = stats.reduce((a, s) => a + parseFloat(s.otHours), 0).toFixed(1);
-  const tnh = stats.reduce((a, s) => a + parseFloat(s.normalHours), 0).toFixed(1);
-  const currentlyIn = WORKERS.filter(w => (workers[w] || {}).status === 'in').length;
-  const activeCount = stats.filter(s => s.shifts > 0 || s.isIn).length;
-  document.getElementById('summaryContent').innerHTML = `
-    <div class="scard-grid">
-      <div class="scard"><div class="sc-label">Total shifts</div><div class="sc-val">${ts}</div></div>
-      <div class="scard"><div class="sc-label">Total hours</div><div class="sc-val">${th}h</div></div>
-      <div class="scard"><div class="sc-label">Normal hours</div><div class="sc-val">${tnh}h</div><div class="sc-sub">Mon–Fri 08:00–18:00</div></div>
-      <div class="scard"><div class="sc-label">OT hours</div><div class="sc-val" style="color:#A32D2D">${tot}h</div><div class="sc-sub">After 18:00, weekends & PH</div></div>
-      <div class="scard"><div class="sc-label">Clocked in now</div><div class="sc-val">${currentlyIn}</div><div class="sc-sub">of ${WORKERS.length} workers</div></div>
-    </div>
-    <table class="wtable">
-      <thead><tr><th>Worker</th><th>Status</th><th>Shifts</th><th>Total</th><th>Normal</th><th>OT</th><th>Locations</th></tr></thead>
-      <tbody>${stats.map(s => `<tr>
-        <td>${s.w}</td>
-        <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn ? 'In' : 'Off'}</span></td>
-        <td>${s.shifts}</td>
-        <td>${s.hours}h</td>
-        <td>${s.normalHours}h</td>
-        <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h</td>
-        <td style="font-size:12px;color:#888">${s.locs.length ? s.locs[0] : (workers[s.w] && workers[s.w].loc ? workers[s.w].loc : '—')}</td>
-      </tr>`).join('')}</tbody>
-    </table>`;
-}
-
-function setFilter(f, el) {
-  logTypeFilter = f;
-  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active'); renderLog();
-}
-function renderLog() {
-  const wf = document.getElementById('logWFilter').value;
-  const entries = log.filter(e => (logTypeFilter==='all'||e.type===logTypeFilter) && (wf==='all'||e.worker===wf));
-  const list = document.getElementById('logList');
-  if (!entries.length) { list.innerHTML = '<div class="lempty">No entries found</div>'; return; }
-  list.innerHTML = entries.slice(0,100).map(e => {
-    const d = new Date(e.time);
-    const ds = d.toLocaleDateString([], {day:'2-digit', month:'short', year:'numeric'});
-    const ts = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-    const loc = e.loc || (e.lat!=null ? `${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}` : 'No location');
-    return `<div class="lentry">
-      <span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span>
-      <div><div class="lworker">${e.worker}</div><div class="ltime">${ds} · ${ts}</div><div class="lloc">${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div>
-      <span class="lts">${ts}</span>
-    </div>`;
-  }).join('');
-}
-
-async function clearAndRebuildLog() {
-  if (!confirm('This will delete ALL log entries and rebuild clean ones. Continue?')) return;
-  const btn = document.getElementById('clearLogBtn');
-  btn.disabled = true; btn.textContent = 'Clearing…';
-  try {
-    // Use REST API DELETE to force-delete the log node regardless of size
-    const dbUrl = 'https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json';
-    const res = await fetch(dbUrl, {method: 'DELETE'});
-    if (!res.ok) throw new Error('REST delete failed: ' + res.status);
-    // Rebuild one clean entry per worker currently clocked in
-    const rebuilds = WORKERS.map(w => {
-      const wd = workers[w] || {};
-      if (wd.status !== 'in' || !wd.since) return Promise.resolve();
-      return push(ref(db, 'log'), {
-        worker: w, type: 'in', time: wd.since,
-        lat: null, lon: null, acc: null, loc: wd.loc || ''
-      });
-    });
-    await Promise.all(rebuilds);
-    backfillDone = true;
-    btn.disabled = false; btn.textContent = 'Clear duplicate logs';
-    toast('Log cleared and rebuilt ✓');
-  } catch(err) {
-    // Fallback: try SDK remove
-    try {
-      await remove(ref(db, 'log'));
-      btn.disabled = false; btn.textContent = 'Clear duplicate logs';
-      toast('Log cleared ✓');
-    } catch(e) {
-      btn.disabled = false; btn.textContent = 'Clear duplicate logs';
-      toast('Error — try deleting log in Firebase console');
-      console.error(err, e);
-    }
-  }
-}
-
-function exportCSV() {
-  const rows = [['Worker','Type','Date','Time','Latitude','Longitude','Accuracy (m)','Location']];
-  log.forEach(e => {
-    const d = new Date(e.time);
-    rows.push([e.worker, e.type, d.toLocaleDateString(), d.toLocaleTimeString(), e.lat||'', e.lon||'', e.acc||'', e.loc||'']);
-  });
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-  a.download = `worktracker_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); toast('CSV exported');
-}
-
-function openPin(target) {
-  pinTarget = target; settingNew = false;
-  document.getElementById('pinTitle').textContent = target === 'change' ? 'Change PIN' : 'Manager PIN';
-  document.getElementById('pinSub').textContent = target === 'change' ? 'Verify current PIN first' : 'Enter 4-digit PIN to continue';
-  document.getElementById('newPinArea').style.display = target === 'change' ? 'block' : 'none';
-  document.getElementById('pinSubmitBtn').textContent = 'Unlock';
-  document.getElementById('pinSubmitBtn').onclick = submitPin;
-  clearPin(); document.getElementById('pinErr').textContent = '';
-  document.getElementById('pinModal').classList.add('show');
-  setTimeout(() => document.getElementById('p0').focus(), 80);
-}
-function closePinModal() { document.getElementById('pinModal').classList.remove('show'); pinTarget = null; settingNew = false; }
-function clearPin() { [0,1,2,3].forEach(i => document.getElementById('p'+i).value = ''); }
-function getPin() { return [0,1,2,3].map(i => document.getElementById('p'+i).value).join(''); }
-function pinInput(i) {
-  if (document.getElementById('p'+i).value && i < 3) setTimeout(() => document.getElementById('p'+(i+1)).focus(), 10);
-  if (getPin().length === 4) setTimeout(() => { if (settingNew) saveNewPin(); else submitPin(); }, 100);
-}
-function submitPin() {
-  const p = getPin();
-  if (p.length < 4) { document.getElementById('pinErr').textContent = 'Enter all 4 digits'; return; }
-  if (p === pin) {
-    if (pinTarget === 'change') {
-      settingNew = true;
-      document.getElementById('pinTitle').textContent = 'Set new PIN';
-      document.getElementById('pinSub').textContent = 'Enter your new 4-digit PIN';
-      document.getElementById('newPinArea').style.display = 'none';
-      document.getElementById('pinSubmitBtn').textContent = 'Save PIN';
-      document.getElementById('pinSubmitBtn').onclick = saveNewPin;
-      clearPin(); document.getElementById('pinErr').textContent = '';
-      document.getElementById('p0').focus(); return;
-    }
-    unlocked[pinTarget] = true; closePinModal();
-    const tabs = ['clock','manager','summary','log'];
-    const idx = tabs.indexOf(pinTarget);
-    if (idx >= 0) switchTab(pinTarget, document.querySelectorAll('.tab')[idx]);
-  } else {
-    document.getElementById('pinErr').textContent = 'Incorrect PIN';
-    clearPin(); document.getElementById('p0').focus();
-  }
-}
-function saveNewPin() {
-  const p = getPin();
-  if (p.length < 4) { document.getElementById('pinErr').textContent = 'Enter all 4 digits'; return; }
-  set(ref(db, 'config/pin'), p);
-  closePinModal(); toast('PIN updated');
-}
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-function liveClock() {
-  document.getElementById('liveClock').textContent = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-}
-
-// Expose functions called from HTML onclick attributes
-window._app = { selectW, switchTab, doAction, setFilter, renderSummary, renderLog, exportCSV, openPin, closePinModal, pinInput, submitPin, saveNewPin };
-// Also expose top-level for inline onclicks
-window.switchTab = switchTab;
-window.doAction = doAction;
-window.setFilter = setFilter;
-window.renderSummary = renderSummary;
-window.renderLog = renderLog;
-window.exportCSV = exportCSV;
-window.openPin = openPin;
-window.closePinModal = closePinModal;
-window.pinInput = pinInput;
-window.submitPin = submitPin;
-window.saveNewPin = saveNewPin;
-window.clearAndRebuildLog = clearAndRebuildLog;
-
-// Boot
-WORKERS.forEach(w => {
-  const o = document.createElement('option'); o.value = w; o.textContent = w;
-  document.getElementById('logWFilter').appendChild(o);
+WORKERS.forEach(async w=>{
+  const snap=await get(ref(db,'workers/'+w));
+  if(!snap.exists()) await set(ref(db,'workers/'+w),{status:'out',since:null,loc:'',lastTime:null});
 });
 renderWorkers();
-setGeoUI('', 'Geolocation ready');
-liveClock(); setInterval(liveClock, 1000);
-initData();
+setGeoUI('','Geolocation ready');
+liveClock(); setInterval(liveClock,1000);
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
 </body>
 </html>
