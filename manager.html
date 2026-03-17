@@ -404,6 +404,16 @@ function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t
 function liveClock(){document.getElementById('liveClock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 function fmtDate(d){if(!d)return'—';return d.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'});}
 
+// Format an ISO timestamp in a specific IANA timezone
+function fmtInTZ(isoStr, tz, opts) {
+  if (!isoStr) return '—';
+  try {
+    const d = new Date(isoStr);
+    const options = opts || {hour:'2-digit', minute:'2-digit', hour12:false};
+    return new Intl.DateTimeFormat('en-GB', {timeZone: tz || 'Asia/Singapore', ...options}).format(d);
+  } catch(e) { return new Date(isoStr).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+}
+
 // ── Calendar state ────────────────────────────────────────────
 let calState={preset:'today',fromDate:null,toDate:null,fromVM:new Date(),toVM:new Date(new Date().getFullYear(),new Date().getMonth()+1,1)};
 
@@ -481,14 +491,17 @@ window.calSelect=function(y,m,d){
 function renderWorkers(){
   document.getElementById('workerGrid').innerHTML=WORKERS.map((w,i)=>{
     const wd=workers[w]||{},isSel=sel===w,isIn=wd.status==='in';
-    const since=wd.since?new Date(wd.since).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
-    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')"><div class="wav">${w}</div><div class="wnum">${i+1}</div><div class="wstat${isIn?' in':''}">${isIn?'In · '+since:'Off'}</div></div>`;
+    const since=wd.sinceLocal?wd.sinceLocal.split(',')[1]?.trim().slice(0,5):(wd.since?fmtInTZ(wd.since,wd.tz||'Asia/Singapore'):'');
+    const job=wd.job?` · ${wd.job}`:'';
+    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')"><div class="wav">${w}</div><div class="wnum">${i+1}</div><div class="wstat${isIn?' in':''}">${isIn?'In · '+since+job:'Off'}</div></div>`;
   }).join('');
 }
 window.selectW=function(w){
   sel=w;const wd=workers[w]||{},isIn=wd.status==='in';
   document.getElementById('panelTitle').textContent=w;
-  document.getElementById('panelSub').textContent=isIn?`Clocked in at ${new Date(wd.since).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}. Ready to clock out.`:'Not clocked in. Ready to clock in.';
+  const sinceDisplay = wd.sinceLocal ? wd.sinceLocal.split(',')[1]?.trim().slice(0,5) : (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore') : '');
+  const tzNote = wd.tz && wd.tz !== 'Asia/Singapore' ? ` (${wd.tz.split('/').pop().replace(/_/g,' ')} time)` : '';
+  document.getElementById('panelSub').textContent=isIn?`Clocked in at ${sinceDisplay}${tzNote}. Ready to clock out.`:'Not clocked in. Ready to clock in.';
   document.getElementById('btnIn').disabled=isIn;
   document.getElementById('btnOut').disabled=!isIn;
   renderWorkers();
@@ -549,10 +562,11 @@ function renderManager(){
     <div class="scard"><div class="sc-label">Off shift</div><div class="sc-val">${WORKERS.length-inW.length}</div></div>`;
   document.getElementById('managerGrid').innerHTML=WORKERS.map(w=>{
     const wd=workers[w]||{},isIn=wd.status==='in';
-    const since=wd.since?new Date(wd.since).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    const lastE=log.find(e=>e.worker===w);
-    const lastSeen=lastE?new Date(lastE.time).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'Never';
-    return `<div class="mcard${isIn?' in':''}"><div class="mc-name">${w}</div><span class="mc-badge ${wd.status||'out'}">${isIn?'Clocked in':'Off shift'}</span><div class="mc-detail">${isIn?`Since: ${since}<br>Job: ${wd.job||'—'}<br>Location: ${wd.loc||'—'}`:`Last seen: ${lastSeen}`}</div></div>`;
+    const since = wd.sinceLocal || (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '');
+    const tzNote = wd.tz && wd.tz !== 'Asia/Singapore' ? ` (${wd.tz.split('/').pop().replace(/_/g,' ')})` : '';
+    const lastE = log.find(e=>e.worker===w);
+    const lastSeen = lastE ? (lastE.localTime || fmtInTZ(lastE.time, lastE.tz||'Asia/Singapore', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})) : 'Never';
+    return `<div class="mcard${isIn?' in':''}"><div class="mc-name">${w}</div><span class="mc-badge ${wd.status||'out'}">${isIn?'Clocked in':'Off shift'}</span><div class="mc-detail">${isIn?`Since: ${since}${tzNote}<br>Job: ${wd.job||'—'}<br>Location: ${wd.loc||'—'}`:`Last seen: ${lastSeen}`}</div></div>`;
   }).join('');
 }
 
@@ -647,13 +661,12 @@ function renderLog(){
   if(!entries.length){list.innerHTML='<div class="lempty">No entries found</div>';return;}
   list.innerHTML=entries.slice(0,200).map(e=>{
     const d=new Date(e.time);
-    const d_utc=d;
-    const ds=d_utc.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'});
-    const ts=d_utc.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    const localDisplay=e.localTime?e.localTime:'';
     const tzLabel=e.tz&&e.tz!=='Asia/Singapore'?` <span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 5px;border-radius:8px;font-weight:600">${e.tz.split('/').pop().replace(/_/g,' ')}</span>`:'';
     const loc=e.loc||(e.lat!=null?`${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`:'No location');
-    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}</div><div class="ltime">${localDisplay||ds+' · '+ts}</div><div class="lloc">${e.job?'<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">'+e.job+'</span>':''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><span class="lts">${ts}</span></div>`;
+    // Local time display: use saved localTime or convert UTC to worker's tz
+    const displayTime = e.localTime || fmtInTZ(e.time, e.tz||'Asia/Singapore', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const shortTime = e.localTime ? e.localTime.split(',')[1]?.trim().slice(0,5) : fmtInTZ(e.time, e.tz||'Asia/Singapore');
+    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?'<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">'+e.job+'</span>':''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><span class="lts">${shortTime}</span></div>`;
   }).join('');
 }
 

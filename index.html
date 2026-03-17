@@ -167,7 +167,7 @@ window.doAction=async function(type){
       hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
     });
     const coordStr=geo?`${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}`:'';
-    await update(ref(db,'workers/'+w),{status:type,since:type==='in'?nowISO:null,lastTime:nowISO,loc:type==='in'?coordStr:'',job:type==='in'?jobNum:'',tz:localTZ});
+    await update(ref(db,'workers/'+w),{status:type,since:type==='in'?nowISO:null,sinceLocal:type==='in'?localTimeStr:null,lastTime:nowISO,loc:type==='in'?coordStr:'',job:type==='in'?jobNum:'',tz:localTZ});
     const entry={worker:w,type,time:nowISO,localTime:localTimeStr,tz:localTZ,lat:geo?geo.lat:null,lon:geo?geo.lon:null,acc:geo?geo.acc:null,loc:coordStr,job:jobNum};
     try{
       debug(`Writing ${type} for ${w}…`);
