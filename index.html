@@ -136,8 +136,9 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
     <div class="scard-grid" id="mStats"></div>
     <div class="sec-title">Current status</div>
     <div class="mgrid" id="managerGrid"></div>
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6">
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6;display:flex;gap:8px;flex-wrap:wrap">
       <button onclick="openPin('change')">Change PIN</button>
+      <button onclick="clearAndRebuildLog()" style="border-color:#A32D2D;color:#A32D2D" id="clearLogBtn">Clear duplicate logs</button>
     </div>
   </div>
 
@@ -198,7 +199,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, push, update, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, set, push, update, remove, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
@@ -236,7 +237,10 @@ async function initData() {
 
   let workersReady = false, logReady = false;
   function checkReady() {
-    if (workersReady && logReady) document.getElementById('loadingScreen').classList.add('hide');
+    if (workersReady && logReady) {
+      document.getElementById('loadingScreen').classList.add('hide');
+      backfillMissingLogEntries();
+    }
   }
   setTimeout(() => document.getElementById('loadingScreen').classList.add('hide'), 5000);
 
@@ -245,7 +249,7 @@ async function initData() {
     WORKERS.forEach(w => { if (!workers[w]) workers[w] = {status:'out', since:null, loc:'', lastTime:null}; });
     workersReady = true; checkReady();
     // Backfill log entries for workers clocked in with no log record
-    if (logReady) backfillMissingLogEntries();
+
     renderWorkers();
     if (sel) selectW(sel);
     if (document.getElementById('tab-manager').classList.contains('active')) renderManager();
@@ -257,7 +261,7 @@ async function initData() {
     if (snap.exists()) snap.forEach(child => log.unshift({id: child.key, ...child.val()}));
     log.sort((a, b) => new Date(b.time) - new Date(a.time));
     logReady = true; checkReady();
-    if (workersReady) backfillMissingLogEntries();
+
     renderLog();
     if (document.getElementById('tab-summary').classList.contains('active')) renderSummary();
   });
@@ -265,19 +269,19 @@ async function initData() {
   onValue(ref(db, 'config/pin'), snap => { if (snap.exists()) pin = snap.val(); });
 }
 
+let backfillDone = false;
 function backfillMissingLogEntries() {
+  if (backfillDone) return;
+  backfillDone = true;
   WORKERS.forEach(w => {
     const wd = workers[w] || {};
     if (wd.status !== 'in' || !wd.since) return;
-    // Check if a log entry exists for this clock-in
-    const hasEntry = log.find(e => e.worker === w && e.type === 'in' && e.time === wd.since);
+    const hasEntry = log.find(e => e.worker === w && e.type === 'in');
     if (!hasEntry) {
-      // Write a synthetic log entry to Firebase so it appears in log and summary
-      const entry = {
+      push(ref(db, 'log'), {
         worker: w, type: 'in', time: wd.since,
         lat: null, lon: null, acc: null, loc: wd.loc || ''
-      };
-      push(ref(db, 'log'), entry);
+      });
     }
   });
 }
@@ -487,6 +491,32 @@ function renderLog() {
       <span class="lts">${ts}</span>
     </div>`;
   }).join('');
+}
+
+function clearAndRebuildLog() {
+  if (!confirm('This will delete ALL log entries and rebuild clean ones from current worker status. Continue?')) return;
+  const btn = document.getElementById('clearLogBtn');
+  btn.disabled = true; btn.textContent = 'Clearing…';
+  // Delete entire log node
+  remove(ref(db, 'log')).then(() => {
+    // Rebuild one clean entry per worker currently clocked in
+    const promises = WORKERS.map(w => {
+      const wd = workers[w] || {};
+      if (wd.status !== 'in' || !wd.since) return Promise.resolve();
+      return push(ref(db, 'log'), {
+        worker: w, type: 'in', time: wd.since,
+        lat: null, lon: null, acc: null, loc: wd.loc || ''
+      });
+    });
+    return Promise.all(promises);
+  }).then(() => {
+    backfillDone = true;
+    btn.disabled = false; btn.textContent = 'Clear duplicate logs';
+    toast('Log cleared and rebuilt');
+  }).catch(err => {
+    btn.disabled = false; btn.textContent = 'Clear duplicate logs';
+    toast('Error: ' + err.message);
+  });
 }
 
 function exportCSV() {
