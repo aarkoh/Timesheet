@@ -269,20 +269,22 @@ async function initData() {
 }
 
 let backfillDone = false;
-function backfillMissingLogEntries() {
+async function backfillMissingLogEntries() {
   if (backfillDone) return;
   backfillDone = true;
-  WORKERS.forEach(w => {
+  for (const w of WORKERS) {
     const wd = workers[w] || {};
-    if (wd.status !== 'in' || !wd.since) return;
+    if (wd.status !== 'in' || !wd.since) continue;
     const hasEntry = log.find(e => e.worker === w && e.type === 'in');
     if (!hasEntry) {
-      push(ref(db, 'log'), {
-        worker: w, type: 'in', time: wd.since,
-        lat: null, lon: null, acc: null, loc: wd.loc || ''
-      });
+      try {
+        await push(ref(db, 'log'), {
+          worker: w, type: 'in', time: wd.since,
+          lat: null, lon: null, acc: null, loc: wd.loc || ''
+        });
+      } catch(e) { console.error('backfill failed for', w, e); }
     }
-  });
+  }
 }
 
 function renderWorkers() {
@@ -339,38 +341,56 @@ function revGeo(lat, lon, cb) {
     }).catch(() => cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));
 }
 
-function doAction(type) {
+async function doAction(type) {
   if (!sel) return;
   const w = sel;
   document.getElementById('btnIn').disabled = true;
   document.getElementById('btnOut').disabled = true;
-  getGeo((geo, err) => {
+  getGeo(async (geo, err) => {
     if (err) setGeoUI('err', err);
     const now = new Date().toISOString();
-    update(ref(db, 'workers/' + w), {status: type, since: type==='in' ? now : null, lastTime: now});
-    const entry = {worker: w, type, time: now, lat: geo ? geo.lat : null, lon: geo ? geo.lon : null, acc: geo ? geo.acc : null, loc: ''};
-    const newRef = push(ref(db, 'log'), entry);
-    if (geo) {
-      setGeoUI('ok', `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
-      // Immediately save coordinates as placeholder so something shows right away
-      const coordStr = `${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}`;
-      update(newRef, {loc: coordStr});
-      if (type === 'in') update(ref(db, 'workers/' + w), {loc: coordStr});
-      // Then overwrite with human-readable address once revGeo resolves
-      revGeo(geo.lat, geo.lon, loc => {
-        update(newRef, {loc});
-        if (type === 'in') update(ref(db, 'workers/' + w), {loc});
-        else update(ref(db, 'workers/' + w), {loc: ''});
-      });
-    } else {
-      setGeoUI('err', 'No location captured');
+    const coordStr = geo ? `${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}` : '';
+    // Update worker status
+    await update(ref(db, 'workers/' + w), {
+      status: type,
+      since: type === 'in' ? now : null,
+      lastTime: now,
+      loc: type === 'in' ? coordStr : ''
+    });
+    // Write log entry with coordinates immediately
+    const entry = {
+      worker: w, type, time: now,
+      lat: geo ? geo.lat : null,
+      lon: geo ? geo.lon : null,
+      acc: geo ? geo.acc : null,
+      loc: coordStr
+    };
+    try {
+      const newRef = await push(ref(db, 'log'), entry);
+      if (geo) {
+        setGeoUI('ok', `${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
+        // Upgrade to full address in background
+        revGeo(geo.lat, geo.lon, loc => {
+          update(newRef, {loc});
+          if (type === 'in') update(ref(db, 'workers/' + w), {loc});
+        });
+      } else {
+        setGeoUI('err', 'No location captured');
+      }
+      toast(`${w} clocked ${type === 'in' ? 'in' : 'out'}`);
+    } catch(e) {
+      console.error('Log write failed:', e);
+      setGeoUI('err', 'Write failed — check Firebase rules');
+      toast('Error saving — check Firebase rules');
+      // Re-enable buttons so user can try again
+      document.getElementById('btnIn').disabled = type === 'in';
+      document.getElementById('btnOut').disabled = type !== 'in';
     }
-    toast(`${w} clocked ${type === 'in' ? 'in' : 'out'}`);
   });
 }
 
 function switchTab(tab, el) {
-  if ((tab === 'manager' || tab === 'summary') && !unlocked[tab]) { openPin(tab); return; }
+  if ((tab === 'manager' || tab === 'summary' || tab === 'log') && !unlocked[tab]) { openPin(tab); return; }
   document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
