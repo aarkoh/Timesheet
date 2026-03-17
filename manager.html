@@ -489,37 +489,41 @@ function renderSummary(){
     const shifts=[];let openIn=null;
     for(const e of allEvents){if(e.type==='in')openIn=e;else if(e.type==='out'&&openIn){shifts.push({in:openIn,out:e});openIn=null;}}
     if(openIn)shifts.push({in:openIn,out:null});
-    let mins=0,otMins=0,ovsMins=0;
+    let mins=0,otMins=0;
+    const ovsDaySet=new Set(); // unique calendar days (YYYY-MM-DD) worked overseas
     for(const s of shifts){
       const inT=new Date(s.in.time),outT=s.out?new Date(s.out.time):(isIn?now:null);
       if(!outT||outT<start||inT>end)continue;
       const eIn=inT<start?start:inT,eOut=outT>end?end:outT;
-      const shiftMins=(eOut-eIn)/60000;
-      mins+=shiftMins;
+      mins+=(eOut-eIn)/60000;
       otMins+=calcOTMins(eIn,eOut);
-      // OVS: determine if this shift was overseas based on clock-in location/coords
+      // OVS: count each calendar day within this shift if it's overseas
       const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
-      const inSG=lat!=null?isInSingapore(lat,lon):isLocSingapore(loc);
-      if(inSG===false) ovsMins+=shiftMins; // confirmed overseas
+      const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
+      if(overseas){
+        // Walk each calendar day in this shift
+        let d=new Date(eIn);d.setHours(0,0,0,0);
+        while(d<=eOut){ovsDaySet.add(dateKey(d));d.setDate(d.getDate()+1);}
+      }
     }
     const hasNoLog=isIn&&wd.since&&!allEvents.find(e=>e.type==='in');
     if(hasNoLog&&wd.since){
       const sT=new Date(wd.since),eIn=sT<start?start:sT;
-      const shiftMins=(now-eIn)/60000;
-      mins+=shiftMins; otMins+=calcOTMins(eIn,now);
-      const inSG=wd.lat!=null?isInSingapore(wd.lat,wd.lon):isLocSingapore(wd.loc);
-      if(inSG===false) ovsMins+=shiftMins;
+      mins+=(now-eIn)/60000;otMins+=calcOTMins(eIn,now);
+      const overseas=wd.lat!=null?(isInSingapore(wd.lat,wd.lon)===false):(isLocSingapore(wd.loc)===false);
+      if(overseas){let d=new Date(eIn);d.setHours(0,0,0,0);while(d<=now){ovsDaySet.add(dateKey(d));d.setDate(d.getDate()+1);}}
     }
+    const ovsDays=ovsDaySet.size;
     const locs=[...new Set([...log.filter(e=>e.worker===w&&e.loc).map(e=>e.loc),...(wd.loc?[wd.loc]:[])])];
     const otRate=otRates[w]||0,ovsRate=ovsRates[w]||0;
-    const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1)),ovsH=parseFloat((ovsMins/60).toFixed(1));
-    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsHours:ovsH.toFixed(1),otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsH*ovsRate),locs,isIn};
+    const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1));
+    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn};
   });
   const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0).toFixed(1);
   const tnh=stats.reduce((a,s)=>a+parseFloat(s.normalHours),0).toFixed(1);
   const tot=stats.reduce((a,s)=>a+parseFloat(s.otHours),0).toFixed(1);
   const toc=stats.reduce((a,s)=>a+s.otCost,0);
-  const tovsh=stats.reduce((a,s)=>a+parseFloat(s.ovsHours),0).toFixed(1);
+  const tovsd=stats.reduce((a,s)=>a+s.ovsDays,0);
   const tovsc=stats.reduce((a,s)=>a+s.ovsCost,0);
   const currentlyIn=WORKERS.filter(w=>(workers[w]||{}).status==='in').length;
   document.getElementById('summaryContent').innerHTML=`
@@ -528,12 +532,12 @@ function renderSummary(){
       <div class="scard"><div class="sc-label">Normal hours</div><div class="sc-val">${tnh}h</div><div class="sc-sub">Mon–Fri 08:00–18:00</div></div>
       <div class="scard"><div class="sc-label">OT hours</div><div class="sc-val" style="color:#A32D2D">${tot}h</div><div class="sc-sub">After 18:00, wknd & PH</div></div>
       <div class="scard"><div class="sc-label">Total OT cost</div><div class="sc-val" style="color:#A32D2D">S$${toc.toFixed(2)}</div></div>
-      <div class="scard"><div class="sc-label">OVS hours</div><div class="sc-val" style="color:#185FA5">${tovsh}h</div><div class="sc-sub">Outside Singapore</div></div>
+      <div class="scard"><div class="sc-label">OVS days</div><div class="sc-val" style="color:#185FA5">${tovsd}</div><div class="sc-sub">Outside Singapore</div></div>
       <div class="scard"><div class="sc-label">Total OVS cost</div><div class="sc-val" style="color:#185FA5">S$${tovsc.toFixed(2)}</div></div>
       <div class="scard"><div class="sc-label">Clocked in now</div><div class="sc-val">${currentlyIn}</div><div class="sc-sub">of ${WORKERS.length} workers</div></div>
     </div>
     <div class="tbl-wrap"><table class="wtable">
-      <thead><tr><th>Worker</th><th>Status</th><th>Total hrs</th><th>Normal hrs</th><th>OT hrs</th><th>OT Rate (S$/hr)</th><th>OT Cost</th><th>OVS hrs</th><th>OVS Rate (S$/hr)</th><th>OVS Cost</th><th>Last location</th></tr></thead>
+      <thead><tr><th>Worker</th><th>Status</th><th>Total hrs</th><th>Normal hrs</th><th>OT hrs</th><th>OT Rate (S$/hr)</th><th>OT Cost</th><th>OVS days</th><th>OVS Rate (S$/day)</th><th>OVS Cost</th><th>Last location</th></tr></thead>
       <tbody>${stats.map(s=>`<tr>
         <td style="font-weight:600">${s.w}</td>
         <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn?'In':'Off'}</span></td>
@@ -542,8 +546,8 @@ function renderSummary(){
         <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h</td>
         <td><input type="number" min="0" step="0.5" value="${s.otRate||''}" placeholder="0.00" onchange="setOTRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
         <td style="font-weight:${s.otCost>0?'600':'400'};color:${s.otCost>0?'#A32D2D':'#888'}">${s.otCost>0?'S$'+s.otCost.toFixed(2):'—'}</td>
-        <td style="color:${parseFloat(s.ovsHours)>0?'#185FA5':'#888'};font-weight:${parseFloat(s.ovsHours)>0?'600':'400'}">${s.ovsHours}h</td>
-        <td><input type="number" min="0" step="0.5" value="${s.ovsRate||''}" placeholder="0.00" onchange="setOVSRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
+        <td style="color:${s.ovsDays>0?'#185FA5':'#888'};font-weight:${s.ovsDays>0?'600':'400'}">${s.ovsDays}</td>
+        <td><input type="number" min="0" step="1" value="${s.ovsRate||''}" placeholder="0.00" onchange="setOVSRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
         <td style="font-weight:${s.ovsCost>0?'600':'400'};color:${s.ovsCost>0?'#185FA5':'#888'}">${s.ovsCost>0?'S$'+s.ovsCost.toFixed(2):'—'}</td>
         <td style="font-size:11px;color:#888">${s.locs.length?s.locs[0]:'—'}</td>
       </tr>`).join('')}</tbody>
@@ -609,9 +613,9 @@ window.exportExcel=function(){
 
   // ── Sheet 2: Summary ───────────────────────────────────────
   const stats=window._lastStats||[];
-  const sumData=[['Work Tracker — '+periodLabel],[''],['Worker','Status','Total Hours','Normal Hours','OT Hours','OT Rate (S$/hr)','OT Cost (S$)','OVS Hours','OVS Rate (S$/hr)','OVS Cost (S$)','Last Location']];
+  const sumData=[['Work Tracker — '+periodLabel],[''],['Worker','Status','Total Hours','Normal Hours','OT Hours','OT Rate (S$/hr)','OT Cost (S$)','OVS Days','OVS Rate (S$/day)','OVS Cost (S$)','Last Location']];
   stats.forEach(s=>{
-    sumData.push([s.w,s.isIn?'Clocked In':'Off Shift',parseFloat(s.hours),parseFloat(s.normalHours),parseFloat(s.otHours),s.otRate||'',s.otCost||'',parseFloat(s.ovsHours),s.ovsRate||'',s.ovsCost||'',s.locs.length?s.locs[0]:'—']);
+    sumData.push([s.w,s.isIn?'Clocked In':'Off Shift',parseFloat(s.hours),parseFloat(s.normalHours),parseFloat(s.otHours),s.otRate||'',s.otCost||'',s.ovsDays,s.ovsRate||'',s.ovsCost||'',s.locs.length?s.locs[0]:'—']);
   });
   // Totals row
   sumData.push(['']);
@@ -629,7 +633,7 @@ window.exportExcel=function(){
   XLSX.utils.book_append_sheet(wb,wsSum,'Summary');
 
   // ── Sheet 3: OT Rates ──────────────────────────────────────
-  const rateData=[['Worker','OT Rate (S$/hr)','OVS Rate (S$/hr)','Note']];
+  const rateData=[['Worker','OT Rate (S$/hr)','OVS Rate (S$/day)','Note']];
   WORKERS.forEach(w=>rateData.push([w,otRates[w]||0,ovsRates[w]||0,'']));
   rateData.push(['']);
   rateData.push(['','','','Rates saved in browser. Update in Summary tab.']);
