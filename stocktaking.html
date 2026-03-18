@@ -70,6 +70,11 @@ button.submit:disabled{opacity:0.4;cursor:default}
 .re-meta{font-size:11px;color:#888;margin-top:1px}
 .re-qty{font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap}
 .empty{font-size:13px;color:#aaa;text-align:center;padding:1.5rem}
+.new-item-banner{background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:13px;color:#185FA5;cursor:pointer;display:none;align-items:center;gap:8px}
+.new-item-banner:hover{background:#B5D4F4}
+.new-item-form{background:#fff;border:1px solid #B5D4F4;border-radius:10px;padding:1rem;margin-top:8px;display:none}
+.new-item-form .form-title{font-size:13px;font-weight:600;color:#185FA5;margin-bottom:0.75rem}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
 .loading-screen.hide{display:none}
 .spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#854F0B;border-radius:50%;animation:spin 0.8s linear infinite}
@@ -108,6 +113,33 @@ button.submit:disabled{opacity:0.4;cursor:default}
         <div class="dropdown" id="itemDropdown" style="display:none"></div>
       </div>
       <div id="selectedItem" style="display:none;margin-top:6px;padding:8px 10px;background:#f9f9f7;border-radius:8px;font-size:13px"></div>
+      <!-- New item banner - shows when no match found -->
+      <div class="new-item-banner" id="newItemBanner" onclick="toggleNewItemForm()">
+        <span style="font-size:16px">+</span>
+        <span id="newItemBannerText">Add this as a new item</span>
+      </div>
+      <!-- Inline new item form -->
+      <div class="new-item-form" id="newItemForm">
+        <div class="form-title">+ Add new item to stock</div>
+        <div class="field"><label>Item name *</label><input type="text" id="ni_name" placeholder="e.g. Steel Pipe 50mm"></div>
+        <div class="field-row">
+          <div class="field"><label>SKU / Item code</label><input type="text" id="ni_sku" placeholder="e.g. SP-50"></div>
+          <div class="field"><label>Category</label><input type="text" id="ni_cat" placeholder="e.g. Pipes"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Make / Brand</label><input type="text" id="ni_make" placeholder="e.g. Panasonic"></div>
+          <div class="field"><label>Model</label><input type="text" id="ni_model" placeholder="e.g. EX-200"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Unit *</label><input type="text" id="ni_unit" placeholder="pcs, kg, m…"></div>
+          <div class="field"><label>Min stock alert</label><input type="number" id="ni_min" min="0" step="any" placeholder="0"></div>
+        </div>
+        <div class="field"><label>Location / Warehouse</label><input type="text" id="ni_loc" placeholder="e.g. Warehouse A, Shelf 3"></div>
+        <div style="display:flex;gap:8px;margin-top:0.5rem">
+          <button onclick="cancelNewItem()" style="flex:1">Cancel</button>
+          <button onclick="saveNewItem()" style="flex:2;background:#185FA5;color:#fff;border-color:#185FA5;font-weight:600">Save & select item</button>
+        </div>
+      </div>
     </div>
     <div class="field">
       <label>Quantity</label>
@@ -175,10 +207,22 @@ window.setType=function(t){
 
 // Item search
 window.searchItems=function(){
-  selItem=null; // clear selection when user types
+  selItem=null;
   document.getElementById('selectedItem').style.display='none';
-  const q=document.getElementById('itemSearch').value.toLowerCase();
-  showDropdown(q);
+  document.getElementById('newItemForm').style.display='none';
+  const q=document.getElementById('itemSearch').value.trim();
+  showDropdown(q.toLowerCase());
+  // Show "add new item" banner if text entered but no exact match
+  const banner=document.getElementById('newItemBanner');
+  if(q.length>1){
+    const hasMatch=Object.values(items).some(i=>i.name.toLowerCase().includes(q.toLowerCase())||(i.sku||'').toLowerCase().includes(q.toLowerCase()));
+    banner.style.display=hasMatch?'none':'flex';
+    document.getElementById('newItemBannerText').textContent='Add "'+q+'" as a new item';
+    // Pre-fill name in new item form
+    document.getElementById('ni_name').value=q;
+  } else {
+    banner.style.display='none';
+  }
   checkSubmit();
 };
 window.showDropdown=function(q=''){
@@ -228,6 +272,55 @@ document.getElementById('qtyInput').addEventListener('input',checkSubmit);
 document.getElementById('itemSearch').addEventListener('change', ()=>{ tryAutoSelect(); checkSubmit(); });
 
 // Submit
+window.toggleNewItemForm=function(){
+  const form=document.getElementById('newItemForm');
+  const isOpen=form.style.display==='block';
+  form.style.display=isOpen?'none':'block';
+  if(!isOpen){
+    // Pre-fill name from search
+    const q=document.getElementById('itemSearch').value.trim();
+    if(q) document.getElementById('ni_name').value=q;
+    setTimeout(()=>document.getElementById('ni_name').focus(),80);
+  }
+};
+window.cancelNewItem=function(){
+  document.getElementById('newItemForm').style.display='none';
+};
+window.saveNewItem=async function(){
+  const name=document.getElementById('ni_name').value.trim();
+  const unit=document.getElementById('ni_unit').value.trim()||'pcs';
+  if(!name){toast('Item name is required');return;}
+  const user=auth.currentUser;
+  if(!user){toast('Not connected — please wait');return;}
+  const btn=event.target;
+  btn.disabled=true;btn.textContent='Saving…';
+  const data={
+    name,
+    sku:document.getElementById('ni_sku').value.trim(),
+    category:document.getElementById('ni_cat').value.trim(),
+    make:document.getElementById('ni_make').value.trim(),
+    model:document.getElementById('ni_model').value.trim(),
+    unit,
+    qty:0,
+    minQty:parseFloat(document.getElementById('ni_min').value)||0,
+    location:document.getElementById('ni_loc').value.trim(),
+    cost:0, sell:0,
+    createdAt:new Date().toISOString(),
+    createdBy:sel||'unknown'
+  };
+  try{
+    const newRef=await push(ref(db,'stock/items'),data);
+    toast(name+' added to stock ✓');
+    // Auto-select the new item
+    setTimeout(()=>{
+      window.selectItem(newRef.key);
+      document.getElementById('newItemForm').style.display='none';
+      document.getElementById('newItemBanner').style.display='none';
+    },300);
+  }catch(e){toast('Error: '+e.message);}
+  btn.disabled=false;btn.textContent='Save & select item';
+};
+
 window.submitMovement=async function(){
   // Last-chance auto-match from search text
   if (!selItem) {
@@ -249,13 +342,19 @@ window.submitMovement=async function(){
   const newQty=moveType==='in'?(selItem.qty||0)+qty:(selItem.qty||0)-qty;
   const entry={itemId:selItem.id,itemName:selItem.name,sku:selItem.sku||'',worker:sel,type:moveType,qty,unit:selItem.unit||'pcs',qtyBefore:selItem.qty||0,qtyAfter:newQty,job,notes,time:now,localTime,tz:localTZ};
   const btn=document.getElementById('submitBtn');
-  btn.disabled=true;btn.textContent='Saving…';
+  btn.disabled=true; btn.textContent='Saving…';
   try{
+    // Ensure user is authenticated
+    const user=auth.currentUser;
+    if(!user){ toast('Not connected — please wait and try again'); btn.disabled=false; btn.textContent='Record Stock '+(moveType==='in'?'IN':'OUT'); return; }
+    const itemId=selItem.id;
+    const itemName=selItem.name;
+    const unit=selItem.unit||'pcs';
+    const minQty=selItem.minQty||0;
     await push(ref(db,'stock/movements'),entry);
-    await update(ref(db,'stock/items/'+selItem.id),{qty:newQty,lastUpdated:now,lastWorker:sel});
-    // Check low stock alert
-    if(newQty<=selItem.minQty&&selItem.minQty>0) toast(`⚠ Low stock alert: ${selItem.name} is at ${newQty} ${selItem.unit||'pcs'}`);
-    else toast(`${selItem.name} stock ${moveType==='in'?'IN':'OUT'} recorded ✓`);
+    await update(ref(db,'stock/items/'+itemId),{qty:newQty,lastUpdated:now,lastWorker:sel});
+    if(newQty<=minQty&&minQty>0) toast('⚠ Low stock: '+itemName+' is at '+newQty+' '+unit);
+    else toast(itemName+' stock '+(moveType==='in'?'IN':'OUT')+' recorded ✓');
     // Reset form
     selItem=null;
     document.getElementById('itemSearch').value='';
@@ -264,8 +363,13 @@ window.submitMovement=async function(){
     document.getElementById('jobInput').value='';
     document.getElementById('notesInput').value='';
     document.getElementById('unitLabel').textContent='—';
-  }catch(e){toast('Error: '+e.message);}
-  btn.textContent=`Record Stock ${moveType==='in'?'IN':'OUT'}`;
+    document.getElementById('jobField').style.display='none';
+  }catch(e){
+    console.error('Stock write error:',e);
+    toast('Error: '+e.message);
+  }
+  btn.disabled=false;
+  btn.textContent='Record Stock '+(moveType==='in'?'IN':'OUT');
   checkSubmit();
 };
 
@@ -289,7 +393,14 @@ signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{const b=document.getElementById('connBadge');b.textContent=snap.val()?'Live':'Offline';b.className='conn '+(snap.val()?'online':'offline');});
-  onValue(ref(db,'stock/items'),snap=>{items=snap.val()||{};if(selItem&&items[selItem.id])selItem={...selItem,...items[selItem.id]};document.getElementById('loadingScreen').classList.add('hide');});
+  onValue(ref(db,'stock/items'),snap=>{
+    items=snap.val()||{};
+    if(selItem&&items[selItem.id])selItem={...selItem,...items[selItem.id]};
+    document.getElementById('loadingScreen').classList.add('hide');
+    // Show item count in search placeholder
+    const count=Object.keys(items).length;
+    document.getElementById('itemSearch').placeholder=count?'Search '+count+' items…':'No items yet — add in Stock Manager';
+  });
   onValue(ref(db,'stock/movements'),snap=>{movements=[];if(snap.exists())snap.forEach(c=>movements.unshift({id:c.key,...c.val()}));renderRecent();});
 });
 renderWorkers();
