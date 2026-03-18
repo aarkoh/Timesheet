@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Worker Dashboard</title>
+<title>Staff Hub</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
@@ -47,6 +47,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-screen p{font-size:13px;color:#888}
+
+/* Logout button */
+.logout-btn{font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#888;cursor:pointer;display:none;align-items:center;gap:5px;white-space:nowrap;transition:all 0.12s}
+.logout-btn:hover{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
+.logout-btn.visible{display:flex}
+.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(245,245,243,0.98);display:none;align-items:center;justify-content:center;z-index:600;padding:1rem}
+.login-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:2rem;width:100%;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+.login-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;margin-bottom:1.5rem;line-height:1.5}
+.pin-big{display:flex;justify-content:center;margin-bottom:1rem}
+.pin-big input{width:80px;height:80px;text-align:center;font-size:36px;font-weight:700;border:2px solid #ddd;border-radius:12px;background:#f9f9f7;font-family:inherit;color:#1a1a1a}
+.pin-big input:focus{outline:none;border-color:#185FA5;background:#fff}
+.login-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.75rem}
+.login-name{font-size:15px;font-weight:600;color:#3B6D11;min-height:22px;margin-bottom:1rem}
+.login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
+.login-btn:disabled{opacity:0.35;cursor:default}
 </style>
 </head>
 <body>
@@ -57,6 +73,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <p>Select a module to get started</p>
     <div class="liveclock" id="liveClock"></div>
     <span class="conn syncing" id="connBadge">Connecting…</span>
+    <button class="logout-btn" id="logoutBtn" onclick="doLogout()">&#128274; Logout</button>
   </div>
   <div class="section-title">Live overview</div>
   <div class="stats-row">
@@ -84,9 +101,65 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
 </div>
+<!-- Staff Login Overlay -->
+<div class="login-overlay" id="loginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(245,245,243,0.98);display:none;align-items:center;justify-content:center;z-index:600;padding:1rem">
+  <div class="login-card">
+    <h2>&#128100; Staff Login</h2>
+    <p>Enter your 1-digit staff code<br>to access this page</p>
+    <div class="pin-big"><input type="password" id="staffPin" maxlength="1" inputmode="numeric" oninput="onStaffPinInput()" autocomplete="off"></div>
+    <div class="login-name" id="loginName"></div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" id="loginBtn" onclick="doStaffLogin()" disabled>Continue</button>
+  </div>
+</div>
+<script>
+var WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
+var staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+var loggedInStaff=null;
+function initStaffLogin(){
+  var saved=sessionStorage.getItem('rc_staff');
+  if(saved&&WORKERS_LIST.indexOf(saved)>=0){
+    loggedInStaff=saved;
+    document.getElementById('loginOverlay').style.display='none';
+    var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
+    return;
+  }
+  document.getElementById('loginOverlay').style.display='flex';
+  setTimeout(function(){var el=document.getElementById('staffPin');if(el)el.focus();},300);
+}
+function onStaffPinInput(){
+  var val=document.getElementById('staffPin').value;
+  var matched=null;
+  for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
+  document.getElementById('loginErr').textContent='';
+  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtn').style.opacity='1';}
+  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;document.getElementById('loginBtn').style.opacity='0.35';}
+}
+function doStaffLogin(){
+  var val=document.getElementById('staffPin').value;
+  var matched=null;
+  for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
+  if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
+  loggedInStaff=matched;
+  sessionStorage.setItem('rc_staff',matched);
+  document.getElementById('loginOverlay').style.display='none';
+  var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
+}
+function doLogout(){
+  if(!confirm('Log out of this device?')) return;
+  sessionStorage.removeItem('rc_staff');
+  loggedInStaff=null;
+  document.getElementById('logoutBtn').classList.remove('visible');
+  document.getElementById('loginOverlay').style.display='flex';
+  var el=document.getElementById('staffPin');if(el){el.value='';el.focus();}
+  document.getElementById('loginName').textContent='';
+  document.getElementById('loginBtn').disabled=true;
+  document.getElementById('loginErr').textContent='';
+}
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
 const fbApp=initializeApp(firebaseConfig);
@@ -95,7 +168,7 @@ const auth=getAuth(fbApp);
 function liveClock(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleDateString([],{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 liveClock();setInterval(liveClock,1000);
 signInAnonymously(auth).catch(e=>console.error(e));
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth,async user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{const online=snap.val();const b=document.getElementById('connBadge');b.textContent=online?'Live':'Offline';b.className='conn '+(online?'online':'offline');document.getElementById('loadingScreen').classList.add('hide');});
   onValue(ref(db,'staff'),snap=>{const w=snap.val()||{};document.getElementById('statIn').textContent=Object.values(w).filter(x=>x.status==='in').length;});

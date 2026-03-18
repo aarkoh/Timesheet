@@ -116,6 +116,11 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .login-name{font-size:15px;font-weight:600;color:#3B6D11;min-height:22px;margin-bottom:1rem}
 .login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
 .login-btn:disabled{opacity:0.35;cursor:default}
+
+/* Logout button */
+.logout-btn{font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#888;cursor:pointer;display:none;align-items:center;gap:5px;white-space:nowrap;transition:all 0.12s}
+.logout-btn:hover{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
+.logout-btn.visible{display:flex}
 </style>
 </head>
 <body>
@@ -125,6 +130,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
     <h1>&#128230; Stock In / Out</h1>
     <a href="https://aarkoh.github.io/Raycontrol/" class="back">&#8962; Hub</a>
     <span class="conn syncing" id="connBadge">Connecting…</span>
+    <button class="logout-btn" id="logoutBtn" onclick="doLogout()">&#128274; Logout</button>
     <div class="tabs">
       <button class="tab active" onclick="switchTab('record',this)">Record</button>
       <button class="tab" onclick="switchTab('overview',this)">Overview</button>
@@ -276,6 +282,7 @@ function initStaffLogin(){
   if(saved&&WORKERS_LIST.indexOf(saved)>=0){
     loggedInStaff=saved;
     document.getElementById('loginOverlay').style.display='none';
+    var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
     return;
   }
   document.getElementById('loginOverlay').style.display='flex';
@@ -311,6 +318,7 @@ function doStaffLogin(){
   loggedInStaff=matched;
   sessionStorage.setItem('rc_staff',matched);
   document.getElementById('loginOverlay').style.display='none';
+  var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
 }
 </script>
 <script type="module">
