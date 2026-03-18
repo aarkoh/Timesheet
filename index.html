@@ -125,6 +125,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 var WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
 var staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+var adminPin='9';
 var loggedInStaff=null;
 function initStaffLogin(){
   var saved=sessionStorage.getItem('rc_staff');
@@ -144,9 +145,12 @@ function onStaffPinInput(){
   var val=document.getElementById('staffPin').value;
   var matched=null;
   for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
+  if(!matched&&val===adminPin) matched='ADMIN';
   document.getElementById('loginErr').textContent='';
-  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtn').style.opacity='1';}
-  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;document.getElementById('loginBtn').style.opacity='0.35';}
+  if(matched){
+    document.getElementById('loginName').textContent=matched==='ADMIN'?'🔑 Admin access':'👋 Hello, '+matched+'!';
+    document.getElementById('loginBtn').disabled=false;document.getElementById('loginBtn').style.opacity='1';
+  }else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;document.getElementById('loginBtn').style.opacity='0.35';}
 }
 function doStaffLogin(){
   var val=document.getElementById('staffPin').value;
@@ -217,6 +221,7 @@ onAuthStateChanged(auth,async user=>{
   });
   // One-time fetch for immediate use on load
   try{const ps=await get(ref(db,'config/staffPins'));if(ps.exists())staffPins={...staffPins,...ps.val()};}catch(e){}
+  try{const ap=await get(ref(db,'config/adminPin'));if(ap.exists())adminPin=ap.val();}catch(e){}
 });
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
