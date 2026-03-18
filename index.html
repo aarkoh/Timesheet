@@ -122,6 +122,9 @@ function initStaffLogin(){
     loggedInStaff=saved;
     document.getElementById('loginOverlay').style.display='none';
     var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
+    var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
+    if(typeof renderOverview==='function') renderOverview();
+    if(typeof renderWorkers==='function') renderWorkers();
     return;
   }
   document.getElementById('loginOverlay').style.display='flex';
@@ -144,6 +147,10 @@ function doStaffLogin(){
   sessionStorage.setItem('rc_staff',matched);
   document.getElementById('loginOverlay').style.display='none';
   var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
+  // Hide loading screen and trigger page render in case data already loaded
+  var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
+  if(typeof renderOverview==='function') renderOverview();
+  if(typeof renderWorkers==='function') renderWorkers();
 }
 function doLogout(){
   if(!confirm('Log out of this device?')) return;

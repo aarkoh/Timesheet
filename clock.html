@@ -245,6 +245,9 @@ function initStaffLogin(){
     loggedInStaff=saved;
     document.getElementById('loginOverlay').style.display='none';
     var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
+    var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
+    if(typeof renderOverview==='function') renderOverview();
+    if(typeof renderWorkers==='function') renderWorkers();
     return;
   }
   document.getElementById('loginOverlay').style.display='flex';
