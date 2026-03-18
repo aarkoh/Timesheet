@@ -131,7 +131,7 @@ button:active{transform:scale(0.97)}
   <!-- DIRECTORY TAB -->
   <div class="panel active" id="tab-list">
     <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search name, company, phone…" oninput="renderList()" onkeyup="renderList()" onchange="renderList()" autocomplete="off" autocorrect="off" autocapitalize="off">
+      <input type="text" id="searchInput" placeholder="Search name, company, phone…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
       <button class="btn-primary" onclick="openAddContact()">+ Add contact</button>
     </div>
     <div class="chips">
@@ -596,12 +596,22 @@ function getPersonRows(){
 }
 
 
-// Search input event listener (more reliable on mobile than oninput attr)
+// Search - attach all possible events for cross-browser/mobile reliability
 const searchEl=document.getElementById('searchInput');
 if(searchEl){
-  ['input','keyup','change','compositionend'].forEach(evt=>
-    searchEl.addEventListener(evt,()=>renderList())
-  );
+  const doSearch=()=>{
+    window.renderList();
+  };
+  searchEl.addEventListener('input', doSearch);
+  searchEl.addEventListener('keyup', doSearch);
+  searchEl.addEventListener('change', doSearch);
+  searchEl.addEventListener('compositionend', doSearch);
+  searchEl.addEventListener('keydown', e=>{if(e.key==='Enter') doSearch();});
+  // iOS Safari polling fallback
+  let lastVal='';
+  setInterval(()=>{
+    if(searchEl.value!==lastVal){lastVal=searchEl.value;doSearch();}
+  },300);
 }
 
 // Close modals on bg click
