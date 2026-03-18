@@ -601,7 +601,25 @@ window.saveEditItem=async function(){
     updatedAt:new Date().toISOString(),updatedBy:loggedInStaff||sel||'unknown'
   };
   try{
+    const oldItem=items[editItemId]||{};
     await update(ref(db,'stock/items/'+editItemId),data);
+    // Log edit as movement entry for manager accountability trail
+    const now=new Date().toISOString();
+    const localTZ=Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Singapore';
+    const localTime=new Date().toLocaleString('en-GB',{timeZone:localTZ,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const changes=[];
+    if((oldItem.qty||0)!==(data.qty||0)) changes.push('Qty: '+(oldItem.qty||0)+' → '+data.qty);
+    if((oldItem.cost||0)!==(data.cost||0)) changes.push('Cost: S$'+(oldItem.cost||0)+' → S$'+(data.cost||0));
+    if((oldItem.sell||0)!==(data.sell||0)) changes.push('Sell: S$'+(oldItem.sell||0)+' → S$'+(data.sell||0));
+    if((oldItem.location||'')!==(data.location||'')) changes.push('Location: '+(oldItem.location||'—')+' → '+(data.location||'—'));
+    await push(ref(db,'stock/movements'),{
+      itemId:editItemId, itemName:data.name, sku:data.sku||'',
+      worker:loggedInStaff||sel||'unknown',
+      type:'edit', qty:0, unit:data.unit||'pcs',
+      qtyBefore:oldItem.qty||0, qtyAfter:data.qty||0,
+      job:'', notes:'Edit — '+(changes.length?changes.join(', '):'details updated'),
+      time:now, localTime, tz:localTZ
+    });
     toast(name+' updated ✓');
     closeEditModal();
   }catch(e){toast('Error: '+e.message);}
