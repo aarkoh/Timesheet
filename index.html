@@ -217,11 +217,11 @@ onAuthStateChanged(auth,async user=>{
   onValue(ref(db,'stock/items'),snap=>{const items=snap.val()||{};const list=Object.values(items);document.getElementById('statItems').textContent=list.length;const low=list.filter(i=>i.minQty>0&&i.qty<=i.minQty).length;const el=document.getElementById('statLow');el.textContent=low;el.className='stat-val '+(low>0?'red':'green');});
   // Load staff PINs from Firebase - keeps login in sync with manager changes
   onValue(ref(db,'config/staffPins'),snap=>{
-    if(snap.exists()) staffPins={...staffPins,...snap.val()};
+    if(snap.exists()) window.staffPins={...window.staffPins,...snap.val()};
   });
   // One-time fetch for immediate use on load
-  try{const ps=await get(ref(db,'config/staffPins'));if(ps.exists())staffPins={...staffPins,...ps.val()};}catch(e){}
-  try{const ap=await get(ref(db,'config/adminPin'));if(ap.exists())adminPin=ap.val();}catch(e){}
+  try{const ps=await get(ref(db,'config/staffPins'));if(ps.exists()) window.staffPins={...window.staffPins,...ps.val()};}catch(e){}
+  try{const ap=await get(ref(db,'config/adminPin'));if(ap.exists()) window.adminPin=ap.val();}catch(e){}
 });
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>

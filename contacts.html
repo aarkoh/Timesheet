@@ -104,14 +104,6 @@ button:active{transform:scale(0.97)}
 .loading-screen p{font-size:13px;color:#888}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
-/* Contact persons */
-.person-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;align-items:center;background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;padding:8px 10px;margin-bottom:6px}
-.person-row input{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;background:#fff}
-.person-row input:focus{outline:none;border-color:#185FA5}
-.person-row .del-btn{background:none;border:none;cursor:pointer;color:#aaa;font-size:16px;padding:0 4px;line-height:1}
-.person-row .del-btn:hover{color:#A32D2D}
-.add-person-btn{font-size:12px;color:#185FA5;cursor:pointer;padding:6px 0;display:inline-block;font-weight:500}
-.add-person-btn:hover{text-decoration:underline}
 .person-labels{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px;font-size:11px;color:#aaa;padding:0 10px;margin-bottom:2px}
 /* Person cards in detail */
 .pcard{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0ede6}
@@ -458,14 +450,6 @@ window.addPersonRow=function(p){
   list.appendChild(row);
 };
 
-function getPersonsFromForm(){
-  return [...document.querySelectorAll('#personList .person-row')].map(row=>({
-    name:row.querySelector('.p-name').value.trim(),
-    role:row.querySelector('.p-role').value.trim(),
-    phone:row.querySelector('.p-phone').value.trim(),
-    email:row.querySelector('.p-email').value.trim()
-  })).filter(p=>p.name);
-}
 
 function clearPersonRows(){
   document.getElementById('personList').innerHTML='';
@@ -485,7 +469,7 @@ window.saveContact=async function(){
     notes:document.getElementById('f_notes').value.trim(),
     types,paymentTerms:termsEl?termsEl.value:'',
     gst:document.getElementById('f_gst').checked,
-    persons:getPersonsFromForm(),
+    persons:getPersonRows(),
     updatedAt:new Date().toISOString()
   };
   try{
