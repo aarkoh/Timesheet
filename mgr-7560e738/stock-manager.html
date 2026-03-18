@@ -59,6 +59,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .ltype{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .ltype.in{background:#EAF3DE;color:#3B6D11}
 .ltype.out{background:#FCEBEB;color:#A32D2D}
+.ltype.edit{background:#E6F1FB;color:#185FA5}
 .lname{font-size:13px;font-weight:500}
 .lmeta{font-size:11px;color:#888;margin-top:2px}
 .lqty{font-size:13px;font-weight:600;white-space:nowrap}
@@ -118,6 +119,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
       <button class="fbtn active" onclick="setMovFilter('all',this)">All</button>
       <button class="fbtn" onclick="setMovFilter('in',this)">IN</button>
       <button class="fbtn" onclick="setMovFilter('out',this)">OUT</button>
+      <button class="fbtn" onclick="setMovFilter('edit',this)">Edits</button>
       <select id="histItemFilter" onchange="renderHistory()" style="font-size:12px;padding:5px 8px"><option value="">All items</option></select>
       <select id="histWorkerFilter" onchange="renderHistory()" style="font-size:12px;padding:5px 8px"><option value="">All workers</option></select>
       <button class="btn-exp" onclick="exportExcel()" style="margin-left:auto">Export Excel</button>
@@ -342,7 +344,7 @@ function renderHistory(){
     const t=m.localTime||new Date(m.time).toLocaleString([],{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
     const qtyBadge=`${m.qtyBefore||0} → ${m.qtyAfter||0} ${m.unit||'pcs'}`;
     return `<div class="lentry">
-      <span class="ltype ${m.type}">${m.type==='in'?'IN':'OUT'}</span>
+      <span class="ltype ${m.type==='edit'?'edit':m.type}">${m.type==='in'?'IN':m.type==='out'?'OUT':'EDIT'}</span>
       <div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="lname">${m.itemName}</span>
@@ -351,7 +353,7 @@ function renderHistory(){
         <div class="lmeta">${t}${m.job?' · <b>Job: '+m.job+'</b>':''}${m.notes?' · '+m.notes:''}</div>
         <div class="lmeta" style="color:#aaa">${qtyBadge}</div>
       </div>
-      <div class="lqty" style="color:${m.type==='in'?'#3B6D11':'#A32D2D'}">${m.type==='in'?'+':'-'}${m.qty} ${m.unit||'pcs'}</div>
+      <div class="lqty" style="color:${m.type==='in'?'#3B6D11':m.type==='out'?'#A32D2D':'#185FA5'}">${m.type==='in'?'+':m.type==='out'?'-':''}${m.type==='edit'?'—':m.qty+' '+(m.unit||'pcs')}</div>
     </div>`;
   }).join('');
 }
