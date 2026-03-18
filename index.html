@@ -156,6 +156,7 @@ function doStaffLogin(){
   var val=document.getElementById('staffPin').value;
   var matched=null;
   for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
+  if(!matched&&val===adminPin) matched='ADMIN';
   if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
   loggedInStaff=matched;
   sessionStorage.setItem('rc_staff',matched);
