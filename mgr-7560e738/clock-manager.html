@@ -249,12 +249,14 @@ const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel=null, logTypeFilter='all';
 let workers={}, log=[], pin='1234';
 
-// OT rates persisted in localStorage
+// OT/OVS rates stored in Firebase (works across all devices and app installs)
 let otRates={}, ovsRates={};
-try{otRates=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');}catch(e){otRates={};}
-try{ovsRates=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');}catch(e){ovsRates={};}
-function saveOTRates(){try{localStorage.setItem('wt_ot_rates',JSON.stringify(otRates));}catch(e){}}
-function saveOVSRates(){try{localStorage.setItem('wt_ovs_rates',JSON.stringify(ovsRates));}catch(e){}}
+function saveOTRates(){
+  set(ref(db,'config/otRates'),otRates).catch(e=>console.warn('OT rates save failed:',e));
+}
+function saveOVSRates(){
+  set(ref(db,'config/ovsRates'),ovsRates).catch(e=>console.warn('OVS rates save failed:',e));
+}
 window.setOTRate=function(w,val){otRates[w]=parseFloat(val)||0;saveOTRates();renderSummary();};
 window.setOVSRate=function(w,val){ovsRates[w]=parseFloat(val)||0;saveOVSRates();renderSummary();};
 
@@ -788,6 +790,16 @@ onAuthStateChanged(auth,async user=>{
   if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+
+  // Load OT/OVS rates from Firebase (replaces localStorage)
+  onValue(ref(db,'config/otRates'),snap=>{
+    if(snap.exists()) otRates={...otRates,...snap.val()};
+    if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+  });
+  onValue(ref(db,'config/ovsRates'),snap=>{
+    if(snap.exists()) ovsRates={...ovsRates,...snap.val()};
+    if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+  });
 
   onValue(ref(db,'workers'),snap=>{
     workers=snap.val()||{};
