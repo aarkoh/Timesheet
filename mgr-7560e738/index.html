@@ -197,6 +197,14 @@ window.saveStaffPins=async function(){
 
 let managerPin='1234';
 
+window.togglePinFolder=function(){
+  const folder=document.getElementById('pinFolder');
+  const btn=document.getElementById('pinFolderBtn');
+  const open=folder.style.display==='none';
+  folder.style.display=open?'block':'none';
+  btn.textContent=open?'&#128193; Hide':'&#128193; Show';
+};
+
 window.changeManagerPin=async function(){
   const cur=document.getElementById('curPin').value.trim();
   const n=document.getElementById('newPin').value.trim();
