@@ -598,6 +598,8 @@ window.saveEditItem=async function(){
     unit:document.getElementById('ei_unit').value.trim()||'pcs',
     minQty:parseFloat(document.getElementById('ei_min').value)||0,
     location:document.getElementById('ei_loc').value.trim(),
+    cost:parseFloat(document.getElementById('ei_cost').value)||0,
+    sell:parseFloat(document.getElementById('ei_sell').value)||0,
     updatedAt:new Date().toISOString(),updatedBy:loggedInStaff||sel||'unknown'
   };
   try{
