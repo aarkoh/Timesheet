@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:780px;margin:0 auto;padding:1.25rem 1rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
+.topbar h1{font-size:20px;font-weight:600;flex:1}
+.back{font-size:13px;color:#185FA5;text-decoration:none;padding:6px 12px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
+.tab{font-family:inherit;font-size:12px;padding:6px 13px;border:none;background:transparent;cursor:pointer;color:#666;transition:background 0.12s}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
+.panel{display:none}.panel.active{display:block}
+button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer;transition:background 0.12s,transform 0.1s}
+button:hover{background:#f5f5f3}
+button:active{transform:scale(0.97)}
+button:disabled{opacity:0.35;cursor:default;transform:none}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}.btn-primary:hover{background:#333}
+.btn-green{border-color:#3B6D11;color:#3B6D11}.btn-green:hover{background:#EAF3DE}
+.btn-red{border-color:#A32D2D;color:#A32D2D}.btn-red:hover{background:#FCEBEB}
+.btn-exp{border-color:#3B6D11;color:#3B6D11;font-weight:500}.btn-exp:hover{background:#EAF3DE}
+.scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1.25rem}
+.scard{background:#efefed;border-radius:8px;padding:0.85rem}
+.sc-label{font-size:11px;color:#888;margin-bottom:4px}
+.sc-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.sc-val.red{color:#A32D2D}.sc-val.amber{color:#854F0B}.sc-val.green{color:#3B6D11}
+.field{margin-bottom:0.75rem}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;color:#1a1a1a;background:#f9f9f7}
+.field input:focus,.field select:focus{outline:none;border-color:#185FA5;background:#fff}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.form-section{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.form-section h2{font-size:14px;font-weight:600;margin-bottom:1rem}
+.item-table-wrap{overflow-x:auto}
+.item-table{width:100%;border-collapse:collapse;font-size:13px}
+.item-table th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:8px 10px;border-bottom:1px solid #e0ddd6;white-space:nowrap}
+.item-table td{padding:8px 10px;border-bottom:1px solid #f0ede6;vertical-align:middle}
+.item-table tr:last-child td{border:none}
+.item-table tr:hover td{background:#fafaf8}
+.stock-badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+.stock-ok{background:#EAF3DE;color:#3B6D11}
+.stock-low{background:#FAEEDA;color:#854F0B}
+.stock-empty{background:#FCEBEB;color:#A32D2D}
+.action-btns{display:flex;gap:4px}
+.action-btns button{padding:4px 10px;font-size:11px}
+select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer}
+.log-filters{display:flex;gap:6px;margin-bottom:0.75rem;flex-wrap:wrap;align-items:center}
+.fbtn{font-size:12px;padding:4px 10px;border-radius:20px}
+.fbtn.active{background:#efefed;border-color:#aaa;font-weight:500}
+.lempty{font-size:13px;color:#aaa;text-align:center;padding:1.5rem;border:1px solid #e0ddd6;border-radius:8px}
+.lentry{border:1px solid #e0ddd6;border-radius:8px;padding:9px 12px;margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;background:#fff}
+.ltype{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.ltype.in{background:#EAF3DE;color:#3B6D11}
+.ltype.out{background:#FCEBEB;color:#A32D2D}
+.lname{font-size:13px;font-weight:500}
+.lmeta{font-size:11px;color:#888;margin-top:2px}
+.lqty{font-size:13px;font-weight:600;white-space:nowrap}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;padding:1rem}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:1px solid #e0ddd6}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+.loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-screen.hide{display:none}
+.spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#8B1A8B;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:13px;color:#888}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+.pin-modal .pin-input{display:flex;gap:8px;margin-bottom:1rem}
+.pin-modal .pin-input input{width:100%;height:52px;text-align:center;font-size:22px;font-weight:600;border:1px solid #ccc;border-radius:8px}
+.pin-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.5rem}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading…</p></div>
+
+<div class="app">
+  <div class="topbar">
+    <h1>&#128179; Stock Manager</h1>
+    <a href="dashboard.html" class="back">&#8592; Dashboard</a>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('items',this)">Items</button>
+      <button class="tab" onclick="switchTab('history',this)">History</button>
+      <button class="tab" onclick="switchTab('reports',this)">Reports</button>
+    </div>
+  </div>
+
+  <!-- ITEMS TAB -->
+  <div class="panel active" id="tab-items">
+    <div class="scard-grid" id="itemStats"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
+      <input type="text" id="itemFilter" placeholder="Search items…" oninput="renderItems()" style="flex:1;min-width:160px;padding:7px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
+      <div style="display:flex;gap:6px">
+        <select id="catFilter" onchange="renderItems()" style="font-size:12px;padding:6px 8px"><option value="">All categories</option></select>
+        <button class="btn-primary" onclick="openItemModal()">+ Add item</button>
+      </div>
+    </div>
+    <div class="item-table-wrap">
+      <table class="item-table">
+        <thead><tr><th>Item</th><th>SKU</th><th>Make/Model</th><th>Category</th><th>Stock</th><th>Unit</th><th>Min</th><th>Location</th><th>Cost</th><th>Sell</th><th>Actions</th></tr></thead>
+        <tbody id="itemsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="panel" id="tab-history">
+    <div class="log-filters">
+      <button class="fbtn active" onclick="setMovFilter('all',this)">All</button>
+      <button class="fbtn" onclick="setMovFilter('in',this)">IN</button>
+      <button class="fbtn" onclick="setMovFilter('out',this)">OUT</button>
+      <select id="histItemFilter" onchange="renderHistory()" style="font-size:12px;padding:5px 8px"><option value="">All items</option></select>
+      <select id="histWorkerFilter" onchange="renderHistory()" style="font-size:12px;padding:5px 8px"><option value="">All workers</option></select>
+      <button class="btn-exp" onclick="exportExcel()" style="margin-left:auto">Export Excel</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- REPORTS TAB -->
+  <div class="panel" id="tab-reports">
+    <div class="scard-grid" id="reportStats"></div>
+    <div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">
+      <button class="btn-exp" onclick="exportExcel()">Export Excel</button>
+      <button class="btn-exp" onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div id="reportContent"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT ITEM MODAL -->
+<div class="modal-bg" id="itemModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add new item</h2>
+    <div class="field"><label>Item name *</label><input type="text" id="f_name" placeholder="e.g. Steel Pipe 50mm"></div>
+    <div class="field-row">
+      <div class="field"><label>SKU / Item code</label><input type="text" id="f_sku" placeholder="e.g. SP-50"></div>
+      <div class="field"><label>Category</label><input type="text" id="f_cat" placeholder="e.g. Pipes, Tools"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Make / Brand</label><input type="text" id="f_make" placeholder="e.g. Panasonic"></div>
+      <div class="field"><label>Model</label><input type="text" id="f_model" placeholder="e.g. EX-200"></div>
+    </div>
+    <div class="field-row3">
+      <div class="field"><label>Current qty *</label><input type="number" id="f_qty" min="0" step="any" placeholder="0"></div>
+      <div class="field"><label>Unit *</label><input type="text" id="f_unit" placeholder="pcs, kg, m…"></div>
+      <div class="field"><label>Min stock alert</label><input type="number" id="f_min" min="0" step="any" placeholder="0"></div>
+    </div>
+    <div class="field"><label>Location / Warehouse</label><input type="text" id="f_loc" placeholder="e.g. Warehouse A, Shelf 3"></div>
+    <div class="field-row3">
+      <div class="field"><label>Cost price (S$)</label><input type="number" id="f_cost" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Selling price (S$)</label><input type="number" id="f_sell" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Notes</label><input type="text" id="f_notes" placeholder="Optional"></div>
+    </div>
+    <div class="modal-footer">
+      <button onclick="closeItemModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveItem()">Save item</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal-bg pin-modal" id="pinModal">
+  <div class="modal" style="max-width:300px">
+    <h2>Manager PIN</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:1rem">Enter PIN to access Stock Manager</p>
+    <div class="pin-input">
+      <input type="password" maxlength="1" inputmode="numeric" id="p0" oninput="pinInput(0)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p1" oninput="pinInput(1)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p2" oninput="pinInput(2)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p3" oninput="pinInput(3)">
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="window.location.href='dashboard.html'">Cancel</button>
+      <button class="btn-primary" onclick="submitPin()">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, push, update, remove, set, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
+const fbApp=initializeApp(firebaseConfig);
+const db=getDatabase(fbApp);
+const auth=getAuth(fbApp);
+const WORKERS=['HS','TM','RG','MU','AY','IL','SA','AN'];
+
+let items={}, movements=[], pin='1234', unlocked=false, editId=null, movFilter='all';
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── PIN ────────────────────────────────────────────────────────
+function showPin(){document.getElementById('pinModal').classList.add('show');setTimeout(()=>document.getElementById('p0').focus(),80);}
+function clearPin(){[0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');}
+function getPin(){return[0,1,2,3].map(i=>document.getElementById('p'+i).value).join('');}
+window.pinInput=function(i){if(document.getElementById('p'+i).value&&i<3)setTimeout(()=>document.getElementById('p'+(i+1)).focus(),10);if(getPin().length===4)setTimeout(submitPin,100);};
+window.submitPin=function(){
+  const p=getPin();
+  if(p===pin){unlocked=true;document.getElementById('pinModal').classList.remove('show');document.getElementById('loadingScreen').classList.add('hide');}
+  else{document.getElementById('pinErr').textContent='Incorrect PIN';clearPin();document.getElementById('p0').focus();}
+};
+
+// ── Tabs ───────────────────────────────────────────────────────
+window.switchTab=function(tab,el){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='history')renderHistory();
+  if(tab==='reports')renderReports();
+};
+
+// ── Item stats ─────────────────────────────────────────────────
+function renderStats(){
+  const list=Object.values(items);
+  const total=list.length;
+  const low=list.filter(i=>i.minQty>0&&i.qty>0&&i.qty<=i.minQty).length;
+  const empty=list.filter(i=>i.qty<=0).length;
+  const totalValue=list.reduce((a,i)=>(a+(i.qty||0)*(i.cost||0)),0);
+  document.getElementById('itemStats').innerHTML=`
+    <div class="scard"><div class="sc-label">Total items</div><div class="sc-val">${total}</div></div>
+    <div class="scard"><div class="sc-label">Low stock</div><div class="sc-val amber">${low}</div></div>
+    <div class="scard"><div class="sc-label">Empty</div><div class="sc-val red">${empty}</div></div>
+    <div class="scard"><div class="sc-label">Stock value</div><div class="sc-val" style="font-size:16px">S$${totalValue.toFixed(2)}</div></div>`;
+}
+
+// ── Items table ────────────────────────────────────────────────
+function renderItems(){
+  const q=document.getElementById('itemFilter').value.toLowerCase();
+  const cat=document.getElementById('catFilter').value;
+  const list=Object.entries(items).filter(([,i])=>{
+    const matchQ=!q||i.name.toLowerCase().includes(q)||(i.sku||'').toLowerCase().includes(q)||(i.make||'').toLowerCase().includes(q)||(i.model||'').toLowerCase().includes(q);
+    const matchC=!cat||i.category===cat;
+    return matchQ&&matchC;
+  });
+  const body=document.getElementById('itemsBody');
+  if(!list.length){body.innerHTML='<tr><td colspan="11" style="text-align:center;color:#aaa;padding:2rem">No items found</td></tr>';return;}
+  body.innerHTML=list.map(([id,i])=>{
+    const stockCls=i.qty<=0?'stock-empty':i.minQty>0&&i.qty<=i.minQty?'stock-low':'stock-ok';
+    const stockTxt=i.qty<=0?'Empty':i.qty<=i.minQty&&i.minQty>0?'Low':'OK';
+    return `<tr>
+      <td style="font-weight:500">${i.name}</td>
+      <td style="color:#888">${i.sku||'—'}</td>
+      <td style="color:#888">${[i.make,i.model].filter(Boolean).join(' ')||'—'}</td>
+      <td style="color:#888">${i.category||'—'}</td>
+      <td><b>${i.qty||0}</b> <span class="stock-badge ${stockCls}">${stockTxt}</span></td>
+      <td>${i.unit||'pcs'}</td>
+      <td>${i.minQty||0}</td>
+      <td style="color:#888;font-size:12px">${i.location||'—'}</td>
+      <td>S$${(i.cost||0).toFixed(2)}</td>
+      <td>S$${(i.sell||0).toFixed(2)}</td>
+      <td><div class="action-btns"><button class="btn-green" onclick="openItemModal('${id}')">Edit</button><button class="btn-red" onclick="deleteItem('${id}','${i.name.replace(/'/g,"\\'")}')">Del</button></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function updateCatFilter(){
+  const cats=[...new Set(Object.values(items).map(i=>i.category).filter(Boolean))].sort();
+  const sel=document.getElementById('catFilter');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All categories</option>'+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+  const hSel=document.getElementById('histItemFilter');
+  hSel.innerHTML='<option value="">All items</option>'+Object.entries(items).map(([id,i])=>`<option value="${id}">${i.name}</option>`).join('');
+}
+
+// ── Item modal ─────────────────────────────────────────────────
+window.openItemModal=function(id=null){
+  editId=id;
+  document.getElementById('modalTitle').textContent=id?'Edit item':'Add new item';
+  const i=id?items[id]:{};
+  document.getElementById('f_name').value=i.name||'';
+  document.getElementById('f_sku').value=i.sku||'';
+  document.getElementById('f_cat').value=i.category||'';
+  document.getElementById('f_make').value=i.make||'';
+  document.getElementById('f_model').value=i.model||'';
+  document.getElementById('f_qty').value=i.qty??'';
+  document.getElementById('f_unit').value=i.unit||'';
+  document.getElementById('f_min').value=i.minQty??'';
+  document.getElementById('f_loc').value=i.location||'';
+  document.getElementById('f_cost').value=i.cost??'';
+  document.getElementById('f_sell').value=i.sell??'';
+  document.getElementById('f_notes').value=i.notes||'';
+  document.getElementById('itemModal').classList.add('show');
+  setTimeout(()=>document.getElementById('f_name').focus(),80);
+};
+window.closeItemModal=function(){document.getElementById('itemModal').classList.remove('show');editId=null;};
+window.saveItem=async function(){
+  const name=document.getElementById('f_name').value.trim();
+  const unit=document.getElementById('f_unit').value.trim();
+  if(!name){toast('Item name is required');return;}
+  const data={
+    name, sku:document.getElementById('f_sku').value.trim(),
+    category:document.getElementById('f_cat').value.trim(),
+    make:document.getElementById('f_make').value.trim(),
+    model:document.getElementById('f_model').value.trim(),
+    qty:parseFloat(document.getElementById('f_qty').value)||0,
+    unit:unit||'pcs',
+    minQty:parseFloat(document.getElementById('f_min').value)||0,
+    location:document.getElementById('f_loc').value.trim(),
+    cost:parseFloat(document.getElementById('f_cost').value)||0,
+    sell:parseFloat(document.getElementById('f_sell').value)||0,
+    notes:document.getElementById('f_notes').value.trim(),
+    updatedAt:new Date().toISOString()
+  };
+  try{
+    if(editId) await update(ref(db,'stock/items/'+editId),data);
+    else await push(ref(db,'stock/items'),{...data,createdAt:new Date().toISOString()});
+    toast(editId?'Item updated ✓':'Item added ✓');
+    closeItemModal();
+  }catch(e){toast('Error: '+e.message);}
+};
+window.deleteItem=async function(id,name){
+  if(!confirm(`Delete "${name}"? This cannot be undone.`))return;
+  try{await remove(ref(db,'stock/items/'+id));toast('Item deleted');}catch(e){toast('Error: '+e.message);}
+};
+
+// ── History ────────────────────────────────────────────────────
+window.setMovFilter=function(f,el){movFilter=f;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderHistory();};
+function renderHistory(){
+  const itemF=document.getElementById('histItemFilter').value;
+  const workerF=document.getElementById('histWorkerFilter').value;
+  const list=movements.filter(m=>(movFilter==='all'||m.type===movFilter)&&(!itemF||m.itemId===itemF)&&(!workerF||m.worker===workerF));
+  const div=document.getElementById('historyList');
+  if(!list.length){div.innerHTML='<div class="lempty">No movements found</div>';return;}
+  div.innerHTML=list.slice(0,150).map(m=>{
+    const t=m.localTime||new Date(m.time).toLocaleString([],{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    const qtyBadge=`${m.qtyBefore||0} → ${m.qtyAfter||0} ${m.unit||'pcs'}`;
+    return `<div class="lentry">
+      <span class="ltype ${m.type}">${m.type==='in'?'IN':'OUT'}</span>
+      <div>
+        <div class="lname">${m.itemName}</div>
+        <div class="lmeta">${m.worker} · ${t}${m.job?' · Job: '+m.job:''}${m.notes?' · '+m.notes:''}</div>
+        <div class="lmeta" style="color:#aaa">${qtyBadge}</div>
+      </div>
+      <div class="lqty" style="color:${m.type==='in'?'#3B6D11':'#A32D2D'}">${m.type==='in'?'+':'-'}${m.qty} ${m.unit||'pcs'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Reports ────────────────────────────────────────────────────
+function renderReports(){
+  const list=Object.values(items);
+  const totalValue=list.reduce((a,i)=>a+(i.qty||0)*(i.cost||0),0);
+  const sellValue=list.reduce((a,i)=>a+(i.qty||0)*(i.sell||0),0);
+  const low=list.filter(i=>i.minQty>0&&i.qty>0&&i.qty<=i.minQty);
+  const empty=list.filter(i=>i.qty<=0);
+  document.getElementById('reportStats').innerHTML=`
+    <div class="scard"><div class="sc-label">Total items</div><div class="sc-val">${list.length}</div></div>
+    <div class="scard"><div class="sc-label">Stock cost value</div><div class="sc-val" style="font-size:15px">S$${totalValue.toFixed(2)}</div></div>
+    <div class="scard"><div class="sc-label">Stock sell value</div><div class="sc-val" style="font-size:15px">S$${sellValue.toFixed(2)}</div></div>
+    <div class="scard"><div class="sc-label">Potential profit</div><div class="sc-val green" style="font-size:15px">S$${(sellValue-totalValue).toFixed(2)}</div></div>`;
+  let html='';
+  if(low.length||empty.length){
+    html+=`<div style="background:#FAEEDA;border:1px solid #FAC775;border-radius:10px;padding:1rem;margin-bottom:1rem">
+      <div style="font-weight:600;margin-bottom:0.5rem;color:#854F0B">&#9888; Stock alerts (${low.length+empty.length})</div>
+      ${[...empty.map(i=>`<div style="font-size:13px;color:#A32D2D;padding:3px 0">&#8226; <b>${i.name}</b> — EMPTY (0 ${i.unit||'pcs'})</div>`),
+         ...low.map(i=>`<div style="font-size:13px;color:#854F0B;padding:3px 0">&#8226; <b>${i.name}</b> — Low: ${i.qty} / min ${i.minQty} ${i.unit||'pcs'}</div>`)].join('')}
+    </div>`;
+  }
+  // Items by category
+  const cats=[...new Set(list.map(i=>i.category||'Uncategorised'))].sort();
+  html+=cats.map(cat=>{
+    const catItems=list.filter(i=>(i.category||'Uncategorised')===cat);
+    const catVal=catItems.reduce((a,i)=>a+(i.qty||0)*(i.cost||0),0);
+    return `<div style="margin-bottom:1rem">
+      <div style="font-size:12px;font-weight:600;color:#aaa;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px">${cat} — S$${catVal.toFixed(2)}</div>
+      <div class="item-table-wrap"><table class="item-table">
+        <thead><tr><th>Item</th><th>Make/Model</th><th>Stock</th><th>Unit</th><th>Cost</th><th>Sell</th><th>Value</th></tr></thead>
+        <tbody>${catItems.map(i=>{
+          const sc=i.qty<=0?'stock-empty':i.minQty>0&&i.qty<=i.minQty?'stock-low':'stock-ok';
+          return `<tr><td>${i.name}${i.sku?'<span style="color:#aaa;font-size:11px"> · '+i.sku+'</span>':''}</td>
+            <td style="color:#888">${[i.make,i.model].filter(Boolean).join(' ')||'—'}</td>
+            <td><b>${i.qty||0}</b> <span class="stock-badge ${sc}">${i.qty<=0?'Empty':i.qty<=i.minQty&&i.minQty>0?'Low':'OK'}</span></td>
+            <td>${i.unit||'pcs'}</td><td>S$${(i.cost||0).toFixed(2)}</td><td>S$${(i.sell||0).toFixed(2)}</td>
+            <td>S$${((i.qty||0)*(i.cost||0)).toFixed(2)}</td></tr>`;
+        }).join('')}</tbody>
+      </table></div></div>`;
+  }).join('');
+  document.getElementById('reportContent').innerHTML=html;
+}
+
+// ── Excel Export ───────────────────────────────────────────────
+window.exportExcel=function(){
+  const XLSX=window.XLSX;if(!XLSX){toast('Export library loading, try again');return;}
+  const wb=XLSX.utils.book_new();
+  // Sheet 1: Current stock
+  const stockData=[['Item Name','SKU','Make','Model','Category','Qty','Unit','Min Qty','Location','Cost (S$)','Sell (S$)','Stock Value (S$)','Status']];
+  Object.values(items).forEach(i=>{
+    const status=i.qty<=0?'Empty':i.minQty>0&&i.qty<=i.minQty?'Low stock':'OK';
+    stockData.push([i.name,i.sku||'',i.make||'',i.model||'',i.category||'',i.qty||0,i.unit||'pcs',i.minQty||0,i.location||'',(i.cost||0),(i.sell||0),((i.qty||0)*(i.cost||0)),status]);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(stockData);
+  ws1['!cols']=[{wch:25},{wch:10},{wch:12},{wch:12},{wch:14},{wch:8},{wch:6},{wch:8},{wch:18},{wch:10},{wch:10},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Current Stock');
+  // Sheet 2: Movement history
+  const movData=[['Date/Time','Timezone','Item','SKU','Worker','Type','Qty','Unit','Qty Before','Qty After','Job','Notes']];
+  movements.forEach(m=>{movData.push([m.localTime||new Date(m.time).toLocaleString(),m.tz||'Asia/Singapore',m.itemName,m.sku||'',m.worker,m.type==='in'?'Stock IN':'Stock OUT',m.qty,m.unit||'pcs',m.qtyBefore||0,m.qtyAfter||0,m.job||'',m.notes||'']);});
+  const ws2=XLSX.utils.aoa_to_sheet(movData);
+  ws2['!cols']=[{wch:22},{wch:18},{wch:25},{wch:10},{wch:8},{wch:12},{wch:8},{wch:6},{wch:10},{wch:10},{wch:12},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Movement History');
+  XLSX.writeFile(wb,`StockReport_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exported ✓');
+};
+window.exportCSV=function(){
+  const rows=[['Item','SKU','Make','Model','Category','Qty','Unit','Min','Location','Cost','Sell','Value','Status']];
+  Object.values(items).forEach(i=>{const s=i.qty<=0?'Empty':i.minQty>0&&i.qty<=i.minQty?'Low':'OK';rows.push([i.name,i.sku||'',i.make||'',i.model||'',i.category||'',i.qty||0,i.unit||'pcs',i.minQty||0,i.location||'',(i.cost||0),(i.sell||0),((i.qty||0)*(i.cost||0)),s]);});
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`Stock_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('CSV exported ✓');
+};
+
+// ── Auth & Init ────────────────────────────────────────────────
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user)return;
+  onValue(ref(db,'.info/connected'),snap=>{const b=document.getElementById('connBadge');b.textContent=snap.val()?'Live':'Offline';b.className='conn '+(snap.val()?'online':'offline');});
+  onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+  onValue(ref(db,'stock/items'),snap=>{items=snap.val()||{};renderStats();renderItems();updateCatFilter();if(document.getElementById('tab-reports').classList.contains('active'))renderReports();});
+  onValue(ref(db,'stock/movements'),snap=>{movements=[];if(snap.exists())snap.forEach(c=>movements.unshift({id:c.key,...c.val()}));if(document.getElementById('tab-history').classList.contains('active'))renderHistory();});
+  // Init worker filter
+  const wf=document.getElementById('histWorkerFilter');
+  WORKERS.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;wf.appendChild(o);});
+  // Show PIN gate
+  if(!unlocked)showPin();
+});
+setTimeout(()=>{if(!unlocked&&document.getElementById('pinModal').classList.contains('show')){}else document.getElementById('loadingScreen').classList.add('hide');},8000);
+</script>
+</body>
+</html>
