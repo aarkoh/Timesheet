@@ -240,6 +240,17 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
     </div>
   </div>
 </div>
+<!-- Staff Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>&#128100; Staff Login</h2>
+    <p>Enter your 1-digit staff code<br>to access this page</p>
+    <div class="pin-big"><input type="password" id="staffPin" maxlength="1" inputmode="numeric" oninput="onStaffPinInput()" autocomplete="off"></div>
+    <div class="login-name" id="loginName"></div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" id="loginBtn" onclick="doStaffLogin()" disabled>Continue</button>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
@@ -565,14 +576,50 @@ async function fetchMovements(){
   }catch(e){console.error('fetchMovements:',e);}
 }
 
+// ── Staff Login ───────────────────────────────────────────────
+const WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
+let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+let loggedInStaff=null;
+
+function initStaffLogin(){
+  const saved=sessionStorage.getItem('rc_staff');
+  if(saved&&WORKERS_LIST.includes(saved)){
+    loggedInStaff=saved;
+    document.getElementById('loginOverlay').classList.add('hide');
+    return;
+  }
+  document.getElementById('loginOverlay').classList.remove('hide');
+  setTimeout(()=>document.getElementById('staffPin').focus(),200);
+}
+window.onStaffPinInput=function(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  document.getElementById('loginErr').textContent='';
+  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;}
+  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;}
+  if(val.length===1&&matched) setTimeout(doStaffLogin,300);
+};
+window.doStaffLogin=function(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
+  loggedInStaff=matched;
+  sessionStorage.setItem('rc_staff',matched);
+  document.getElementById('loginOverlay').classList.add('hide');
+};
+
 signInAnonymously(auth).catch(e=>console.error(e));
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth,async user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{
     const b=document.getElementById('connBadge');
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
+  // Load staff pins and show login
+  const pinsSnap=await get(ref(db,'config/staffPins'));
+  if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
+  initStaffLogin();
   onValue(ref(db,'stock/items'),snap=>{
     items=snap.val()||{};
     // Only silently update selItem data if one is actively selected

@@ -55,6 +55,19 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
 .loading-screen p{font-size:14px;color:#888}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
+/* Staff login modal */
+.login-overlay{position:fixed;inset:0;background:#f5f5f3;display:flex;align-items:center;justify-content:center;z-index:500;padding:1rem}
+.login-overlay.hide{display:none}
+.login-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:2rem;width:100%;max-width:340px;text-align:center}
+.login-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;margin-bottom:1.5rem;line-height:1.5}
+.pin-big{display:flex;justify-content:center;margin-bottom:1rem}
+.pin-big input{width:80px;height:80px;text-align:center;font-size:36px;font-weight:700;border:2px solid #ddd;border-radius:12px;background:#f9f9f7;font-family:inherit;color:#1a1a1a;transition:border-color 0.12s}
+.pin-big input:focus{outline:none;border-color:#185FA5;background:#fff}
+.login-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.75rem}
+.login-name{font-size:15px;font-weight:600;color:#3B6D11;min-height:20px;margin-bottom:1rem}
+.login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
+.login-btn:disabled{opacity:0.35;cursor:default}
 </style>
 </head>
 <body>
@@ -81,6 +94,17 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
     </div>
     <div class="geost"><span class="gdot" id="geoDot"></span><span id="geoText">Geolocation ready</span></div>
     <div id="debugPanel" style="margin-top:10px;font-size:11px;color:#aaa;font-family:monospace;line-height:1.6"></div>
+  </div>
+</div>
+<!-- Staff Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <h2>&#128100; Staff Login</h2>
+    <p>Enter your 1-digit staff code<br>to access this page</p>
+    <div class="pin-big"><input type="password" id="staffPin" maxlength="1" inputmode="numeric" oninput="onStaffPinInput()" autocomplete="off"></div>
+    <div class="login-name" id="loginName"></div>
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" id="loginBtn" onclick="doStaffLogin()" disabled>Continue</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -191,10 +215,42 @@ window.doAction=async function(type){
 };
 
 // ── Auth & Init ───────────────────────────────────────────────
+// ── Staff Login ───────────────────────────────────────────────
+const WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
+let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+let loggedInStaff=null;
+
+function initStaffLogin(){
+  const saved=sessionStorage.getItem('rc_staff');
+  if(saved&&WORKERS_LIST.includes(saved)){
+    loggedInStaff=saved;
+    document.getElementById('loginOverlay').classList.add('hide');
+    return;
+  }
+  document.getElementById('loginOverlay').classList.remove('hide');
+  setTimeout(()=>document.getElementById('staffPin').focus(),200);
+}
+window.onStaffPinInput=function(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  document.getElementById('loginErr').textContent='';
+  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;}
+  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;}
+  if(val.length===1&&matched) setTimeout(doStaffLogin,300);
+};
+window.doStaffLogin=function(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
+  loggedInStaff=matched;
+  sessionStorage.setItem('rc_staff',matched);
+  document.getElementById('loginOverlay').classList.add('hide');
+};
+
 signInAnonymously(auth).catch(e=>{
   document.getElementById('loadingScreen').innerHTML='<p style="color:#A32D2D;padding:2rem;text-align:center">Connection failed. Please refresh.</p>';
 });
-onAuthStateChanged(auth,user=>{
+onAuthStateChanged(auth,async user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{
     const online=snap.val();
@@ -209,6 +265,10 @@ onAuthStateChanged(auth,user=>{
     document.getElementById('loadingScreen').classList.add('hide');
   });
   WORKERS.forEach(async w=>{const s=await get(ref(db,'workers/'+w));if(!s.exists())await set(ref(db,'workers/'+w),{status:'out',since:null,loc:'',lastTime:null});});
+  // Load staff pins
+  const pinsSnap=await get(ref(db,'config/staffPins'));
+  if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
+  initStaffLogin();
 });
 renderWorkers();
 setGeoUI('','Geolocation ready');
