@@ -146,7 +146,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 <div class="app">
   <div class="topbar">
     <h1>Work Tracker</h1>
-    <a href="dashboard.html" style="font-size:12px;color:#888;text-decoration:none;padding:5px 10px;border:1px solid #ddd;border-radius:8px;white-space:nowrap">&#8962; Hub</a>
+    <a href="https://aarkoh.github.io/Raycontrol/" style="font-size:12px;color:#888;text-decoration:none;padding:5px 10px;border:1px solid #ddd;border-radius:8px;white-space:nowrap">&#8962; Hub</a>
     <span class="conn syncing" id="connBadge">Connecting…</span>
     <span class="liveclock" id="liveClock"></span>
     <div class="tabs">
@@ -492,7 +492,7 @@ window.calSelect=function(y,m,d){
 function renderWorkers(){
   document.getElementById('workerGrid').innerHTML=WORKERS.map((w,i)=>{
     const wd=workers[w]||{},isSel=sel===w,isIn=wd.status==='in';
-    const since=wd.sinceLocal?wd.sinceLocal.split(',')[1]?.trim().slice(0,5):(wd.since?fmtInTZ(wd.since,wd.tz||'Asia/Singapore'):'');
+    const since=wd.sinceLocal?(wd.sinceLocal.split(',')[1]||wd.sinceLocal).trim().slice(0,5):(wd.since?fmtInTZ(wd.since,wd.tz||'Asia/Singapore'):'');
     const job=wd.job?` · ${wd.job}`:'';
     return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')"><div class="wav">${w}</div><div class="wnum">${i+1}</div><div class="wstat${isIn?' in':''}">${isIn?'In · '+since+job:'Off'}</div></div>`;
   }).join('');
@@ -500,7 +500,7 @@ function renderWorkers(){
 window.selectW=function(w){
   sel=w;const wd=workers[w]||{},isIn=wd.status==='in';
   document.getElementById('panelTitle').textContent=w;
-  const sinceDisplay = wd.sinceLocal ? wd.sinceLocal.split(',')[1]?.trim().slice(0,5) : (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore') : '');
+  const sinceDisplay = wd.sinceLocal ? (wd.sinceLocal.split(',')[1]||wd.sinceLocal).trim().slice(0,5) : (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore') : '');
   const tzNote = wd.tz && wd.tz !== 'Asia/Singapore' ? ` (${wd.tz.split('/').pop().replace(/_/g,' ')} time)` : '';
   document.getElementById('panelSub').textContent=isIn?`Clocked in at ${sinceDisplay}${tzNote}. Ready to clock out.`:'Not clocked in. Ready to clock in.';
   document.getElementById('btnIn').disabled=isIn;
