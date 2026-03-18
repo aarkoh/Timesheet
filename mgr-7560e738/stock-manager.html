@@ -344,8 +344,11 @@ function renderHistory(){
     return `<div class="lentry">
       <span class="ltype ${m.type}">${m.type==='in'?'IN':'OUT'}</span>
       <div>
-        <div class="lname">${m.itemName}</div>
-        <div class="lmeta">${m.worker} · ${t}${m.job?' · Job: '+m.job:''}${m.notes?' · '+m.notes:''}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="lname">${m.itemName}</span>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#E6F1FB;color:#185FA5">${m.worker||m.updatedBy||'—'}</span>
+        </div>
+        <div class="lmeta">${t}${m.job?' · <b>Job: '+m.job+'</b>':''}${m.notes?' · '+m.notes:''}</div>
         <div class="lmeta" style="color:#aaa">${qtyBadge}</div>
       </div>
       <div class="lqty" style="color:${m.type==='in'?'#3B6D11':'#A32D2D'}">${m.type==='in'?'+':'-'}${m.qty} ${m.unit||'pcs'}</div>
