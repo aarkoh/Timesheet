@@ -345,17 +345,7 @@ window.openDetail=function(id){
       <div class="detail-row"><span class="detail-label">GST 9%</span><span class="detail-val">${c.gst?'✓ Yes':'No'}</span></div>
       ${c.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span class="detail-val" style="max-width:60%;text-align:right">${c.notes}</span></div>`:''}
     </div>
-    ${(c.persons||[]).length ? `
-    <div class="detail-section">
-      <h3>Contact persons</h3>
-      ${(c.persons||[]).map(p=>`
-        <div class="person-card" style="margin-bottom:6px">
-          <div>
-            <div class="person-name">${p.name}${p.role?' <span class="person-role">· '+p.role+'</span>':''}</div>
-            <div class="person-contact">${[p.phone?'📞 '+p.phone:'', p.email?'✉ '+p.email:''].filter(Boolean).join('  ')}</div>
-          </div>
-        </div>`).join('')}
-    </div>` : ''}
+
     <div class="detail-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
         <h3 style="margin:0">Previous jobs</h3>
@@ -424,9 +414,6 @@ window.openEditContact=function(id){
     inp.checked=checked;
     o.classList.toggle('checked',checked);
   });
-  // Load persons
-  clearPersonRows();
-  (c.persons||[]).forEach(p=>addPersonRow(p));
   // Load existing persons
   clearPersonRows();
   (c.persons||[]).forEach(p=>addPersonRow(p.name||'',p.role||'',p.phone||'',p.email||''));
