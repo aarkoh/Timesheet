@@ -201,7 +201,7 @@ mgrInitLogin();
 </script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
@@ -268,12 +268,18 @@ window.changeManagerPin=async function(){
   const n=document.getElementById('newPin').value.trim();
   const c=document.getElementById('confirmPin').value.trim();
   const msg=document.getElementById('pinChangeMsg');
-  if(cur!==managerPin){msg.style.color='#A32D2D';msg.textContent='Current PIN is incorrect';return;}
-  if(!n||n.length<4){msg.style.color='#A32D2D';msg.textContent='New PIN must be 4 digits';return;}
-  if(n!==c){msg.style.color='#A32D2D';msg.textContent='New PINs do not match';return;}
+  msg.style.color='#888';
+  msg.textContent='Checking…';
+  // Fetch current PIN fresh from Firebase to avoid stale value
   try{
+    const snap=await get(ref(db,'config/pin'));
+    const currentPin=snap.exists()?snap.val():'1234';
+    if(cur!==currentPin){msg.style.color='#A32D2D';msg.textContent='Current PIN is incorrect (got: '+cur.length+' digits)';return;}
+    if(!n||n.length<4){msg.style.color='#A32D2D';msg.textContent='New PIN must be exactly 4 digits';return;}
+    if(n!==c){msg.style.color='#A32D2D';msg.textContent='New PINs do not match';return;}
     await set(ref(db,'config/pin'),n);
     managerPin=n;
+    mgrPin=n;
     document.getElementById('curPin').value='';
     document.getElementById('newPin').value='';
     document.getElementById('confirmPin').value='';
