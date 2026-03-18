@@ -71,6 +71,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .ltype{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .ltype.in{background:#EAF3DE;color:#3B6D11}
 .ltype.out{background:#FCEBEB;color:#A32D2D}
+.ltype.edit{background:#E6F1FB;color:#185FA5}
 .lname{font-size:13px;font-weight:500}
 .lmeta{font-size:11px;color:#888;margin-top:2px}
 .lqty{font-size:13px;font-weight:600;white-space:nowrap;text-align:right}
@@ -205,6 +206,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
       <button class="fbtn active" onclick="setLogFilter('all',this)">All</button>
       <button class="fbtn" onclick="setLogFilter('in',this)">IN</button>
       <button class="fbtn" onclick="setLogFilter('out',this)">OUT</button>
+      <button class="fbtn" onclick="setLogFilter('edit',this)">Edits</button>
       <select id="logItemFilter" onchange="renderLog()" style="font-size:12px;padding:5px 8px"><option value="">All items</option></select>
       <select id="logWorkerFilter" onchange="renderLog()" style="font-size:12px;padding:5px 8px"><option value="">All workers</option></select>
     </div>
@@ -494,7 +496,7 @@ function renderLog(){
     const qArrow=(m.type==='in'?'+':'-')+m.qty+' '+( m.unit||'pcs');
     const qBefore='was '+(m.qtyBefore||0)+' → now '+(m.qtyAfter||0);
     return '<div class="lentry">'
-      +'<span class="ltype '+m.type+'">'+(m.type==='in'?'IN':'OUT')+'</span>'
+      +'<span class="ltype '+(m.type==='edit'?'edit':m.type)+'">'+(m.type==='in'?'IN':m.type==='out'?'OUT':'EDIT')+'</span>'
       +'<div><div class="lname">'+m.itemName+'</div>'
       +'<div class="lmeta">'+m.worker+' · '+t+(m.job?' · '+m.job:'')+'</div>'
       +'<div class="lmeta" style="color:#bbb">'+qBefore+(m.notes?' · '+m.notes:'')+'</div></div>'
