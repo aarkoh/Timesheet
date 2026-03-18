@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customers & Vendors</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:780px;margin:0 auto;padding:1.25rem 1rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
+.topbar h1{font-size:20px;font-weight:600;flex:1}
+.back{font-size:12px;color:#185FA5;text-decoration:none;padding:5px 10px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
+.tab{font-family:inherit;font-size:12px;padding:6px 13px;border:none;background:transparent;cursor:pointer;color:#666;transition:background 0.12s}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
+.panel{display:none}.panel.active{display:block}
+/* Buttons */
+button{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer;transition:background 0.12s}
+button:hover{background:#f5f5f3}
+button:active{transform:scale(0.97)}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}.btn-primary:hover{background:#333}
+.btn-danger{border-color:#A32D2D;color:#A32D2D}.btn-danger:hover{background:#FCEBEB}
+/* Search bar */
+.search-bar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.search-bar input{flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#fff}
+.search-bar input:focus{outline:none;border-color:#185FA5}
+/* Filter chips */
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.chip{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#666}
+.chip.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+/* Contact cards */
+.contact-list{display:flex;flex-direction:column;gap:8px}
+.ccard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;cursor:pointer;transition:box-shadow 0.12s}
+.ccard:hover{box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.ccard-top{display:flex;align-items:flex-start;gap:10px}
+.cavatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;background:#E6F1FB;color:#185FA5}
+.cavatar.vendor{background:#F3E6F3;color:#8B1A8B}
+.cinfo{flex:1;min-width:0}
+.cname{font-size:14px;font-weight:600}
+.ccompany{font-size:12px;color:#888;margin-top:1px}
+.cbadges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.cbadge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.cbadge.customer{background:#EAF3DE;color:#3B6D11}
+.cbadge.vendor{background:#F3E6F3;color:#8B1A8B}
+.cbadge.both{background:#E6F1FB;color:#185FA5}
+.cbadge.gst{background:#FAEEDA;color:#854F0B}
+.cbadge.terms{background:#efefed;color:#555}
+.ccontact{font-size:12px;color:#888;margin-top:4px;display:flex;gap:12px;flex-wrap:wrap}
+.empty-state{text-align:center;padding:2rem;color:#aaa;font-size:13px;border:1px solid #e0ddd6;border-radius:12px}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:520px;border:1px solid #e0ddd6;margin:auto}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.field{margin-bottom:0.85rem}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#185FA5;background:#fff}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check-group{display:flex;gap:6px;flex-wrap:wrap}
+.check-opt{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-size:13px;user-select:none;background:#f9f9f7}
+.check-opt input{cursor:pointer;width:15px;height:15px}
+.check-opt.checked{background:#E6F1FB;border-color:#185FA5;color:#185FA5;font-weight:500}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+/* Detail view */
+.detail-section{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.detail-section h3{font-size:13px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0ede6;font-size:13px}
+.detail-row:last-child{border:none}
+.detail-label{color:#888}
+.detail-val{font-weight:500;text-align:right}
+/* Jobs table */
+.jtable{width:100%;border-collapse:collapse;font-size:12px}
+.jtable th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:6px 8px;border-bottom:1px solid #e0ddd6}
+.jtable td{padding:7px 8px;border-bottom:1px solid #f0ede6;vertical-align:middle}
+.jtable tr:last-child td{border:none}
+.pay-badge{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500}
+.pay-paid{background:#EAF3DE;color:#3B6D11}
+.pay-pending{background:#FAEEDA;color:#854F0B}
+.pay-partial{background:#E6F1FB;color:#185FA5}
+.pay-overdue{background:#FCEBEB;color:#A32D2D}
+/* Loading */
+.loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-screen.hide{display:none}
+.spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:13px;color:#888}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading…</p></div>
+<div class="app">
+  <div class="topbar">
+    <h1>&#128101; Contacts</h1>
+    <a href="https://aarkoh.github.io/Raycontrol/" class="back">&#8962; Hub</a>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('list',this)">Directory</button>
+      <button class="tab" onclick="switchTab('detail',this)" id="detailTab" style="display:none">Contact</button>
+    </div>
+  </div>
+
+  <!-- DIRECTORY TAB -->
+  <div class="panel active" id="tab-list">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search name, company, phone…" oninput="renderList()">
+      <button class="btn-primary" onclick="openAddContact()">+ Add contact</button>
+    </div>
+    <div class="chips">
+      <div class="chip active" onclick="setFilter('all',this)">All</div>
+      <div class="chip" onclick="setFilter('customer',this)">Customers</div>
+      <div class="chip" onclick="setFilter('vendor',this)">Vendors</div>
+    </div>
+    <div class="contact-list" id="contactList"></div>
+  </div>
+
+  <!-- DETAIL TAB -->
+  <div class="panel" id="tab-detail">
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT CONTACT MODAL -->
+<div class="modal-bg" id="contactModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add contact</h2>
+    <div class="field">
+      <label>Type *</label>
+      <div class="check-group" id="typeGroup">
+        <label class="check-opt" id="opt-customer"><input type="checkbox" value="customer" onchange="updateTypeOpt(this)"> Customer</label>
+        <label class="check-opt" id="opt-vendor"><input type="checkbox" value="vendor" onchange="updateTypeOpt(this)"> Vendor</label>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Full name *</label><input type="text" id="f_name" placeholder="e.g. John Tan"></div>
+      <div class="field"><label>Company</label><input type="text" id="f_company" placeholder="e.g. ABC Pte Ltd"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Phone</label><input type="tel" id="f_phone" placeholder="+65 9123 4567"></div>
+      <div class="field"><label>Email</label><input type="email" id="f_email" placeholder="john@abc.com"></div>
+    </div>
+    <div class="field"><label>Address</label><input type="text" id="f_address" placeholder="Street, unit, postal code"></div>
+    <div class="field">
+      <label>Payment terms</label>
+      <div class="check-group" id="termsGroup">
+        <label class="check-opt" id="opt-advance"><input type="radio" name="terms" value="Advance" onchange="updateTermsOpt(this)"> Advance</label>
+        <label class="check-opt" id="opt-7days"><input type="radio" name="terms" value="7 Days" onchange="updateTermsOpt(this)"> 7 Days</label>
+        <label class="check-opt" id="opt-30days"><input type="radio" name="terms" value="30 Days" onchange="updateTermsOpt(this)"> 30 Days</label>
+      </div>
+    </div>
+    <div class="field">
+      <label>GST registered (9%)</label>
+      <div class="check-group">
+        <label class="check-opt" id="opt-gst"><input type="checkbox" id="f_gst" onchange="this.closest('.check-opt').classList.toggle('checked',this.checked)"> GST 9% applies</label>
+      </div>
+    </div>
+    <div class="field"><label>Notes</label><textarea id="f_notes" rows="2" placeholder="Any additional notes…"></textarea></div>
+    <div class="modal-footer">
+      <button onclick="closeContactModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveContact()">Save contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD JOB MODAL -->
+<div class="modal-bg" id="jobModal">
+  <div class="modal">
+    <h2>Add job record</h2>
+    <div class="field-row">
+      <div class="field"><label>Job No *</label><input type="text" id="j_jobno" placeholder="e.g. JOB-001"></div>
+      <div class="field"><label>Amount (S$)</label><input type="number" id="j_amt" min="0" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Make</label><input type="text" id="j_make" placeholder="e.g. HANLA"></div>
+      <div class="field"><label>Model</label><input type="text" id="j_model" placeholder="e.g. FMS-200"></div>
+    </div>
+    <div class="field">
+      <label>Payment status</label>
+      <div class="check-group" id="payStatusGroup">
+        <label class="check-opt" id="ps-pending"><input type="radio" name="payStatus" value="Pending" onchange="updatePayOpt(this)"> Pending</label>
+        <label class="check-opt" id="ps-partial"><input type="radio" name="payStatus" value="Partial" onchange="updatePayOpt(this)"> Partial</label>
+        <label class="check-opt" id="ps-paid"><input type="radio" name="payStatus" value="Paid" onchange="updatePayOpt(this)"> Paid</label>
+        <label class="check-opt" id="ps-overdue"><input type="radio" name="payStatus" value="Overdue" onchange="updatePayOpt(this)"> Overdue</label>
+      </div>
+    </div>
+    <div class="field"><label>Date</label><input type="date" id="j_date"></div>
+    <div class="field"><label>Notes</label><input type="text" id="j_notes" placeholder="Optional notes"></div>
+    <div class="modal-footer">
+      <button onclick="closeJobModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveJob()">Save job</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, push, update, remove, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
+const fbApp=initializeApp(firebaseConfig);
+const db=getDatabase(fbApp);
+const auth=getAuth(fbApp);
+
+let contacts={}, currentContactId=null, editContactId=null, editJobId=null, filterType='all';
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── Tabs ──────────────────────────────────────────────────────
+window.switchTab=function(tab,el){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+};
+
+// ── Filter ────────────────────────────────────────────────────
+window.setFilter=function(f,el){
+  filterType=f;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+};
+
+// ── List ──────────────────────────────────────────────────────
+function renderList(){
+  const q=(document.getElementById('searchInput').value||'').toLowerCase();
+  const list=Object.entries(contacts).filter(([,c])=>{
+    if(filterType!=='all'&&!(c.types||[]).includes(filterType)) return false;
+    if(q&&!c.name.toLowerCase().includes(q)&&!(c.company||'').toLowerCase().includes(q)&&!(c.phone||'').includes(q)) return false;
+    return true;
+  });
+  const el=document.getElementById('contactList');
+  if(!list.length){el.innerHTML='<div class="empty-state">No contacts found.<br>Tap + Add contact to get started.</div>';return;}
+  el.innerHTML=list.sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([id,c])=>{
+    const types=c.types||[];
+    const isC=types.includes('customer'),isV=types.includes('vendor');
+    const avatarCls=isC&&isV?'cavatar':isC?'cavatar':'cavatar vendor';
+    const badgeType=isC&&isV?'both':isC?'customer':'vendor';
+    const badgeLabel=isC&&isV?'Customer & Vendor':isC?'Customer':'Vendor';
+    const initials=(c.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const jobCount=Object.keys(c.jobs||{}).length;
+    return `<div class="ccard" onclick="openDetail('${id}')">
+      <div class="ccard-top">
+        <div class="${avatarCls}">${initials}</div>
+        <div class="cinfo">
+          <div class="cname">${c.name}${c.company?' <span style="font-weight:400;color:#888">· '+c.company+'</span>':''}</div>
+          <div class="cbadges">
+            <span class="cbadge ${badgeType}">${badgeLabel}</span>
+            ${c.paymentTerms?`<span class="cbadge terms">${c.paymentTerms}</span>`:''}
+            ${c.gst?'<span class="cbadge gst">GST 9%</span>':''}
+          </div>
+          <div class="ccontact">
+            ${c.phone?`<span>📞 ${c.phone}</span>`:''}
+            ${c.email?`<span>✉ ${c.email}</span>`:''}
+            ${jobCount?`<span>📋 ${jobCount} job${jobCount>1?'s':''}</span>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Detail ────────────────────────────────────────────────────
+window.openDetail=function(id){
+  currentContactId=id;
+  const c=contacts[id]||{};
+  const types=c.types||[];
+  const isC=types.includes('customer'),isV=types.includes('vendor');
+  const badgeType=isC&&isV?'both':isC?'customer':'vendor';
+  const badgeLabel=isC&&isV?'Customer & Vendor':isC?'Customer':'Vendor';
+  const jobs=c.jobs||{};
+  const jobRows=Object.entries(jobs).length
+    ? Object.entries(jobs).sort((a,b)=>b[1].date?.localeCompare(a[1].date)||0).map(([jid,j])=>{
+        const payCls=j.paymentStatus==='Paid'?'pay-paid':j.paymentStatus==='Partial'?'pay-partial':j.paymentStatus==='Overdue'?'pay-overdue':'pay-pending';
+        return `<tr>
+          <td>${j.jobNo||'—'}</td>
+          <td>${[j.make,j.model].filter(Boolean).join(' ')||'—'}</td>
+          <td>S$${(parseFloat(j.amt)||0).toFixed(2)}</td>
+          <td><span class="pay-badge ${payCls}">${j.paymentStatus||'Pending'}</span></td>
+          <td>${j.date||'—'}</td>
+          <td><button onclick="editJob('${id}','${jid}')" style="font-size:11px;padding:3px 8px;border-color:#185FA5;color:#185FA5">Edit</button>
+              <button onclick="deleteJob('${id}','${jid}')" style="font-size:11px;padding:3px 8px;border-color:#A32D2D;color:#A32D2D;margin-left:4px">Del</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1rem">No jobs yet</td></tr>';
+
+  document.getElementById('detailContent').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+      <button onclick="backToList()" style="font-size:12px;padding:5px 10px">← Back</button>
+      <h2 style="font-size:17px;font-weight:600;flex:1">${c.name}</h2>
+      <button onclick="openEditContact('${id}')" style="font-size:12px;border-color:#185FA5;color:#185FA5">Edit</button>
+      <button onclick="deleteContact('${id}')" class="btn-danger" style="font-size:12px">Delete</button>
+    </div>
+    <div class="detail-section">
+      <h3>Contact info</h3>
+      <div class="detail-row"><span class="detail-label">Type</span><span class="detail-val"><span class="cbadge ${badgeType}">${badgeLabel}</span></span></div>
+      ${c.company?`<div class="detail-row"><span class="detail-label">Company</span><span class="detail-val">${c.company}</span></div>`:''}
+      ${c.phone?`<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val"><a href="tel:${c.phone}" style="color:#185FA5">${c.phone}</a></span></div>`:''}
+      ${c.email?`<div class="detail-row"><span class="detail-label">Email</span><span class="detail-val"><a href="mailto:${c.email}" style="color:#185FA5">${c.email}</a></span></div>`:''}
+      ${c.address?`<div class="detail-row"><span class="detail-label">Address</span><span class="detail-val">${c.address}</span></div>`:''}
+      <div class="detail-row"><span class="detail-label">Payment terms</span><span class="detail-val">${c.paymentTerms||'—'}</span></div>
+      <div class="detail-row"><span class="detail-label">GST 9%</span><span class="detail-val">${c.gst?'✓ Yes':'No'}</span></div>
+      ${c.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span class="detail-val" style="max-width:60%;text-align:right">${c.notes}</span></div>`:''}
+    </div>
+    <div class="detail-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+        <h3 style="margin:0">Previous jobs</h3>
+        <button class="btn-primary" onclick="openAddJob('${id}')" style="font-size:12px;padding:5px 12px">+ Add job</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="jtable">
+          <thead><tr><th>Job No</th><th>Make / Model</th><th>Amount</th><th>Payment</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>${jobRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById('detailTab').style.display='';
+  window.switchTab('detail', document.getElementById('detailTab'));
+};
+
+window.backToList=function(){
+  document.getElementById('detailTab').style.display='none';
+  window.switchTab('list', document.querySelectorAll('.tab')[0]);
+  currentContactId=null;
+};
+
+// ── Add/Edit Contact ──────────────────────────────────────────
+window.openAddContact=function(){
+  editContactId=null;
+  document.getElementById('modalTitle').textContent='Add contact';
+  document.getElementById('f_name').value='';
+  document.getElementById('f_company').value='';
+  document.getElementById('f_phone').value='';
+  document.getElementById('f_email').value='';
+  document.getElementById('f_address').value='';
+  document.getElementById('f_notes').value='';
+  document.getElementById('f_gst').checked=false;
+  document.getElementById('opt-gst').classList.remove('checked');
+  document.querySelectorAll('#typeGroup .check-opt').forEach(o=>{o.classList.remove('checked');o.querySelector('input').checked=false;});
+  document.querySelectorAll('#termsGroup .check-opt').forEach(o=>{o.classList.remove('checked');o.querySelector('input').checked=false;});
+  document.getElementById('contactModal').classList.add('show');
+  setTimeout(()=>document.getElementById('f_name').focus(),80);
+};
+window.openEditContact=function(id){
+  editContactId=id;
+  const c=contacts[id]||{};
+  document.getElementById('modalTitle').textContent='Edit contact';
+  document.getElementById('f_name').value=c.name||'';
+  document.getElementById('f_company').value=c.company||'';
+  document.getElementById('f_phone').value=c.phone||'';
+  document.getElementById('f_email').value=c.email||'';
+  document.getElementById('f_address').value=c.address||'';
+  document.getElementById('f_notes').value=c.notes||'';
+  document.getElementById('f_gst').checked=!!c.gst;
+  document.getElementById('opt-gst').classList.toggle('checked',!!c.gst);
+  // Types
+  document.querySelectorAll('#typeGroup .check-opt').forEach(o=>{
+    const inp=o.querySelector('input');
+    const checked=(c.types||[]).includes(inp.value);
+    inp.checked=checked;
+    o.classList.toggle('checked',checked);
+  });
+  // Terms
+  document.querySelectorAll('#termsGroup .check-opt').forEach(o=>{
+    const inp=o.querySelector('input');
+    const checked=inp.value===c.paymentTerms;
+    inp.checked=checked;
+    o.classList.toggle('checked',checked);
+  });
+  document.getElementById('contactModal').classList.add('show');
+};
+window.closeContactModal=function(){document.getElementById('contactModal').classList.remove('show');editContactId=null;};
+window.updateTypeOpt=function(inp){inp.closest('.check-opt').classList.toggle('checked',inp.checked);};
+window.updateTermsOpt=function(inp){document.querySelectorAll('#termsGroup .check-opt').forEach(o=>o.classList.remove('checked'));inp.closest('.check-opt').classList.add('checked');};
+
+window.saveContact=async function(){
+  const name=document.getElementById('f_name').value.trim();
+  if(!name){toast('Name is required');return;}
+  const types=[...(document.querySelectorAll('#typeGroup input:checked'))].map(i=>i.value);
+  if(!types.length){toast('Select at least one type (Customer or Vendor)');return;}
+  const termsEl=document.querySelector('#termsGroup input:checked');
+  const data={
+    name,company:document.getElementById('f_company').value.trim(),
+    phone:document.getElementById('f_phone').value.trim(),
+    email:document.getElementById('f_email').value.trim(),
+    address:document.getElementById('f_address').value.trim(),
+    notes:document.getElementById('f_notes').value.trim(),
+    types,paymentTerms:termsEl?termsEl.value:'',
+    gst:document.getElementById('f_gst').checked,
+    updatedAt:new Date().toISOString()
+  };
+  try{
+    if(editContactId){
+      await update(ref(db,'contacts/'+editContactId),data);
+      toast('Contact updated ✓');
+      closeContactModal();
+      openDetail(editContactId);
+    }else{
+      data.createdAt=new Date().toISOString();
+      await push(ref(db,'contacts'),data);
+      toast('Contact added ✓');
+      closeContactModal();
+    }
+  }catch(e){toast('Error: '+e.message);}
+};
+
+window.deleteContact=async function(id){
+  if(!confirm('Delete this contact and all their job records?'))return;
+  try{await remove(ref(db,'contacts/'+id));toast('Deleted');backToList();}catch(e){toast('Error: '+e.message);}
+};
+
+// ── Jobs ──────────────────────────────────────────────────────
+window.openAddJob=function(contactId){
+  editJobId=null;
+  currentContactId=contactId;
+  document.getElementById('j_jobno').value='';
+  document.getElementById('j_amt').value='';
+  document.getElementById('j_make').value='';
+  document.getElementById('j_model').value='';
+  document.getElementById('j_notes').value='';
+  document.getElementById('j_date').value=new Date().toISOString().slice(0,10);
+  document.querySelectorAll('#payStatusGroup .check-opt').forEach(o=>{o.classList.remove('checked');o.querySelector('input').checked=false;});
+  // Default to Pending
+  const pending=document.getElementById('ps-pending');
+  pending.querySelector('input').checked=true;
+  pending.classList.add('checked');
+  document.getElementById('jobModal').classList.add('show');
+  setTimeout(()=>document.getElementById('j_jobno').focus(),80);
+};
+window.editJob=function(contactId,jobId){
+  currentContactId=contactId;editJobId=jobId;
+  const j=(contacts[contactId]?.jobs||{})[jobId]||{};
+  document.getElementById('j_jobno').value=j.jobNo||'';
+  document.getElementById('j_amt').value=j.amt||'';
+  document.getElementById('j_make').value=j.make||'';
+  document.getElementById('j_model').value=j.model||'';
+  document.getElementById('j_notes').value=j.notes||'';
+  document.getElementById('j_date').value=j.date||new Date().toISOString().slice(0,10);
+  document.querySelectorAll('#payStatusGroup .check-opt').forEach(o=>{
+    const inp=o.querySelector('input');
+    const checked=inp.value===j.paymentStatus;
+    inp.checked=checked;o.classList.toggle('checked',checked);
+  });
+  document.getElementById('jobModal').classList.add('show');
+};
+window.closeJobModal=function(){document.getElementById('jobModal').classList.remove('show');editJobId=null;};
+window.updatePayOpt=function(inp){document.querySelectorAll('#payStatusGroup .check-opt').forEach(o=>o.classList.remove('checked'));inp.closest('.check-opt').classList.add('checked');};
+
+window.saveJob=async function(){
+  const jobNo=document.getElementById('j_jobno').value.trim();
+  if(!jobNo){toast('Job number is required');return;}
+  const payEl=document.querySelector('#payStatusGroup input:checked');
+  const data={
+    jobNo,amt:parseFloat(document.getElementById('j_amt').value)||0,
+    make:document.getElementById('j_make').value.trim(),
+    model:document.getElementById('j_model').value.trim(),
+    paymentStatus:payEl?payEl.value:'Pending',
+    date:document.getElementById('j_date').value,
+    notes:document.getElementById('j_notes').value.trim()
+  };
+  try{
+    const path=editJobId
+      ?'contacts/'+currentContactId+'/jobs/'+editJobId
+      :'contacts/'+currentContactId+'/jobs';
+    if(editJobId) await update(ref(db,path),data);
+    else await push(ref(db,path),data);
+    toast('Job saved ✓');
+    closeJobModal();
+    openDetail(currentContactId);
+  }catch(e){toast('Error: '+e.message);}
+};
+
+window.deleteJob=async function(contactId,jobId){
+  if(!confirm('Delete this job record?'))return;
+  try{await remove(ref(db,'contacts/'+contactId+'/jobs/'+jobId));toast('Job deleted');openDetail(contactId);}
+  catch(e){toast('Error: '+e.message);}
+};
+
+// ── Auth & Init ───────────────────────────────────────────────
+// Session check
+if(!sessionStorage.getItem('rc_staff')&&!sessionStorage.getItem('rc_manager')){
+  window.location.href='https://aarkoh.github.io/Raycontrol/';
+}
+
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user)return;
+  onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
+    b.textContent=snap.val()?'Live':'Offline';
+    b.className='conn '+(snap.val()?'online':'offline');
+    document.getElementById('loadingScreen').classList.add('hide');
+  });
+  onValue(ref(db,'contacts'),snap=>{
+    contacts=snap.val()||{};
+    renderList();
+    if(currentContactId&&contacts[currentContactId]) openDetail(currentContactId);
+  });
+});
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
+
+// Close modals on bg click
+document.getElementById('contactModal').addEventListener('click',e=>{if(e.target===document.getElementById('contactModal'))closeContactModal();});
+document.getElementById('jobModal').addEventListener('click',e=>{if(e.target===document.getElementById('jobModal'))closeJobModal();});
+</script>
+</body>
+</html>
