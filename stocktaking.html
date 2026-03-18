@@ -413,7 +413,7 @@ function renderOverview(){
     +'<div class="scard"><div class="sc-label">Empty</div><div class="sc-val red">'+empty+'</div></div>'
     +'<div class="scard"><div class="sc-label">OK</div><div class="sc-val green">'+(all.length-low-empty)+'</div></div>';
   if(!list.length){document.getElementById('ovGrid').innerHTML='<div class="empty-state">No items found</div>';return;}
-  document.getElementById('ovGrid').innerHTML=list.map(([,i])=>{
+  document.getElementById('ovGrid').innerHTML=list.map(([id,i])=>{
     const isEmpty=i.qty<=0,isLow=i.minQty>0&&i.qty>0&&i.qty<=i.minQty;
     const cls=isEmpty?'ov-card empty':isLow?'ov-card low':'ov-card';
     const sc=isEmpty?'stock-empty':isLow?'stock-low':'stock-ok';
