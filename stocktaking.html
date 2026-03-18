@@ -363,7 +363,6 @@ window.submitMovement=async function(){
     document.getElementById('jobInput').value='';
     document.getElementById('notesInput').value='';
     document.getElementById('unitLabel').textContent='—';
-    document.getElementById('jobField').style.display='none';
   }catch(e){
     console.error('Stock write error:',e);
     toast('Error: '+e.message);
