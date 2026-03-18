@@ -616,6 +616,8 @@ onAuthStateChanged(auth,async user=>{
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
+  // Hide loading screen immediately so login overlay is usable
+  document.getElementById('loadingScreen').classList.add('hide');
   // Load staff pins and show login
   const pinsSnap=await get(ref(db,'config/staffPins'));
   if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
@@ -628,7 +630,6 @@ onAuthStateChanged(auth,async user=>{
     }
     const count=Object.keys(items).length;
     document.getElementById('itemSearch').placeholder=count?'Search '+count+' items…':'No items yet — tap + to add';
-    document.getElementById('loadingScreen').classList.add('hide');
     updateOvCatFilter();updateLogFilters();
     renderOverview();
   });
@@ -656,7 +657,11 @@ document.getElementById('newItemForm').style.display='none';
 // Set initial label for Stock IN
 document.getElementById('jobLabel').innerHTML='Vendor invoice number <span style="color:#A32D2D">*</span>';
 document.getElementById('jobInput').placeholder='e.g. INV-2026-001';
-setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),6000);
+// Safety timeout - hide loading if auth takes too long
+setTimeout(()=>{
+  document.getElementById('loadingScreen').classList.add('hide');
+  if(!loggedInStaff) initStaffLogin();
+},6000);
 </script>
 </body>
 </html>
