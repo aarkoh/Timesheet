@@ -103,6 +103,19 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;border:1px solid #e0ddd6}
 .modal h2{font-size:15px;font-weight:600;margin-bottom:1rem}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+/* Staff Login */
+.login-overlay{position:fixed;inset:0;background:rgba(245,245,243,0.98);display:flex;align-items:center;justify-content:center;z-index:600;padding:1rem}
+.login-overlay.hide{display:none}
+.login-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:2rem;width:100%;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+.login-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;margin-bottom:1.5rem;line-height:1.5}
+.pin-big{display:flex;justify-content:center;margin-bottom:1rem}
+.pin-big input{width:80px;height:80px;text-align:center;font-size:36px;font-weight:700;border:2px solid #ddd;border-radius:12px;background:#f9f9f7;font-family:inherit;color:#1a1a1a;transition:border-color 0.12s}
+.pin-big input:focus{outline:none;border-color:#854F0B;background:#fff}
+.login-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.75rem}
+.login-name{font-size:15px;font-weight:600;color:#3B6D11;min-height:22px;margin-bottom:1rem}
+.login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
+.login-btn:disabled{opacity:0.35;cursor:default}
 </style>
 </head>
 <body>
@@ -241,7 +254,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
   </div>
 </div>
 <!-- Staff Login Overlay -->
-<div class="login-overlay" id="loginOverlay">
+<div class="login-overlay" id="loginOverlay" style="position:fixed;inset:0;top:0;left:0;right:0;bottom:0;background:rgba(245,245,243,0.98);display:flex;align-items:center;justify-content:center;z-index:600;padding:1rem">
   <div class="login-card">
     <h2>&#128100; Staff Login</h2>
     <p>Enter your 1-digit staff code<br>to access this page</p>
@@ -253,6 +266,40 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 </div>
 <div class="toast" id="toast"></div>
 
+<script>
+// ── Staff Login ───────────────────────────────────────────────
+const WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
+let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+let loggedInStaff=null;
+
+function initStaffLogin(){
+  const saved=sessionStorage.getItem('rc_staff');
+  if(saved&&WORKERS_LIST.includes(saved)){
+    loggedInStaff=saved;
+    document.getElementById('loginOverlay').classList.add('hide');
+    return;
+  }
+  document.getElementById('loginOverlay').classList.remove('hide');
+  setTimeout(()=>document.getElementById('staffPin').focus(),200);
+}
+function onStaffPinInput(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  document.getElementById('loginErr').textContent='';
+  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;}
+  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;}
+  if(val.length===1&&matched) setTimeout(doStaffLogin,300);
+};
+function doStaffLogin(){
+  const val=document.getElementById('staffPin').value;
+  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
+  if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
+  loggedInStaff=matched;
+  sessionStorage.setItem('rc_staff',matched);
+  document.getElementById('loginOverlay').classList.add('hide');
+};
+
+</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, push, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
@@ -576,38 +623,6 @@ async function fetchMovements(){
   }catch(e){console.error('fetchMovements:',e);}
 }
 
-// ── Staff Login ───────────────────────────────────────────────
-const WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
-let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
-let loggedInStaff=null;
-
-function initStaffLogin(){
-  const saved=sessionStorage.getItem('rc_staff');
-  if(saved&&WORKERS_LIST.includes(saved)){
-    loggedInStaff=saved;
-    document.getElementById('loginOverlay').classList.add('hide');
-    return;
-  }
-  document.getElementById('loginOverlay').classList.remove('hide');
-  setTimeout(()=>document.getElementById('staffPin').focus(),200);
-}
-window.onStaffPinInput=function(){
-  const val=document.getElementById('staffPin').value;
-  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
-  document.getElementById('loginErr').textContent='';
-  if(matched){document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';document.getElementById('loginBtn').disabled=false;}
-  else{document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;}
-  if(val.length===1&&matched) setTimeout(doStaffLogin,300);
-};
-window.doStaffLogin=function(){
-  const val=document.getElementById('staffPin').value;
-  const matched=WORKERS_LIST.find(w=>staffPins[w]===val);
-  if(!matched){document.getElementById('loginErr').textContent='Invalid code — try again';document.getElementById('staffPin').value='';document.getElementById('loginName').textContent='';document.getElementById('loginBtn').disabled=true;return;}
-  loggedInStaff=matched;
-  sessionStorage.setItem('rc_staff',matched);
-  document.getElementById('loginOverlay').classList.add('hide');
-};
-
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,async user=>{
   if(!user)return;
@@ -616,9 +631,7 @@ onAuthStateChanged(auth,async user=>{
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
-  // Hide loading screen immediately so login overlay is usable
-  document.getElementById('loadingScreen').classList.add('hide');
-  // Load staff pins and show login
+  // Load staff pins and show login (login overlay z-index 600 > loading screen 200)
   const pinsSnap=await get(ref(db,'config/staffPins'));
   if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
   initStaffLogin();
