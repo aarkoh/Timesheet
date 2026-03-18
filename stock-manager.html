@@ -62,7 +62,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .lname{font-size:13px;font-weight:500}
 .lmeta{font-size:11px;color:#888;margin-top:2px}
 .lqty{font-size:13px;font-weight:600;white-space:nowrap}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;padding:1rem}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:300;padding:1rem}
 .modal-bg.show{display:flex}
 .modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:1px solid #e0ddd6}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
@@ -429,10 +429,12 @@ onAuthStateChanged(auth,user=>{
   const wf=document.getElementById('histWorkerFilter');
   WORKERS.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;wf.appendChild(o);});
   // Show PIN gate after data loads
+  // Hide loading screen and show PIN
+  document.getElementById('loadingScreen').classList.add('hide');
   if(!unlocked) showPin();
 });
-// Hide loading screen immediately, let PIN modal show on top
-document.getElementById('loadingScreen').classList.add('hide');
+// Safety timeout
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'), 8000);
 </script>
 </body>
 </html>

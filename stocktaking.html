@@ -256,8 +256,9 @@ window.switchTab=function(tab,el){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));el.classList.add('active');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
-  if(tab==='overview')renderOverview();
-  if(tab==='log')renderLog();
+  // Always force re-render on tab switch
+  if(tab==='overview'){updateOvCatFilter();renderOverview();}
+  if(tab==='log'){updateLogFilters();renderLog();}
 };
 
 // ── Workers ───────────────────────────────────────────────────
