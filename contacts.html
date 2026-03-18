@@ -272,16 +272,12 @@ function renderList(){
       <div class="ccard-top">
         <div class="${avatarCls}">${initials}</div>
         <div class="cinfo">
-          <div class="cname">${c.name}${c.company?' <span style="font-weight:400;color:#888">· '+c.company+'</span>':''}</div>
+          <div class="cname">${c.company||c.name}</div>
           <div class="cbadges">
             <span class="cbadge ${badgeType}">${badgeLabel}</span>
             ${c.paymentTerms?`<span class="cbadge terms">${c.paymentTerms}</span>`:''}
             ${c.gst?'<span class="cbadge gst">GST 9%</span>':''}
-          </div>
-          <div class="ccontact">
-            ${c.phone?`<span>📞 ${c.phone}</span>`:''}
-            ${c.email?`<span>✉ ${c.email}</span>`:''}
-            ${jobCount?`<span>📋 ${jobCount} job${jobCount>1?'s':''}</span>`:''}
+            ${jobCount?`<span class="cbadge terms">📋 ${jobCount} job${jobCount>1?'s':''}</span>`:''}
           </div>
         </div>
       </div>
@@ -316,7 +312,7 @@ window.openDetail=function(id){
   document.getElementById('detailContent').innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
       <button onclick="backToList()" style="font-size:12px;padding:5px 10px">← Back</button>
-      <h2 style="font-size:17px;font-weight:600;flex:1">${c.name}</h2>
+      <span style="flex:1"></span>
       <button onclick="openEditContact('${id}')" style="font-size:12px;border-color:#185FA5;color:#185FA5">Edit</button>
       <button onclick="deleteContact('${id}')" class="btn-danger" style="font-size:12px">Delete</button>
     </div>
@@ -328,11 +324,10 @@ window.openDetail=function(id){
       }).join('')}
     </div>`:''}
     <div class="detail-section">
-      <h3>Contact info</h3>
+      <h3>Company info</h3>
       <div class="detail-row"><span class="detail-label">Type</span><span class="detail-val"><span class="cbadge ${badgeType}">${badgeLabel}</span></span></div>
       ${c.company?`<div class="detail-row"><span class="detail-label">Company</span><span class="detail-val">${c.company}</span></div>`:''}
-      ${c.phone?`<div class="detail-row"><span class="detail-label">Phone</span><span class="detail-val"><a href="tel:${c.phone}" style="color:#185FA5">${c.phone}</a></span></div>`:''}
-      ${c.email?`<div class="detail-row"><span class="detail-label">Email</span><span class="detail-val"><a href="mailto:${c.email}" style="color:#185FA5">${c.email}</a></span></div>`:''}
+
       ${c.address?`<div class="detail-row"><span class="detail-label">Address</span><span class="detail-val">${c.address}</span></div>`:''}
       <div class="detail-row"><span class="detail-label">Payment terms</span><span class="detail-val">${c.paymentTerms||'—'}</span></div>
       <div class="detail-row"><span class="detail-label">GST 9%</span><span class="detail-val">${c.gst?'✓ Yes':'No'}</span></div>
