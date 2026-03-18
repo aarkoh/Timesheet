@@ -791,14 +791,14 @@ onAuthStateChanged(auth,async user=>{
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
 
-  // Load OT/OVS rates from Firebase (replaces localStorage)
+  // Load OT/OVS rates from Firebase - always re-render summary so inputs show saved values
   onValue(ref(db,'config/otRates'),snap=>{
     if(snap.exists()) otRates={...otRates,...snap.val()};
-    if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+    renderSummary();
   });
   onValue(ref(db,'config/ovsRates'),snap=>{
     if(snap.exists()) ovsRates={...ovsRates,...snap.val()};
-    if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+    renderSummary();
   });
 
   onValue(ref(db,'workers'),snap=>{
