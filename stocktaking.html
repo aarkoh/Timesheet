@@ -644,20 +644,23 @@ onAuthStateChanged(auth,async user=>{
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
-  // Load staff pins and show login (login overlay z-index 600 > loading screen 200)
-  const pinsSnap=await get(ref(db,'config/staffPins'));
-  if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
+  // Load staff pins (non-blocking - items load regardless)
+  try{
+    const pinsSnap=await get(ref(db,'config/staffPins'));
+    if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
+  }catch(e){console.warn('Pins not set yet, using defaults');}
   initStaffLogin();
   onValue(ref(db,'stock/items'),snap=>{
     items=snap.val()||{};
-    // Only silently update selItem data if one is actively selected
     if(selItem&&selItem.id&&items[selItem.id]){
       selItem={...selItem,...items[selItem.id]};
     }
     const count=Object.keys(items).length;
     document.getElementById('itemSearch').placeholder=count?'Search '+count+' items…':'No items yet — tap + to add';
+    document.getElementById('loadingScreen').classList.add('hide');
     updateOvCatFilter();updateLogFilters();
     renderOverview();
+    if(document.getElementById('tab-log').classList.contains('active'))renderLog();
   });
   // Use REST fetch for movements (more reliable than SDK onValue for this node)
   fetchMovements();
