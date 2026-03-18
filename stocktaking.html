@@ -103,24 +103,8 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
 .modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;border:1px solid #e0ddd6}
 .modal h2{font-size:15px;font-weight:600;margin-bottom:1rem}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
-/* Staff Login */
-.login-overlay{position:fixed;inset:0;background:rgba(245,245,243,0.98);display:flex;align-items:center;justify-content:center;z-index:600;padding:1rem}
-.login-overlay.hide{display:none}
-.login-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:2rem;width:100%;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
-.login-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
-.login-card p{font-size:13px;color:#888;margin-bottom:1.5rem;line-height:1.5}
-.pin-big{display:flex;justify-content:center;margin-bottom:1rem}
-.pin-big input{width:80px;height:80px;text-align:center;font-size:36px;font-weight:700;border:2px solid #ddd;border-radius:12px;background:#f9f9f7;font-family:inherit;color:#1a1a1a;transition:border-color 0.12s}
-.pin-big input:focus{outline:none;border-color:#854F0B;background:#fff}
-.login-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.75rem}
-.login-name{font-size:15px;font-weight:600;color:#3B6D11;min-height:22px;margin-bottom:1rem}
-.login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
-.login-btn:disabled{opacity:0.35;cursor:default}
 
-/* Logout button */
-.logout-btn{font-family:inherit;font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#888;cursor:pointer;display:none;align-items:center;gap:5px;white-space:nowrap;transition:all 0.12s}
-.logout-btn:hover{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
-.logout-btn.visible{display:flex}
+
 </style>
 </head>
 <body>
@@ -130,7 +114,6 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
     <h1>&#128230; Stock In / Out</h1>
     <a href="https://aarkoh.github.io/Raycontrol/" class="back">&#8962; Hub</a>
     <span class="conn syncing" id="connBadge">Connecting…</span>
-    <button class="logout-btn" id="logoutBtn" onclick="doLogout()">&#128274; Logout</button>
     <div class="tabs">
       <button class="tab active" onclick="switchTab('record',this)">Record</button>
       <button class="tab" onclick="switchTab('overview',this)">Overview</button>
@@ -260,109 +243,8 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
   </div>
 </div>
 <!-- Staff Login Overlay -->
-<div class="login-overlay" id="loginOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(245,245,243,0.98);display:none;align-items:center;justify-content:center;z-index:600;padding:1rem">
-  <div class="login-card">
-    <h2>&#128100; Staff Login</h2>
-    <p>Enter your 1-digit staff code<br>to access this page</p>
-    <div class="pin-big"><input type="password" id="staffPin" maxlength="1" inputmode="numeric" oninput="onStaffPinInput()" autocomplete="off"></div>
-    <div class="login-name" id="loginName"></div>
-    <div class="login-err" id="loginErr"></div>
-    <button class="login-btn" id="loginBtn" onclick="doStaffLogin()" disabled>Continue</button>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 
-<script>
-var WORKERS_LIST=['HS','TM','RG','MU','AY','IL','SA','AN'];
-var staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
-var loggedInStaff=null;
-
-function initStaffLogin(){
-  var saved=sessionStorage.getItem('rc_staff');
-  if(saved&&WORKERS_LIST.indexOf(saved)>=0){
-    loggedInStaff=saved;
-    document.getElementById('loginOverlay').style.display='none';
-    var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
-    var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
-    if(typeof renderOverview==='function') renderOverview();
-    if(typeof renderWorkers==='function') renderWorkers();
-    return;
-  }
-  document.getElementById('loginOverlay').style.display='flex';
-  setTimeout(function(){var el=document.getElementById('staffPin');if(el)el.focus();},300);
-}
-function onStaffPinInput(){
-  var val=document.getElementById('staffPin').value;
-  var matched=null;
-  for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
-  document.getElementById('loginErr').textContent='';
-  if(matched){
-    document.getElementById('loginName').textContent='👋 Hello, '+matched+'!';
-    document.getElementById('loginBtn').disabled=false;
-    document.getElementById('loginBtn').style.opacity='1';
-    document.getElementById('loginBtn').style.cursor='pointer';
-  } else {
-    document.getElementById('loginName').textContent='';
-    document.getElementById('loginBtn').disabled=true;
-    document.getElementById('loginBtn').style.opacity='0.35';
-  }
-}
-function doStaffLogin(){
-  var val=document.getElementById('staffPin').value;
-  var matched=null;
-  for(var i=0;i<WORKERS_LIST.length;i++){if(staffPins[WORKERS_LIST[i]]===val){matched=WORKERS_LIST[i];break;}}
-  if(!matched){
-    document.getElementById('loginErr').textContent='Invalid code — try again';
-    document.getElementById('staffPin').value='';
-    document.getElementById('loginName').textContent='';
-    document.getElementById('loginBtn').disabled=true;
-    return;
-  }
-  loggedInStaff=matched;
-  sessionStorage.setItem('rc_staff',matched);
-  document.getElementById('loginOverlay').style.display='none';
-  var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
-  // Hide loading screen and trigger page render in case data already loaded
-  var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
-  if(typeof renderOverview==='function') renderOverview();
-  if(typeof renderWorkers==='function') renderWorkers();
-}
-
-function doLogout(){
-  if(!confirm('Log out of this device?')) return;
-  sessionStorage.removeItem('rc_staff');
-  loggedInStaff=null;
-  var lb=document.getElementById('logoutBtn');if(lb)lb.classList.remove('visible');
-  var pin=document.getElementById('staffPin');if(pin)pin.value='';
-  document.getElementById('loginName').textContent='';
-  document.getElementById('loginErr').textContent='';
-  document.getElementById('loginBtn').disabled=true;
-  document.getElementById('loginBtn').style.opacity='0.35';
-  document.getElementById('loginOverlay').style.display='flex';
-  setTimeout(function(){var el=document.getElementById('staffPin');if(el)el.focus();},200);
-}
-</script>
-<script>
-// Show login immediately on page load using default PINs
-// Firebase will update pins in background when ready
-(function(){
-  var saved = sessionStorage.getItem('rc_staff');
-  if(saved && WORKERS_LIST.indexOf(saved) >= 0){
-    loggedInStaff = saved;
-    var ls = document.getElementById('loadingScreen');
-    if(ls) ls.classList.add('hide');
-    var lb = document.getElementById('logoutBtn');
-    if(lb) lb.classList.add('visible');
-  } else {
-    // Show login right away - no waiting for Firebase
-    document.getElementById('loginOverlay').style.display = 'flex';
-    setTimeout(function(){
-      var el = document.getElementById('staffPin');
-      if(el) el.focus();
-    }, 100);
-  }
-})();
-</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, push, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
@@ -389,12 +271,19 @@ window.switchTab=function(tab,el){
 
 // ── Workers ───────────────────────────────────────────────────
 function renderWorkers(){
-  document.getElementById('workerGrid').innerHTML=WORKERS.map(w=>`
-    <div class="wcard${sel===w?' sel':''}" onclick="selectW('${w}')">
-      <div class="wav">${w}</div><div class="wlabel">${w}</div>
-    </div>`).join('');
+  const sessionStaff=sessionStorage.getItem('rc_staff');
+  document.getElementById('workerGrid').innerHTML=WORKERS.map(w=>{
+    const locked=sessionStaff&&w!==sessionStaff;
+    const click=locked?'':('onclick="selectW(\'' + w + '\')"');
+    const style=locked?'style="opacity:0.25;cursor:default;pointer-events:none"':'';
+    return '<div class="wcard'+(sel===w?' sel':'')+'" '+click+' '+style+'><div class="wav">'+w+'</div><div class="wlabel">'+w+'</div></div>';
+  }).join('');
 }
-window.selectW=function(w){sel=w;renderWorkers();checkSubmit();};
+window.selectW=function(w){
+  const sessionStaff=sessionStorage.getItem('rc_staff');
+  if(sessionStaff&&w!==sessionStaff) return; // locked
+  sel=w;renderWorkers();checkSubmit();
+};
 
 // ── Move type ─────────────────────────────────────────────────
 window.setType=function(t){
@@ -709,16 +598,14 @@ async function fetchMovements(){
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,async user=>{
   if(!user)return;
+  // Check session - redirect to hub if not logged in
+  const sessionStaff=sessionStorage.getItem('rc_staff');
+  if(!sessionStaff){window.location.href='https://aarkoh.github.io/Raycontrol/';return;}
   onValue(ref(db,'.info/connected'),snap=>{
     const b=document.getElementById('connBadge');
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
-  // Update staff pins from Firebase in background (overlay already showing)
-  try{
-    const pinsSnap=await get(ref(db,'config/staffPins'));
-    if(pinsSnap.exists()) staffPins={...staffPins,...pinsSnap.val()};
-  }catch(e){console.warn('Pins not set yet, using defaults');}
   onValue(ref(db,'stock/items'),snap=>{
     items=snap.val()||{};
     if(selItem&&selItem.id&&items[selItem.id]){
@@ -737,6 +624,9 @@ onAuthStateChanged(auth,async user=>{
   // Movements loaded via REST fetch only (avoids SDK caching issues)
 });
 renderWorkers();
+// Auto-select logged-in staff
+const _ss=sessionStorage.getItem('rc_staff');
+if(_ss&&WORKERS.includes(_ss)){sel=_ss;renderWorkers();}
 // Full reset on page load - clear any cached state
 document.getElementById('itemSearch').value='';
 document.getElementById('selectedItem').style.display='none';
