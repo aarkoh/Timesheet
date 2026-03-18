@@ -426,8 +426,28 @@ onAuthStateChanged(auth,user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{const b=document.getElementById('connBadge');b.textContent=snap.val()?'Live':'Offline';b.className='conn '+(snap.val()?'online':'offline');});
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
-  onValue(ref(db,'stock/items'),snap=>{items=snap.val()||{};renderStats();renderItems();updateCatFilter();if(document.getElementById('tab-reports').classList.contains('active'))renderReports();});
-  onValue(ref(db,'stock/movements'),snap=>{movements=[];if(snap.exists())snap.forEach(c=>movements.unshift({id:c.key,...c.val()}));if(document.getElementById('tab-history').classList.contains('active'))renderHistory();});
+  onValue(ref(db,'stock/items'),snap=>{
+    items=snap.val()||{};
+    renderStats();
+    renderItems();
+    updateCatFilter();
+    // Update history item filter
+    const iSel=document.getElementById('histItemFilter');
+    const curVal=iSel.value;
+    iSel.innerHTML='<option value="">All items</option>'+Object.entries(items).map(([id,i])=>'<option value="'+id+'"'+(id===curVal?' selected':'')+'>'+i.name+'</option>').join('');
+    if(document.getElementById('tab-reports').classList.contains('active')) renderReports();
+    if(document.getElementById('tab-history').classList.contains('active')) renderHistory();
+  });
+  onValue(ref(db,'stock/movements'),snap=>{
+    movements=[];
+    if(snap.exists()) snap.forEach(c=>movements.unshift({id:c.key,...c.val()}));
+    // Update history item filter dropdown with latest items
+    const iSel=document.getElementById('histItemFilter');
+    const curVal=iSel.value;
+    iSel.innerHTML='<option value="">All items</option>'+Object.entries(items).map(([id,i])=>'<option value="'+id+'"'+(id===curVal?' selected':'')+'>'+i.name+'</option>').join('');
+    // Always re-render if on history tab
+    if(document.getElementById('tab-history').classList.contains('active')) renderHistory();
+  });
   // Init worker filter
   const wf=document.getElementById('histWorkerFilter');
   WORKERS.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;wf.appendChild(o);});
