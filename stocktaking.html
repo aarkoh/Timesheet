@@ -427,7 +427,7 @@ window.saveNewItem=async function(){
   const unit=document.getElementById('ni_unit').value.trim()||'pcs';
   if(!name){toast('Item name is required');return;}
   if(!auth.currentUser){toast('Not connected — please wait');return;}
-  const data={name,sku:document.getElementById('ni_sku').value.trim(),category:document.getElementById('ni_cat').value.trim(),make:document.getElementById('ni_make').value.trim(),model:document.getElementById('ni_model').value.trim(),unit,qty:0,minQty:parseFloat(document.getElementById('ni_min').value)||0,location:document.getElementById('ni_loc').value.trim(),cost:0,sell:0,createdAt:new Date().toISOString(),createdBy:sel||'unknown'};
+  const data={name,sku:document.getElementById('ni_sku').value.trim(),category:document.getElementById('ni_cat').value.trim(),make:document.getElementById('ni_make').value.trim(),model:document.getElementById('ni_model').value.trim(),unit,qty:0,minQty:parseFloat(document.getElementById('ni_min').value)||0,location:document.getElementById('ni_loc').value.trim(),cost:0,sell:0,createdAt:new Date().toISOString(),createdBy:loggedInStaff||sel||'unknown'};
   try{
     const newRef=await push(ref(db,'stock/items'),data);
     toast(name+' added ✓');
@@ -598,7 +598,7 @@ window.saveEditItem=async function(){
     unit:document.getElementById('ei_unit').value.trim()||'pcs',
     minQty:parseFloat(document.getElementById('ei_min').value)||0,
     location:document.getElementById('ei_loc').value.trim(),
-    updatedAt:new Date().toISOString(),updatedBy:sel||'unknown'
+    updatedAt:new Date().toISOString(),updatedBy:loggedInStaff||sel||'unknown'
   };
   try{
     await update(ref(db,'stock/items/'+editItemId),data);
