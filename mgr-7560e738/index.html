@@ -345,6 +345,12 @@ window.addWorker=async function(){
     }
     // Init worker status
     await set(ref(db,'workers/'+initials),{status:'out',since:null,loc:'',lastTime:null});
+    // Clear from removed list if re-adding
+    const removedSnap=await get(ref(db,'config/removedWorkers'));
+    if(removedSnap.exists()){
+      const cleaned=removedSnap.val().filter(w=>w!==initials);
+      await set(ref(db,'config/removedWorkers'),cleaned);
+    }
     document.getElementById('newWorkerInitials').value='';
     renderWorkerMgmt();
     renderStaffPins();
@@ -356,7 +362,7 @@ window.addWorker=async function(){
 
 window.removeWorker=async function(initials){
   const msg=document.getElementById('workerMgmtMsg');
-  if(!confirm('Remove '+initials+' from the worker list? Their clock history is preserved.')) return;
+  if(!confirm('Remove '+initials+' from the worker list? Their clock history is preserved.\nThey will be logged out immediately.')) return;
   const newList=WORKERS_ALL.filter(w=>w!==initials);
   try{
     await set(ref(db,'config/workers'),newList);
@@ -364,10 +370,14 @@ window.removeWorker=async function(initials){
     // Remove their PIN
     delete staffPins[initials];
     await set(ref(db,'config/staffPins'),staffPins);
+    // Force logout - write to removedWorkers so their session is invalidated
+    const removedSnap=await get(ref(db,'config/removedWorkers'));
+    const removed=removedSnap.exists()?removedSnap.val():[];
+    if(!removed.includes(initials)) await set(ref(db,'config/removedWorkers'),[...removed,initials]);
     renderWorkerMgmt();
     renderStaffPins();
     msg.style.color='#3B6D11';
-    msg.textContent='✓ '+initials+' removed';
+    msg.textContent='✓ '+initials+' removed and logged out';
     setTimeout(()=>msg.textContent='',3000);
   }catch(e){msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;}
 };
