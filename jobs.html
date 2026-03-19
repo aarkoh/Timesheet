@@ -633,8 +633,12 @@ window.printQuotation=function(id){
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Courier New',Courier,monospace;font-size:11pt;color:#000;background:#fff;padding:15mm 15mm 10mm 15mm}
-@page{size:A4;margin:10mm}
-@media print{body{padding:0}#printBtn{display:none}}
+@page{size:A4;margin:0}
+@media print{
+  body{padding:10mm 15mm;}
+  #printBtn{display:none}
+  /* Remove Chrome's default header/footer (URL, date, page numbers) */
+}
 /* Header */
 .header{display:flex;align-items:flex-start;gap:10px;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:8px}
 .logo-area{flex:1}
