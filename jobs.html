@@ -174,18 +174,20 @@ button:hover{background:#f0f0ee}
     <table class="lit">
       <thead><tr>
         <th style="width:30px">#</th>
-        <th style="min-width:180px">Description</th>
-        <th style="width:52px">Qty</th>
-        <th style="width:58px">Unit</th>
-        <th style="width:88px;text-align:right">Unit Price</th>
-        <th style="width:88px;text-align:right">Amount</th>
-        <th style="width:110px">Vendor</th>
+        <th style="min-width:160px">Description</th>
+        <th style="width:48px">Qty</th>
+        <th style="width:52px">Unit</th>
+        <th style="width:80px;text-align:right">Unit Price</th>
+        <th style="width:80px;text-align:right">Amount</th>
+        <th style="width:80px;text-align:right;color:#854F0B" title="Internal cost price - not printed">Cost *</th>
+        <th style="width:100px">Vendor</th>
         <th style="width:28px"></th>
       </tr></thead>
       <tbody id="liBody"></tbody>
     </table>
   </div>
-  <button onclick="addLI()" style="font-size:12px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-bottom:0.75rem">+ Add line item</button>
+  <button onclick="addLI()" style="font-size:12px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-bottom:4px">+ Add line item</button>
+  <div style="font-size:11px;color:#854F0B;margin-bottom:0.75rem">* Cost price is internal only — not shown on customer quotation</div>
   <div class="ms">Charges</div>
   <div class="fr2">
     <div class="fi"><label>Local Courier</label><select id="j_courier" onchange="togCharge('courier')"><option value="TBA">TBA</option><option value="nil">Nil</option><option value="amt">Enter amount</option></select></div>
@@ -353,6 +355,7 @@ window.openDetail=function(id){
       +"<td>"+(it.unit||"")+"</td>"
       +'<td class="nr">'+fmt(it.unitPrice)+"</td>"
       +'<td class="nr" style="font-weight:500">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0))+"</td>"
+    +'<td class="nr" style="font-size:11px;color:#854F0B">'+(it.costPrice?fmt(it.costPrice):"")+"</td>"
     +'<td style="font-size:11px;color:#888">'+(it.vendorName||"")+"</td>"
     +"</tr>";
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1rem;font-size:12px">No line items</td></tr>';
@@ -398,7 +401,7 @@ window.openDetail=function(id){
     +'<div class="sbox"><h3>Vendors</h3>'+vlist+"</div>"
     +'<div class="sbox"><h3>Line Items</h3>'
       +'<div style="overflow-x:auto"><table class="itable">'
-        +'<thead><tr><th style="width:32px">#</th><th>Description</th><th class="nr" style="width:60px">Qty</th><th style="width:60px">Unit</th><th class="nr" style="width:90px">Unit Price</th><th class="nr" style="width:90px">Amount</th><th style="width:80px">Vendor</th></tr></thead>'
+        +'<thead><tr><th style="width:32px">#</th><th>Description</th><th class="nr" style="width:60px">Qty</th><th style="width:60px">Unit</th><th class="nr" style="width:80px">Unit Price</th><th class="nr" style="width:80px">Amount</th><th class="nr" style="width:70px;color:#854F0B">Cost</th><th style="width:80px">Vendor</th></tr></thead>'
         +"<tbody>"+iRows+"</tbody>"
       +"</table></div>"
       +'<div style="display:flex;justify-content:flex-end;margin-top:1rem">'
@@ -454,8 +457,8 @@ window.deleteJob=async function(id){
 };
 
 // Line items
-window.addLI=function(desc,qty,unit,price,vendor){
-  desc=desc||"";qty=qty||"";unit=unit||"JOB";price=price||"";vendor=vendor||"";
+window.addLI=function(desc,qty,unit,price,vendor,cost){
+  desc=desc||"";qty=qty||"";unit=unit||"JOB";price=price||"";vendor=vendor||"";cost=cost||"";
   liCount++;var n=liCount;
   var tr=document.createElement("tr");tr.id="li_"+n;
   var vopts=selVendors.map(function(v){return '<option value="'+v.id+'"'+(vendor===v.id?' selected':'')+'>'+v.name+'</option>';}).join('');
@@ -465,6 +468,7 @@ window.addLI=function(desc,qty,unit,price,vendor){
     +'<td><input type="text" value="'+unit+'" id="lu_'+n+'" style="width:52px"></td>'
     +'<td><input type="number" value="'+price+'" placeholder="0.00" min="0" step="0.01" id="lp_'+n+'" data-n="'+n+'" oninput="window.calcLI(this.dataset.n)" style="width:82px;text-align:right"></td>'
     +'<td><span class="lamt" id="la_'+n+'">0.00</span></td>'
+    +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+n+'" style="width:75px;text-align:right;padding:5px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
     +'<td><select id="lv_'+n+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f9f9f7"><option value="">—</option>'+vopts+'</select></td>'
     +'<td style="text-align:center"><button data-n="'+n+'" onclick="window.removeLI(this.dataset.n)" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>';
   document.getElementById("liBody").appendChild(tr);
@@ -479,7 +483,7 @@ window.removeLI=function(n){var tr=document.getElementById("li_"+n);if(tr)tr.rem
 function getLIs(){
   return Array.from(document.querySelectorAll("#liBody tr")).map(function(tr){
     var n=tr.id.replace("li_","");
-    var vsel=document.getElementById("lv_"+n);return{desc:(document.getElementById("ld_"+n)||{value:""}).value.trim(),qty:(document.getElementById("lq_"+n)||{value:""}).value,unit:(document.getElementById("lu_"+n)||{value:""}).value,unitPrice:(document.getElementById("lp_"+n)||{value:""}).value,vendorId:vsel?vsel.value:"",vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||""): ""};
+    var vsel=document.getElementById("lv_"+n);return{desc:(document.getElementById("ld_"+n)||{value:""}).value.trim(),qty:(document.getElementById("lq_"+n)||{value:""}).value,unit:(document.getElementById("lu_"+n)||{value:""}).value,unitPrice:(document.getElementById("lp_"+n)||{value:""}).value,costPrice:(document.getElementById("lc_"+n)||{value:""}).value,vendorId:vsel?vsel.value:"",vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||""): ""};
   }).filter(function(i){return i.desc;});
 }
 
@@ -513,17 +517,9 @@ function setupSearch(inpId,dropId,filterFn,onSel){
 function renderVTags(){
   var el=document.getElementById("j_vtags");if(!el)return;
   el.innerHTML=selVendors.map(function(v,i){
-    return '<div style="display:flex;align-items:center;gap:8px;background:#F3E6F3;border:1px solid #d4b8d4;border-radius:8px;padding:6px 10px;margin-bottom:4px">'
-      +'<span style="font-size:12px;font-weight:600;color:#8B1A8B;flex:1">'+v.name+'</span>'
-      +'<span style="font-size:11px;color:#888;white-space:nowrap">Cost price:</span>'
-      +'<input type="number" data-i="'+i+'" value="'+(v.cost||'')+'" placeholder="0.00" min="0" step="0.01"'
-        +' oninput="window.updateVendorCost(this.dataset.i,this.value)"'
-        +' style="width:90px;padding:3px 6px;border:1px solid #d4b8d4;border-radius:6px;font-size:12px;font-family:inherit;text-align:right;background:#fff">'
-      +'<span data-i="'+i+'" onclick="window.removeVendor(this.dataset.i)" style="cursor:pointer;font-weight:700;color:#8B1A8B;padding:0 2px">✕</span>'
-    +'</div>';
+    return '<div style="display:flex;align-items:center;gap:5px;background:#F3E6F3;border:1px solid #d4b8d4;border-radius:20px;padding:3px 10px;font-size:12px;color:#8B1A8B">'+v.name+'<span data-i="'+i+'" onclick="window.removeVendor(this.dataset.i)" style="cursor:pointer;font-weight:700">✕</span></div>';
   }).join("");
 }
-window.updateVendorCost=function(i,val){if(selVendors[parseInt(i)])selVendors[parseInt(i)].cost=val;};
 window.removeVendor=function(i){selVendors.splice(parseInt(i),1);renderVTags();refreshLIVendors();};
 function refreshLIVendors(){
   document.querySelectorAll('#liBody tr').forEach(function(tr){
@@ -591,7 +587,7 @@ window.openEditJob=function(id){
   document.getElementById("j_pay").value=j.payTerms||"30 Days Nett";
   ["courier","packing","freight"].forEach(function(f){document.getElementById("j_"+f+"_w").style.display=j[f]==="amt"?"block":"none";});
   if(j.customerId&&j.customerName){document.getElementById("j_cs_id").value=j.customerId;document.getElementById("j_cs_nm").textContent=j.customerName;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";}
-  (j.lineItems||[]).forEach(function(it){window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"");});
+  (j.lineItems||[]).forEach(function(it){window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"");});
   if(!(j.lineItems||[]).length)window.addLI();
   renderVTags();
   document.getElementById("jobModal").classList.add("show");
