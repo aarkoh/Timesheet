@@ -220,9 +220,13 @@ onAuthStateChanged(auth,async user=>{
   onValue(ref(db,'config/staffPins'),snap=>{
     if(snap.exists()) window.staffPins={...window.staffPins,...snap.val()};
   });
+  onValue(ref(db,'config/workers'),snap=>{
+    if(snap.exists()&&Array.isArray(snap.val())&&snap.val().length>0) window.WORKERS_LIST=snap.val();
+  });
   // One-time fetch for immediate use on load
   try{const ps=await get(ref(db,'config/staffPins'));if(ps.exists()) window.staffPins={...window.staffPins,...ps.val()};}catch(e){}
   try{const ap=await get(ref(db,'config/adminPin'));if(ap.exists()) window.adminPin=ap.val();}catch(e){}
+  try{const ws=await get(ref(db,'config/workers'));if(ws.exists()&&Array.isArray(ws.val())) window.WORKERS_LIST=ws.val();}catch(e){}
 });
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
