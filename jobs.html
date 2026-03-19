@@ -423,13 +423,13 @@ window.addLineItem=function(desc='',qty='',unit='JOB',price=''){
   tr.innerHTML=`
     <td style="text-align:center;color:#888;font-size:11px;padding:3px 5px">${id}</td>
     <td><input type="text" value="${desc.replace(/"/g,'&quot;')}" placeholder="Description of work / item" id="lid_${id}" style="min-width:200px"></td>
-    <td><input type="number" value="${qty}" placeholder="1" min="0" step="0.01" id="liq_${id}" oninput="calcLI(${id})" style="width:48px;text-align:right"></td>
+    <td><input type="number" value="${qty}" placeholder="1" min="0" step="0.01" id="liq_${id}" oninput="window.calcLI(${id})" style="width:48px;text-align:right"></td>
     <td><input type="text" value="${unit}" id="liu_${id}" style="width:52px"></td>
-    <td><input type="number" value="${price}" placeholder="0.00" min="0" step="0.01" id="lip_${id}" oninput="calcLI(${id})" style="width:82px;text-align:right"></td>
+    <td><input type="number" value="${price}" placeholder="0.00" min="0" step="0.01" id="lip_${id}" oninput="window.calcLI(${id})" style="width:82px;text-align:right"></td>
     <td><span class="li-amt" id="lia_${id}">0.00</span></td>
-    <td style="text-align:center"><button onclick="removeLI(${id})" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>`;
+    <td style="text-align:center"><button onclick="window.removeLI(${id})" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>`;
   document.getElementById('liBody').appendChild(tr);
-  if(qty&&price)calcLI(id);
+  if(qty||price) setTimeout(()=>window.calcLI(id), 50);
 };
 window.calcLI=function(id){
   const q=parseFloat(document.getElementById('liq_'+id)?.value)||0;
