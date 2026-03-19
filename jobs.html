@@ -317,11 +317,14 @@ window.openDetail=function(id){
   const j=jobs[id]||{};
   const si=SO.indexOf(j.status||'quote');
   const items=j.lineItems||[];
-  const sub=items.reduce((s,i)=>s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0),0);
+  const itemsSub=items.reduce((s,i)=>s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0),0);
+  const courierAmt=j.courier==='amount'?parseFloat(j.courierAmt)||0:0;
+  const packingAmt=j.packing==='amount'?parseFloat(j.packingAmt)||0:0;
+  const freightAmt=j.freight==='amount'?parseFloat(j.freightAmt)||0:0;
+  const sub=itemsSub+courierAmt+packingAmt+freightAmt;
   const gstAmt=j.gst==='9'?sub*0.09:0;
   const bankFee=parseFloat(j.bankFee)||0;
   const total=sub+gstAmt+bankFee;
-  const cV=v=>v==='TBA'?'TBA':v==='nil'?'Nil':fmt(parseFloat(j[v+'Amt'])||0);
 
   const pipe=SO.map((s,i)=>{
     let cls=i<si?'done':i===si?(s==='closed'?'closed-a':'active'):'';
@@ -382,9 +385,9 @@ window.openDetail=function(id){
       </div>
       <div style="display:flex;justify-content:flex-end;margin-top:1rem">
         <div style="min-width:260px">
-          <div class="total-row"><span>Local Courier</span><span>${j.courier==='TBA'?'TBA':j.courier==='nil'?'Nil':fmt(parseFloat(j.courierAmt)||0)}</span></div>
-          <div class="total-row"><span>Packing</span><span>${j.packing==='TBA'?'TBA':j.packing==='nil'?'Nil':fmt(parseFloat(j.packingAmt)||0)}</span></div>
-          <div class="total-row"><span>Freight</span><span>${j.freight==='TBA'?'TBA':j.freight==='nil'?'Nil':fmt(parseFloat(j.freightAmt)||0)}</span></div>
+          <div class="total-row"><span>Local Courier</span><span>${j.courier==='TBA'?'TBA':j.courier==='nil'?'Nil':courierAmt>0?fmt(courierAmt):'0.00'}</span></div>
+          <div class="total-row"><span>Packing</span><span>${j.packing==='TBA'?'TBA':j.packing==='nil'?'Nil':packingAmt>0?fmt(packingAmt):'0.00'}</span></div>
+          <div class="total-row"><span>Freight</span><span>${j.freight==='TBA'?'TBA':j.freight==='nil'?'Nil':freightAmt>0?fmt(freightAmt):'0.00'}</span></div>
           <div class="total-row"><span>Sub Total</span><span>${fmt(sub)}</span></div>
           ${gstAmt>0?`<div class="total-row"><span>GST (9%)</span><span>${fmt(gstAmt)}</span></div>`:`<div class="total-row"><span style="color:#888;font-size:12px">GSTax not included if applicable</span><span></span></div>`}
           <div class="total-row"><span>Bank Fee</span><span>${fmt(bankFee)}</span></div>
