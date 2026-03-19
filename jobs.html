@@ -304,7 +304,7 @@ function renderList(){
     var aStr=a===0?"Today":a===1?"Yesterday":a+" days ago";
     var aC=a>30&&j.status!=="closed"?" ov":"";
     var t=totals(j);
-    var amt=t.sub>0?(j.currency||"SGD")+" "+fmt(t.sub):"&mdash;";
+    var amt=t.total>0?(j.currency||"SGD")+" "+fmt(t.total):"&mdash;";
     var jst=j.status||"quote";
     var sc=SC[jst]||"sq";
     var bc=BC[jst]||"bq";
