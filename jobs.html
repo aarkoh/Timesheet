@@ -680,6 +680,23 @@ var se=document.getElementById("jobSearch");
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.getElementById("jobModal").classList.contains("show"))window.closeModal();});
 </script>
 <script>
+window.pqSelectAll=function(v){
+  document.querySelectorAll('[id^="pqc_"]').forEach(function(cb){cb.checked=v;});
+};
+window.doPrintQuo=function(id){
+  var jobs=window._jobs||{};
+  var j=jobs[id]||{};
+  var selected=[];
+  (j.lineItems||[]).forEach(function(it,i){
+    var cb=document.getElementById('pqc_'+i);
+    if(cb&&cb.checked)selected.push(it);
+  });
+  var revNum=document.getElementById('pqRevNum');
+  var rev=parseInt((revNum&&revNum.value)||0)||0;
+  var modal=document.getElementById('pqModal');
+  if(modal)modal.remove();
+  window.printQuoData(id,selected,rev);
+};
 function amtWords(amount,cur){
   var ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
   var tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
@@ -1012,21 +1029,4 @@ window.printQuoData=function(j,revLabel){
 };
 </script>
 </body>
-</htmlwindow.pqSelectAll=function(v){
-  document.querySelectorAll('[id^="pqc_"]').forEach(function(cb){cb.checked=v;});
-};
-window.doPrintQuo=function(id){
-  var jobs=window._jobs||{};
-  var j=jobs[id]||{};
-  var selected=[];
-  (j.lineItems||[]).forEach(function(it,i){
-    var cb=document.getElementById('pqc_'+i);
-    if(cb&&cb.checked)selected.push(it);
-  });
-  var revNum=document.getElementById('pqRevNum');
-  var rev=parseInt((revNum&&revNum.value)||0)||0;
-  var modal=document.getElementById('pqModal');
-  if(modal)modal.remove();
-  window.printQuoData(id,selected,rev);
-};
->
+</html>
