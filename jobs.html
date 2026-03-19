@@ -7,126 +7,88 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
-.app{max-width:900px;margin:0 auto;padding:1.25rem 1rem}
-
-/* Topbar */
+.app{max-width:960px;margin:0 auto;padding:1.25rem 1rem}
 .topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
 .topbar h1{font-size:20px;font-weight:600;flex:1}
 .back{font-size:12px;color:#185FA5;text-decoration:none;padding:5px 10px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
 .conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
 .conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
-
-/* Tabs */
 .tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
-.tab{font-family:inherit;font-size:12px;padding:6px 14px;border:none;background:transparent;cursor:pointer;color:#666;transition:background 0.12s;white-space:nowrap}
+.tab{font-family:inherit;font-size:12px;padding:6px 14px;border:none;background:transparent;cursor:pointer;color:#666;white-space:nowrap}
 .tab.active{background:#fff;color:#1a1a1a;font-weight:600}
 .panel{display:none}.panel.active{display:block}
-
-/* Toolbar */
 .toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .toolbar input{flex:1;min-width:180px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
 .toolbar input:focus{outline:none;border-color:#185FA5}
-.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
 .chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#666;white-space:nowrap}
 .chip.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-
-/* Buttons */
-button{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;transition:all 0.12s;white-space:nowrap}
+button{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;white-space:nowrap}
 button:hover{background:#f0f0ee}
 .btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}.btn-primary:hover{background:#333}
 .btn-danger{border-color:#A32D2D;color:#A32D2D}.btn-danger:hover{background:#FCEBEB}
+.btn-blue{border-color:#185FA5;color:#185FA5;background:#E6F1FB}.btn-blue:hover{background:#d0e8f8}
 .btn-sm{font-size:11px;padding:4px 10px}
-
-/* Status pipeline */
-.pipeline{display:flex;align-items:center;gap:0;overflow-x:auto;margin-bottom:1rem;padding:2px 0}
-.pipe-step{display:flex;align-items:center;gap:0;flex-shrink:0}
-.pipe-btn{font-family:inherit;font-size:11px;padding:5px 12px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#888;white-space:nowrap;transition:all 0.12s}
-.pipe-btn:first-child{border-radius:8px 0 0 8px}
-.pipe-btn:last-child{border-radius:0 8px 8px 0}
-.pipe-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
-.pipe-btn.done{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
-.pipe-btn.closed{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-
-/* Job cards */
 .job-list{display:flex;flex-direction:column;gap:8px}
 .jcard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;cursor:pointer;transition:box-shadow 0.12s;border-left:4px solid #e0ddd6}
 .jcard:hover{box-shadow:0 2px 10px rgba(0,0,0,0.08)}
-.jcard.status-quote{border-left-color:#854F0B}
-.jcard.status-customer_po{border-left-color:#185FA5}
-.jcard.status-vendor_po{border-left-color:#8B1A8B}
-.jcard.status-invoice{border-left-color:#A32D2D}
-.jcard.status-soa{border-left-color:#1a6641}
-.jcard.status-closed{border-left-color:#aaa}
-.jcard-top{display:flex;align-items:flex-start;gap:10px}
-.jref{font-size:16px;font-weight:700;letter-spacing:0.02em;font-variant-numeric:tabular-nums}
-.jcustomer{font-size:13px;color:#555;margin-top:2px}
-.jmeta{font-size:11px;color:#aaa;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
-.jright{text-align:right;flex-shrink:0}
-.jamount{font-size:15px;font-weight:600}
-.jage{font-size:11px;color:#aaa;margin-top:2px}
-.jbadges{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.jcard.s-quote{border-left-color:#854F0B}.jcard.s-customer_po{border-left-color:#185FA5}
+.jcard.s-vendor_po{border-left-color:#8B1A8B}.jcard.s-invoice{border-left-color:#A32D2D}
+.jcard.s-soa{border-left-color:#1a6641}.jcard.s-closed{border-left-color:#aaa}
 .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
-.badge-quote{background:#FAEEDA;color:#854F0B}
-.badge-customer_po{background:#E6F1FB;color:#185FA5}
-.badge-vendor_po{background:#F3E6F3;color:#8B1A8B}
-.badge-invoice{background:#FCEBEB;color:#A32D2D}
-.badge-soa{background:#EAF3DE;color:#1a6641}
-.badge-closed{background:#efefed;color:#666}
+.b-quote{background:#FAEEDA;color:#854F0B}.b-customer_po{background:#E6F1FB;color:#185FA5}
+.b-vendor_po{background:#F3E6F3;color:#8B1A8B}.b-invoice{background:#FCEBEB;color:#A32D2D}
+.b-soa{background:#EAF3DE;color:#1a6641}.b-closed{background:#efefed;color:#666}
 .overdue{color:#A32D2D;font-weight:600}
 .empty-state{text-align:center;padding:3rem;color:#aaa;font-size:13px;border:1px dashed #ddd;border-radius:12px}
-
-/* Detail view */
-.detail-header{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
-.detail-ref{font-size:22px;font-weight:700;letter-spacing:0.02em}
 .section-box{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
-.section-box h3{font-size:12px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.85rem}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:500px){.info-grid{grid-template-columns:1fr}}
-.info-row{display:flex;justify-content:space-between;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f0ede6;font-size:13px}
+.section-box h3{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.85rem}
+.info-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0ede6;font-size:13px}
 .info-row:last-child{border:none}
 .info-label{color:#888;flex-shrink:0;margin-right:10px}
 .info-val{font-weight:500;text-align:right}
-.vendor-list{display:flex;flex-direction:column;gap:6px}
-.vendor-tag{display:flex;align-items:center;gap:8px;background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;padding:8px 12px;font-size:13px}
-.vendor-tag button{margin-left:auto;font-size:11px;padding:2px 8px;border-color:#A32D2D;color:#A32D2D}
-
-/* Pipeline in detail */
-.pipeline-detail{display:flex;align-items:center;gap:0;overflow-x:auto;padding:2px 0;margin-bottom:1rem}
-.pd-step{display:flex;align-items:center;flex-shrink:0}
-.pd-btn{font-family:inherit;font-size:11px;padding:7px 14px;border:1px solid #ddd;background:#f9f9f7;cursor:pointer;color:#aaa;transition:all 0.12s;white-space:nowrap}
-.pd-btn:first-child{border-radius:8px 0 0 8px}
+.pipeline-wrap{overflow-x:auto;margin-bottom:1rem}
+.pipeline{display:inline-flex}
+.pd-btn{font-family:inherit;font-size:11px;padding:7px 12px;border:1px solid #ddd;background:#f9f9f7;cursor:pointer;color:#aaa;white-space:nowrap}
+.pd-btn:first-child{border-radius:8px 0 0 8px}.pd-btn:last-child{border-radius:0 8px 8px 0}
 .pd-btn.done{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
 .pd-btn.active{background:#185FA5;color:#fff;border-color:#185FA5;font-weight:600}
-.pd-btn.closed-active{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}
-.pd-arrow{font-size:10px;color:#ddd;padding:0 2px}
-
-/* Documents section */
-.doc-list{display:flex;flex-direction:column;gap:6px}
-.doc-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;font-size:13px}
-.doc-icon{font-size:16px;flex-shrink:0}
-.doc-name{font-weight:500;flex:1}
-.doc-date{font-size:11px;color:#aaa}
-.doc-actions{display:flex;gap:6px}
-
-/* Modal */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
+.pd-btn.closed-a{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}
+.pd-arr{font-size:10px;color:#ccc;padding:0 2px}
+.items-table{width:100%;border-collapse:collapse;font-size:13px}
+.items-table th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:6px 8px;border-bottom:2px solid #e0ddd6;background:#f9f9f7}
+.items-table td{padding:8px;border-bottom:1px solid #f0ede6;vertical-align:middle}
+.items-table .num{text-align:right}
+.total-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0ede6;font-size:13px}
+.total-row:last-child{border:none;font-weight:700;font-size:15px;padding-top:8px}
+.doc-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;margin-bottom:6px;font-size:13px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
 .modal-bg.show{display:flex}
-.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:540px;border:1px solid #e0ddd6;margin:auto}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:700px;border:1px solid #e0ddd6;margin:auto}
 .modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
-.field{margin-bottom:0.85rem}
-.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
-.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
+.msec{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.08em;margin:1.25rem 0 0.75rem;padding-top:1rem;border-top:1px solid #f0ede6}
+.field{margin-bottom:0.75rem}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#185FA5;background:#fff}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:480px){.field-row{grid-template-columns:1fr}}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+@media(max-width:500px){.fr2,.fr3{grid-template-columns:1fr}}
 .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
-
-/* Loading */
+.li-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+.li-table th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:4px 5px;border-bottom:1px solid #e0ddd6;background:#f9f9f7;white-space:nowrap}
+.li-table td{padding:3px 3px;vertical-align:middle}
+.li-table input{width:100%;padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;background:#fff}
+.li-table input:focus{outline:none;border-color:#185FA5}
+.li-amt{padding:5px 6px;background:#f9f9f7;border:1px solid #f0ede6;border-radius:6px;font-size:12px;font-weight:500;text-align:right;min-width:70px;display:block}
+.sdrop{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:200;max-height:200px;overflow-y:auto;margin-top:2px}
+.sdrop-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3}
+.sdrop-item:hover{background:#f5f5f3}
+.sdrop-item:last-child{border:none}
 .loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
 .loading-screen.hide{display:none}
 .spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-screen p{font-size:13px;color:#888}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
 </style>
@@ -144,398 +106,427 @@ button:hover{background:#f0f0ee}
     </div>
   </div>
 
-  <!-- JOBS LIST TAB -->
   <div class="panel active" id="tab-list">
     <div class="toolbar">
-      <input type="text" id="jobSearch" placeholder="Search by ref, customer, memo…" autocomplete="off" autocorrect="off">
+      <input type="text" id="jobSearch" placeholder="Search ref, customer, vessel, memo…" autocomplete="off" autocorrect="off">
       <button class="btn-primary" onclick="openNewJob()">+ New Job</button>
     </div>
-    <div class="filter-chips" id="statusChips">
-      <div class="chip active" onclick="setStatusFilter('all',this)">All</div>
-      <div class="chip" onclick="setStatusFilter('quote',this)">Quote</div>
-      <div class="chip" onclick="setStatusFilter('customer_po',this)">Customer PO</div>
-      <div class="chip" onclick="setStatusFilter('vendor_po',this)">Vendor PO</div>
-      <div class="chip" onclick="setStatusFilter('invoice',this)">Invoice</div>
-      <div class="chip" onclick="setStatusFilter('soa',this)">SOA</div>
-      <div class="chip" onclick="setStatusFilter('closed',this)">Closed</div>
+    <div class="filter-chips">
+      <div class="chip active" onclick="setFilter('all',this)">All</div>
+      <div class="chip" onclick="setFilter('quote',this)">Quote</div>
+      <div class="chip" onclick="setFilter('customer_po',this)">Customer PO</div>
+      <div class="chip" onclick="setFilter('vendor_po',this)">Vendor PO</div>
+      <div class="chip" onclick="setFilter('invoice',this)">Invoice</div>
+      <div class="chip" onclick="setFilter('soa',this)">SOA</div>
+      <div class="chip" onclick="setFilter('closed',this)">Closed</div>
     </div>
     <div class="job-list" id="jobList"></div>
   </div>
 
-  <!-- JOB DETAIL TAB -->
   <div class="panel" id="tab-detail">
     <div id="detailContent"></div>
   </div>
 </div>
 
-<!-- NEW / EDIT JOB MODAL -->
+<!-- JOB MODAL -->
 <div class="modal-bg" id="jobModal">
-  <div class="modal">
-    <h2 id="jobModalTitle">New Job</h2>
-    <div class="field-row">
-      <div class="field">
-        <label>Job Reference *</label>
-        <input type="text" id="j_ref" placeholder="e.g. 2603001" maxlength="7" inputmode="numeric">
-      </div>
-      <div class="field">
-        <label>Date</label>
-        <input type="date" id="j_date">
-      </div>
-    </div>
-    <div class="field">
-      <label>Customer *</label>
-      <input type="text" id="j_customer_search" placeholder="Search customer name…" autocomplete="off" autocorrect="off">
-      <div id="j_customer_dropdown" style="position:relative"></div>
-      <input type="hidden" id="j_customer_id">
-      <div id="j_customer_selected" style="display:none;margin-top:6px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:6px 10px;font-size:12px;color:#185FA5;display:flex;align-items:center;gap:8px">
-        <span id="j_customer_name" style="flex:1"></span>
-        <button onclick="clearCustomer()" style="font-size:11px;padding:2px 6px;border-color:#185FA5;color:#185FA5;background:transparent">✕</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Vendor(s)</label>
-      <input type="text" id="j_vendor_search" placeholder="Search vendor name…" autocomplete="off" autocorrect="off">
-      <div id="j_vendor_dropdown" style="position:relative"></div>
-      <div id="j_vendor_tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label>Job type</label>
-        <select id="j_type">
-          <option value="supply">Supply</option>
-          <option value="service">Service</option>
-          <option value="both">Service + Supply</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Currency</label>
-        <select id="j_currency">
-          <option value="SGD">SGD</option>
-          <option value="USD">USD</option>
-        </select>
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label>Quoted amount</label>
-        <input type="number" id="j_amount" min="0" step="0.01" placeholder="0.00">
-      </div>
-      <div class="field">
-        <label>ETA</label>
-        <input type="date" id="j_eta">
-      </div>
-    </div>
-    <div class="field">
-      <label>Memo / Description</label>
-      <textarea id="j_memo" rows="3" placeholder="Job description, scope of work, notes…"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button onclick="closeJobModal()">Cancel</button>
-      <button class="btn-primary" onclick="saveJob()">Save job</button>
-    </div>
+ <div class="modal">
+  <h2 id="jobModalTitle">New Job</h2>
+
+  <div class="msec" style="margin-top:0;padding-top:0;border:none">Job Info</div>
+  <div class="fr2">
+    <div class="field"><label>Job Reference *</label><input type="text" id="j_ref" placeholder="2603001" maxlength="8" inputmode="numeric"></div>
+    <div class="field"><label>Date</label><input type="date" id="j_date"></div>
   </div>
+  <div class="fr2">
+    <div class="field"><label>Job type</label><select id="j_type"><option value="supply">Supply</option><option value="service">Service</option><option value="both">Service + Supply</option></select></div>
+    <div class="field"><label>Currency</label><select id="j_currency"><option value="SGD">SGD</option><option value="USD">USD</option></select></div>
+  </div>
+
+  <div class="msec">Customer</div>
+  <div class="field">
+    <label>Customer *</label>
+    <div style="position:relative">
+      <input type="text" id="j_cust_search" placeholder="Search customer name…" autocomplete="off" autocorrect="off">
+      <div id="j_cust_drop" class="sdrop" style="display:none"></div>
+    </div>
+    <div id="j_cust_sel" style="display:none;margin-top:6px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:6px 10px;font-size:12px;color:#185FA5;align-items:center;gap:8px">
+      <span id="j_cust_name" style="flex:1"></span>
+      <button onclick="clearCust()" style="font-size:11px;padding:2px 6px;border-color:#185FA5;color:#185FA5;background:transparent">✕</button>
+    </div>
+    <input type="hidden" id="j_cust_id">
+  </div>
+  <div class="fr2">
+    <div class="field"><label>Attn (contact person)</label><input type="text" id="j_attn" placeholder="e.g. Juman Kang, Customer Service"></div>
+    <div class="field"><label>Your Ref (customer's ref)</label><input type="text" id="j_your_ref" placeholder="e.g. BWTS Service"></div>
+  </div>
+
+  <div class="msec">Vessel / Equipment</div>
+  <div class="fr2">
+    <div class="field"><label>Vessel name</label><input type="text" id="j_vessel" placeholder="e.g. CAPE AROLA"></div>
+    <div class="field"><label>Port</label><input type="text" id="j_port" placeholder="e.g. SINGAPORE"></div>
+  </div>
+  <div class="fr3">
+    <div class="field"><label>Equipment</label><input type="text" id="j_equip" placeholder="e.g. BWTS"></div>
+    <div class="field"><label>Make</label><input type="text" id="j_make" placeholder="e.g. HANLA"></div>
+    <div class="field"><label>Model</label><input type="text" id="j_model" placeholder="e.g. EG 2600"></div>
+  </div>
+  <div class="field"><label>Task</label><input type="text" id="j_task" placeholder="e.g. TROUBLESHOOTING"></div>
+
+  <div class="msec">Vendor(s)</div>
+  <div class="field">
+    <div style="position:relative">
+      <input type="text" id="j_vend_search" placeholder="Search vendor name…" autocomplete="off" autocorrect="off">
+      <div id="j_vend_drop" class="sdrop" style="display:none"></div>
+    </div>
+    <div id="j_vend_tags" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px"></div>
+  </div>
+
+  <div class="msec">Line Items</div>
+  <div style="overflow-x:auto">
+    <table class="li-table" id="liTable">
+      <thead><tr>
+        <th style="width:30px">#</th>
+        <th style="min-width:220px">Description</th>
+        <th style="width:52px">Qty</th>
+        <th style="width:58px">Unit</th>
+        <th style="width:88px;text-align:right">Unit Price</th>
+        <th style="width:88px;text-align:right">Amount</th>
+        <th style="width:28px"></th>
+      </tr></thead>
+      <tbody id="liBody"></tbody>
+    </table>
+  </div>
+  <button onclick="addLineItem()" style="font-size:12px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-bottom:0.75rem">+ Add line item</button>
+
+  <div class="msec">Charges</div>
+  <div class="fr2">
+    <div class="field"><label>Local Courier</label><select id="j_courier" onchange="toggleCharge('courier')"><option value="TBA">TBA</option><option value="nil">Nil</option><option value="amount">Enter amount</option></select></div>
+    <div class="field" id="j_courier_wrap" style="display:none"><label>Courier amount</label><input type="number" id="j_courier_amt" min="0" step="0.01" placeholder="0.00"></div>
+  </div>
+  <div class="fr2">
+    <div class="field"><label>Packing</label><select id="j_packing" onchange="toggleCharge('packing')"><option value="TBA">TBA</option><option value="nil">Nil</option><option value="amount">Enter amount</option></select></div>
+    <div class="field" id="j_packing_wrap" style="display:none"><label>Packing amount</label><input type="number" id="j_packing_amt" min="0" step="0.01" placeholder="0.00"></div>
+  </div>
+  <div class="fr2">
+    <div class="field"><label>Freight</label><select id="j_freight" onchange="toggleCharge('freight')"><option value="TBA">TBA</option><option value="nil">Nil</option><option value="amount">Enter amount</option></select></div>
+    <div class="field" id="j_freight_wrap" style="display:none"><label>Freight amount</label><input type="number" id="j_freight_amt" min="0" step="0.01" placeholder="0.00"></div>
+  </div>
+  <div class="fr2">
+    <div class="field"><label>Bank Fee</label><input type="number" id="j_bank_fee" min="0" step="0.01" placeholder="0.00" value="0"></div>
+    <div class="field"><label>GST</label><select id="j_gst"><option value="no">No GST</option><option value="9">GST 9%</option></select></div>
+  </div>
+
+  <div class="msec">Terms &amp; Conditions</div>
+  <div class="fr2">
+    <div class="field"><label>Delivery time</label><input type="text" id="j_del_time" placeholder="e.g. To be arranged and agreed"></div>
+    <div class="field"><label>Delivery terms</label><input type="text" id="j_del_terms" placeholder="e.g. Ex-Work Singapore"></div>
+  </div>
+  <div class="fr2">
+    <div class="field"><label>Payment</label><select id="j_pay_terms"><option value="Advance">Advance</option><option value="7 Days Nett">7 Days Nett</option><option value="30 Days Nett">30 Days Nett</option></select></div>
+    <div class="field"><label>Validity till</label><input type="date" id="j_validity"></div>
+  </div>
+  <div class="fr2">
+    <div class="field"><label>ETA</label><input type="date" id="j_eta"></div>
+    <div class="field"><label>Service engineer / Prepared by</label><input type="text" id="j_engineer" placeholder="e.g. Thamil, +65-94526472"></div>
+  </div>
+  <div class="field"><label>Internal notes</label><textarea id="j_memo" rows="2" placeholder="Internal notes (not printed)…"></textarea></div>
+
+  <div class="modal-footer">
+    <button onclick="closeJobModal()">Cancel</button>
+    <button class="btn-primary" onclick="saveJob()">Save job</button>
+  </div>
+ </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, push, update, remove, get, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, push, update, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
-const fbApp=initializeApp(firebaseConfig);
-const db=getDatabase(fbApp);
-const auth=getAuth(fbApp);
+const db=getDatabase(initializeApp({apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"}));
+const auth=getAuth();
 
-const STATUS_LABELS={quote:'Quote Sent',customer_po:'Customer PO',vendor_po:'Vendor PO',invoice:'Invoice Sent',soa:'SOA Sent',closed:'Closed'};
-const STATUS_ORDER=['quote','customer_po','vendor_po','invoice','soa','closed'];
+const SL={quote:'Quote',customer_po:'Customer PO',vendor_po:'Vendor PO',invoice:'Invoice Sent',soa:'SOA Sent',closed:'Closed'};
+const SO=['quote','customer_po','vendor_po','invoice','soa','closed'];
+let jobs={},contacts={},currentJobId=null,editJobId=null;
+let statusFilter='all',searchQ='',selectedVendors=[],liCount=0;
 
-let jobs={}, contacts={}, currentJobId=null, editJobId=null;
-let statusFilter='all', searchQ='';
-let selectedVendors=[]; // [{id, name}]
-let isManager=false;
-
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-
-// ── Session check ─────────────────────────────────────────────
 const rcStaff=sessionStorage.getItem('rc_staff');
 const rcMgr=sessionStorage.getItem('rc_manager');
 if(!rcStaff&&!rcMgr){window.location.href='https://aarkoh.github.io/Raycontrol/';}
-if(rcMgr==='1'){
-  isManager=true;
-  document.getElementById('hubLink').href='https://aarkoh.github.io/Raycontrol/mgr-7560e738/';
-  document.getElementById('hubLink').textContent='⌂ Dashboard';
-}
+if(rcMgr==='1'){const hl=document.getElementById('hubLink');hl.href='https://aarkoh.github.io/Raycontrol/mgr-7560e738/';hl.textContent='⌂ Dashboard';}
 
-// ── Tabs ──────────────────────────────────────────────────────
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function fmt(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+function age(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d.length===10?d+'T00:00:00':d))/864e5);}
+function chargeLabel(val,amtField){if(val==='TBA')return'TBA';if(val==='nil')return'Nil';const a=parseFloat(document.getElementById(amtField)?.value)||0;return a>0?fmt(a):'0.00';}
+
 window.switchTab=function(tab,el){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('tab-'+tab).classList.add('active');
 };
+window.setFilter=function(f,el){statusFilter=f;document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderList();};
 
-// ── Filter ────────────────────────────────────────────────────
-window.setStatusFilter=function(f,el){
-  statusFilter=f;
-  document.querySelectorAll('.filter-chips .chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  renderList();
-};
-
-// ── Job list ─────────────────────────────────────────────────
 function renderList(){
   const q=searchQ.toLowerCase();
   const list=Object.entries(jobs).filter(([,j])=>{
-    if(statusFilter!=='all'&&j.status!==statusFilter) return false;
-    if(q&&!j.ref?.toLowerCase().includes(q)&&!j.customerName?.toLowerCase().includes(q)&&!j.memo?.toLowerCase().includes(q)) return false;
+    if(statusFilter!=='all'&&j.status!==statusFilter)return false;
+    if(q&&![j.ref,j.customerName,j.vessel,j.equip,j.memo].filter(Boolean).some(x=>x.toLowerCase().includes(q)))return false;
     return true;
-  }).sort((a,b)=>b[1].createdAt?.localeCompare(a[1].createdAt||'')||0);
-
+  }).sort((a,b)=>(b[1].createdAt||'').localeCompare(a[1].createdAt||''));
   const el=document.getElementById('jobList');
-  if(!list.length){
-    el.innerHTML='<div class="empty-state">No jobs found.<br>Tap + New Job to create one.</div>';
-    return;
-  }
+  if(!list.length){el.innerHTML='<div class="empty-state">No jobs found.<br>Tap + New Job to create one.</div>';return;}
   el.innerHTML=list.map(([id,j])=>{
-    const age=daysSince(j.date||j.createdAt);
-    const ageStr=age===0?'Today':age===1?'Yesterday':age+' days ago';
-    const ageClass=age>30&&j.status!=='closed'?' overdue':'';
-    const statusLabel=STATUS_LABELS[j.status]||j.status;
-    const amt=j.amount?(j.currency||'SGD')+' '+(parseFloat(j.amount)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
-    return `<div class="jcard status-${j.status||'quote'}" onclick="openDetail('${id}')">
-      <div class="jcard-top">
+    const a=age(j.date||j.createdAt);
+    const aStr=a===0?'Today':a===1?'Yesterday':a+' days ago';
+    const aC=a>30&&j.status!=='closed'?' overdue':'';
+    const sub=(j.lineItems||[]).reduce((s,i)=>s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0),0);
+    const amt=sub>0?(j.currency||'SGD')+' '+fmt(sub):'—';
+    return `<div class="jcard s-${j.status||'quote'}" onclick="openDetail('${id}')">
+      <div style="display:flex;align-items:flex-start;gap:10px">
         <div style="flex:1">
-          <div class="jref">${j.ref||'—'}</div>
-          <div class="jcustomer">${j.customerName||'No customer'}</div>
-          <div class="jmeta">
-            <span>${j.type==='both'?'Service + Supply':j.type==='service'?'Service':'Supply'}</span>
-            ${j.eta?'<span>ETA: '+formatDate(j.eta)+'</span>':''}
-            ${j.memo?'<span style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+j.memo+'</span>':''}
+          <div style="font-size:17px;font-weight:700">${j.ref||'—'}</div>
+          <div style="font-size:13px;color:#555;margin-top:1px">${j.customerName||'No customer'}${j.vessel?' <span style="color:#aaa">· '+j.vessel+'</span>':''}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+            ${j.equip||j.make?'<span>'+(j.equip||'')+(j.make?' / '+j.make:'')+(j.model?' '+j.model:'')+'</span>':''}
+            ${j.task?'<span>'+j.task+'</span>':''}
+            ${j.eta?'<span>ETA: '+fmtD(j.eta)+'</span>':''}
           </div>
-          <div class="jbadges">
-            <span class="badge badge-${j.status||'quote'}">${statusLabel}</span>
-            ${j.vendorNames&&j.vendorNames.length?j.vendorNames.map(v=>`<span class="badge" style="background:#f9f9f7;color:#666">${v}</span>`).join(''):''}
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+            <span class="badge b-${j.status||'quote'}">${SL[j.status]||j.status}</span>
+            ${(j.vendorNames||[]).map(v=>`<span class="badge" style="background:#f9f9f7;color:#666">${v}</span>`).join('')}
           </div>
         </div>
-        <div class="jright">
-          <div class="jamount">${amt}</div>
-          <div class="jage${ageClass}">${ageStr}</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:15px;font-weight:600">${amt}</div>
+          <div style="font-size:11px;color:#aaa" class="${aC}">${aStr}</div>
         </div>
       </div>
     </div>`;
   }).join('');
 }
 
-function daysSince(dateStr){
-  if(!dateStr) return 0;
-  const d=new Date(dateStr.length===10?dateStr+'T00:00:00':dateStr);
-  return Math.floor((Date.now()-d.getTime())/(1000*60*60*24));
-}
-function formatDate(d){
-  if(!d) return '—';
-  const dt=new Date(d+'T00:00:00');
-  return dt.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
-}
-
-// ── Job detail ────────────────────────────────────────────────
 window.openDetail=function(id){
   currentJobId=id;
   const j=jobs[id]||{};
-  const statusIdx=STATUS_ORDER.indexOf(j.status||'quote');
+  const si=SO.indexOf(j.status||'quote');
+  const items=j.lineItems||[];
+  const sub=items.reduce((s,i)=>s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0),0);
+  const gstAmt=j.gst==='9'?sub*0.09:0;
+  const bankFee=parseFloat(j.bankFee)||0;
+  const total=sub+gstAmt+bankFee;
+  const cV=v=>v==='TBA'?'TBA':v==='nil'?'Nil':fmt(parseFloat(j[v+'Amt'])||0);
 
-  const pipelineHtml=STATUS_ORDER.map((s,i)=>{
-    let cls='';
-    if(i<statusIdx) cls='done';
-    else if(i===statusIdx) cls=s==='closed'?'closed-active':'active';
-    return `<button class="pd-btn ${cls}" onclick="setJobStatus('${id}','${s}')">${STATUS_LABELS[s]}</button>${i<STATUS_ORDER.length-1?'<span class="pd-arrow">›</span>':''}`;
+  const pipe=SO.map((s,i)=>{
+    let cls=i<si?'done':i===si?(s==='closed'?'closed-a':'active'):'';
+    return `<button class="pd-btn ${cls}" onclick="setStatus('${id}','${s}')">${SL[s]}</button>${i<SO.length-1?'<span class="pd-arr">›</span>':''}`;
   }).join('');
 
-  const vendorsHtml=(j.vendorNames||[]).length
-    ? j.vendorNames.map((v,i)=>`<div class="vendor-tag"><span>${v}</span></div>`).join('')
-    : '<div style="font-size:13px;color:#aaa">No vendors assigned</div>';
-
-  const amt=j.amount?(j.currency||'SGD')+' '+(parseFloat(j.amount)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
-  const age=daysSince(j.date||j.createdAt);
-  const ageStr=age===0?'Today':age===1?'Yesterday':age+' days ago';
+  const iRows=items.length?items.map((it,i)=>`<tr>
+    <td style="text-align:center;color:#888;font-size:12px">${i+1}</td>
+    <td>${it.desc||'—'}</td><td class="num">${it.qty||''}</td>
+    <td>${it.unit||''}</td><td class="num">${fmt(it.unitPrice)}</td>
+    <td class="num" style="font-weight:500">${fmt((parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0))}</td>
+  </tr>`).join(''):'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1rem;font-size:12px">No line items</td></tr>';
 
   document.getElementById('detailContent').innerHTML=`
-    <div class="detail-header">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
       <button onclick="backToList()" style="font-size:12px;padding:5px 10px">← Back</button>
-      <div class="detail-ref" style="flex:1">${j.ref||'—'}</div>
-      <button onclick="openEditJob('${id}')" style="font-size:12px;border-color:#185FA5;color:#185FA5">Edit</button>
+      <div style="font-size:22px;font-weight:700;flex:1">${j.ref||'—'}</div>
+      <button onclick="openEditJob('${id}')" class="btn-blue btn-sm">Edit</button>
       <button onclick="deleteJob('${id}')" class="btn-danger btn-sm">Delete</button>
     </div>
-
-    <div style="overflow-x:auto;margin-bottom:1rem">
-      <div class="pipeline-detail">${pipelineHtml}</div>
-    </div>
-
+    <div class="pipeline-wrap"><div class="pipeline">${pipe}</div></div>
     <div class="section-box">
-      <h3>Job details</h3>
-      <div class="info-row"><span class="info-label">Reference</span><span class="info-val">${j.ref||'—'}</span></div>
-      <div class="info-row"><span class="info-label">Date</span><span class="info-val">${formatDate(j.date)}</span></div>
-      <div class="info-row"><span class="info-label">Type</span><span class="info-val">${j.type==='both'?'Service + Supply':j.type==='service'?'Service':'Supply'}</span></div>
-      <div class="info-row"><span class="info-label">Currency</span><span class="info-val">${j.currency||'SGD'}</span></div>
-      <div class="info-row"><span class="info-label">Quoted amount</span><span class="info-val">${amt}</span></div>
-      <div class="info-row"><span class="info-label">ETA</span><span class="info-val">${formatDate(j.eta)}</span></div>
-      <div class="info-row"><span class="info-label">Age</span><span class="info-val">${ageStr}</span></div>
-      ${j.memo?`<div class="info-row"><span class="info-label">Memo</span><span class="info-val" style="max-width:60%;text-align:right">${j.memo}</span></div>`:''}
+      <h3>Job Details</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">
+        <div>
+          <div class="info-row"><span class="info-label">Reference</span><span class="info-val">${j.ref||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Date</span><span class="info-val">${fmtD(j.date)}</span></div>
+          <div class="info-row"><span class="info-label">Type</span><span class="info-val">${j.type==='both'?'Service + Supply':j.type==='service'?'Service':'Supply'}</span></div>
+          <div class="info-row"><span class="info-label">Currency</span><span class="info-val">${j.currency||'SGD'}</span></div>
+          <div class="info-row"><span class="info-label">ETA</span><span class="info-val">${fmtD(j.eta)}</span></div>
+        </div>
+        <div>
+          <div class="info-row"><span class="info-label">Vessel</span><span class="info-val">${j.vessel||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Port</span><span class="info-val">${j.port||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Equipment</span><span class="info-val">${j.equip||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Make / Model</span><span class="info-val">${[j.make,j.model].filter(Boolean).join(' / ')||'—'}</span></div>
+          <div class="info-row"><span class="info-label">Task</span><span class="info-val">${j.task||'—'}</span></div>
+        </div>
+      </div>
+      <div class="info-row"><span class="info-label">Service Engineer</span><span class="info-val">${j.engineer||'—'}</span></div>
+      ${j.memo?`<div class="info-row"><span class="info-label">Notes</span><span class="info-val">${j.memo}</span></div>`:''}
       <div class="info-row"><span class="info-label">Created by</span><span class="info-val">${j.createdBy||'—'}</span></div>
     </div>
-
     <div class="section-box">
       <h3>Customer</h3>
       <div class="info-row"><span class="info-label">Company</span><span class="info-val">${j.customerName||'—'}</span></div>
+      ${j.attn?`<div class="info-row"><span class="info-label">Attn</span><span class="info-val">${j.attn}</span></div>`:''}
+      ${j.yourRef?`<div class="info-row"><span class="info-label">Your Ref</span><span class="info-val">${j.yourRef}</span></div>`:''}
     </div>
-
+    ${(j.vendorNames||[]).length?`<div class="section-box"><h3>Vendors</h3>${(j.vendorNames||[]).map(v=>`<div class="info-row"><span class="info-label">Vendor</span><span class="info-val">${v}</span></div>`).join('')}</div>`:''}
     <div class="section-box">
-      <h3>Vendors</h3>
-      <div class="vendor-list">${vendorsHtml}</div>
+      <h3>Line Items</h3>
+      <div style="overflow-x:auto">
+        <table class="items-table">
+          <thead><tr><th style="width:32px">#</th><th>Description</th><th class="num" style="width:60px">Qty</th><th style="width:60px">Unit</th><th class="num" style="width:100px">Unit Price</th><th class="num" style="width:100px">Amount</th></tr></thead>
+          <tbody>${iRows}</tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+        <div style="min-width:260px">
+          <div class="total-row"><span>Local Courier</span><span>${j.courier==='TBA'?'TBA':j.courier==='nil'?'Nil':fmt(parseFloat(j.courierAmt)||0)}</span></div>
+          <div class="total-row"><span>Packing</span><span>${j.packing==='TBA'?'TBA':j.packing==='nil'?'Nil':fmt(parseFloat(j.packingAmt)||0)}</span></div>
+          <div class="total-row"><span>Freight</span><span>${j.freight==='TBA'?'TBA':j.freight==='nil'?'Nil':fmt(parseFloat(j.freightAmt)||0)}</span></div>
+          <div class="total-row"><span>Sub Total</span><span>${fmt(sub)}</span></div>
+          ${gstAmt>0?`<div class="total-row"><span>GST (9%)</span><span>${fmt(gstAmt)}</span></div>`:`<div class="total-row"><span style="color:#888;font-size:12px">GSTax not included if applicable</span><span></span></div>`}
+          <div class="total-row"><span>Bank Fee</span><span>${fmt(bankFee)}</span></div>
+          <div class="total-row" style="font-size:15px;font-weight:700"><span>TOTAL ${j.currency||'SGD'}</span><span>${fmt(total)}</span></div>
+        </div>
+      </div>
     </div>
-
+    <div class="section-box">
+      <h3>Terms &amp; Conditions</h3>
+      <div class="info-row"><span class="info-label">Delivery time</span><span class="info-val">${j.delTime||'—'}</span></div>
+      <div class="info-row"><span class="info-label">Delivery terms</span><span class="info-val">${j.delTerms||'—'}</span></div>
+      <div class="info-row"><span class="info-label">Payment</span><span class="info-val">${j.payTerms||'—'}</span></div>
+      <div class="info-row"><span class="info-label">Validity till</span><span class="info-val">${fmtD(j.validity)}</span></div>
+    </div>
     <div class="section-box">
       <h3>Documents</h3>
-      <div class="doc-list">
-        <div class="doc-item"><span class="doc-icon">📄</span><span class="doc-name">Quotation ${j.ref||''}</span><span class="doc-date">Phase 2</span><div class="doc-actions"><button class="btn-sm" disabled style="opacity:0.4">Create</button></div></div>
-        <div class="doc-item"><span class="doc-icon">📋</span><span class="doc-name">Vendor PO ${j.ref||''}</span><span class="doc-date">Phase 3</span><div class="doc-actions"><button class="btn-sm" disabled style="opacity:0.4">Create</button></div></div>
-        <div class="doc-item"><span class="doc-icon">🧾</span><span class="doc-name">Invoice ${j.ref||''}</span><span class="doc-date">Phase 4</span><div class="doc-actions"><button class="btn-sm" disabled style="opacity:0.4">Create</button></div></div>
-        <div class="doc-item"><span class="doc-icon">📊</span><span class="doc-name">SOA ${j.ref||''}</span><span class="doc-date">Phase 5</span><div class="doc-actions"><button class="btn-sm" disabled style="opacity:0.4">Create</button></div></div>
-        <div class="doc-item"><span class="doc-icon">🗒️</span><span class="doc-name">CIPL ${j.ref||''}</span><span class="doc-date">Phase 5</span><div class="doc-actions"><button class="btn-sm" disabled style="opacity:0.4">Create</button></div></div>
-      </div>
+      <div class="doc-item"><span>📄</span><span style="font-weight:500;flex:1">Quotation ${j.ref||''}</span><span style="font-size:11px;color:#3B6D11;font-weight:600">Phase 2 — PDF coming soon</span></div>
+      <div class="doc-item"><span>📋</span><span style="font-weight:500;flex:1">Vendor PO ${j.ref||''}</span><span style="font-size:11px;color:#aaa">Phase 3</span></div>
+      <div class="doc-item"><span>🧾</span><span style="font-weight:500;flex:1">Invoice ${j.ref||''}</span><span style="font-size:11px;color:#aaa">Phase 4</span></div>
+      <div class="doc-item"><span>📊</span><span style="font-weight:500;flex:1">SOA ${j.ref||''}</span><span style="font-size:11px;color:#aaa">Phase 5</span></div>
+      <div class="doc-item"><span>🗒️</span><span style="font-weight:500;flex:1">CIPL ${j.ref||''}</span><span style="font-size:11px;color:#aaa">Phase 5</span></div>
     </div>`;
 
   document.getElementById('detailTab').style.display='';
   window.switchTab('detail',document.getElementById('detailTab'));
 };
 
-window.backToList=function(){
-  document.getElementById('detailTab').style.display='none';
-  window.switchTab('list',document.querySelectorAll('.tab')[0]);
-  currentJobId=null;
+window.backToList=function(){document.getElementById('detailTab').style.display='none';window.switchTab('list',document.querySelectorAll('.tab')[0]);currentJobId=null;};
+window.setStatus=async function(id,s){try{await update(ref(db,'jobs/'+id),{status:s,updatedAt:new Date().toISOString()});toast('Status → '+SL[s]);openDetail(id);}catch(e){toast('Error: '+e.message);}};
+window.deleteJob=async function(id){if(!confirm('Delete this job?'))return;try{await remove(ref(db,'jobs/'+id));toast('Deleted');backToList();}catch(e){toast('Error: '+e.message);}};
+
+// ── Line items ────────────────────────────────────────────────
+window.addLineItem=function(desc='',qty='',unit='JOB',price=''){
+  liCount++;const id=liCount;
+  const tr=document.createElement('tr');tr.id='li_'+id;
+  tr.innerHTML=`
+    <td style="text-align:center;color:#888;font-size:11px;padding:3px 5px">${id}</td>
+    <td><input type="text" value="${desc.replace(/"/g,'&quot;')}" placeholder="Description of work / item" id="lid_${id}" style="min-width:200px"></td>
+    <td><input type="number" value="${qty}" placeholder="1" min="0" step="0.01" id="liq_${id}" oninput="calcLI(${id})" style="width:48px;text-align:right"></td>
+    <td><input type="text" value="${unit}" id="liu_${id}" style="width:52px"></td>
+    <td><input type="number" value="${price}" placeholder="0.00" min="0" step="0.01" id="lip_${id}" oninput="calcLI(${id})" style="width:82px;text-align:right"></td>
+    <td><span class="li-amt" id="lia_${id}">0.00</span></td>
+    <td style="text-align:center"><button onclick="removeLI(${id})" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>`;
+  document.getElementById('liBody').appendChild(tr);
+  if(qty&&price)calcLI(id);
+};
+window.calcLI=function(id){
+  const q=parseFloat(document.getElementById('liq_'+id)?.value)||0;
+  const p=parseFloat(document.getElementById('lip_'+id)?.value)||0;
+  const el=document.getElementById('lia_'+id);if(el)el.textContent=fmt(q*p);
+};
+window.removeLI=function(id){const tr=document.getElementById('li_'+id);if(tr)tr.remove();};
+function getLIs(){
+  return[...document.querySelectorAll('#liBody tr')].map(tr=>{
+    const id=tr.id.replace('li_','');
+    return{desc:document.getElementById('lid_'+id)?.value.trim()||'',qty:document.getElementById('liq_'+id)?.value||'',unit:document.getElementById('liu_'+id)?.value||'',unitPrice:document.getElementById('lip_'+id)?.value||''};
+  }).filter(i=>i.desc);
+}
+
+// ── Charge toggles ────────────────────────────────────────────
+window.toggleCharge=function(f){
+  const v=document.getElementById('j_'+f).value;
+  document.getElementById('j_'+f+'_wrap').style.display=v==='amount'?'block':'none';
 };
 
-window.setJobStatus=async function(id,status){
-  try{
-    await update(ref(db,'jobs/'+id),{status,updatedAt:new Date().toISOString()});
-    toast('Status → '+STATUS_LABELS[status]);
-    openDetail(id);
-  }catch(e){toast('Error: '+e.message);}
-};
-
-window.deleteJob=async function(id){
-  if(!confirm('Delete this job? This cannot be undone.')) return;
-  try{await remove(ref(db,'jobs/'+id));toast('Job deleted');backToList();}
-  catch(e){toast('Error: '+e.message);}
-};
-
-// ── Customer/Vendor search ────────────────────────────────────
-function makeDropdown(inputId, dropId, onSelect, filterFn=null){
-  const inp=document.getElementById(inputId);
+// ── Customer / Vendor search ──────────────────────────────────
+function setupSearch(inpId,dropId,filterFn,onSel){
+  const inp=document.getElementById(inpId);
   const drop=document.getElementById(dropId);
   let timer;
   inp.addEventListener('input',()=>{
     clearTimeout(timer);
     timer=setTimeout(()=>{
       const q=inp.value.toLowerCase().trim();
-      if(!q){drop.innerHTML='';return;}
-      const matches=Object.entries(contacts).filter(([,c])=>{
-        const name=(c.company||c.name||'').toLowerCase();
-        if(!name.includes(q)) return false;
-        if(filterFn&&!filterFn(c)) return false;
-        return true;
-      }).slice(0,8);
-      if(!matches.length){drop.innerHTML='<div style="padding:8px;font-size:12px;color:#aaa;background:#fff;border:1px solid #ddd;border-radius:8px;margin-top:4px">No matches</div>';return;}
-      drop.innerHTML=`<div style="background:#fff;border:1px solid #ddd;border-radius:8px;margin-top:4px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1)">`+
-        matches.map(([id,c])=>`<div onclick="window._contactSelect('${inputId}','${id}','${(c.company||c.name||'').replace(/'/g,"\\'")}','${dropId}')" style="padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f0f0ee" onmouseover="this.style.background='#f5f5f3'" onmouseout="this.style.background=''">${c.company||c.name}</div>`).join('')+`</div>`;
+      if(!q){drop.style.display='none';return;}
+      const m=Object.entries(contacts).filter(([,c])=>filterFn(c)&&(c.company||c.name||'').toLowerCase().includes(q)).slice(0,8);
+      if(!m.length){drop.style.display='none';return;}
+      drop.innerHTML=m.map(([id,c])=>`<div class="sdrop-item" data-id="${id}" data-name="${(c.company||c.name||'').replace(/"/g,'&quot;')}">${c.company||c.name}</div>`).join('');
+      drop.style.display='block';
+      drop.querySelectorAll('.sdrop-item').forEach(el=>el.addEventListener('click',()=>{onSel(el.dataset.id,el.dataset.name);inp.value='';drop.style.display='none';}));
     },200);
   });
+  document.addEventListener('click',e=>{if(!inp.contains(e.target)&&!drop.contains(e.target))drop.style.display='none';});
 }
-
-window._contactSelect=function(inputId, id, name, dropId){
-  document.getElementById(dropId).innerHTML='';
-  if(inputId==='j_customer_search'){
-    document.getElementById('j_customer_id').value=id;
-    document.getElementById('j_customer_name').textContent=name;
-    document.getElementById('j_customer_selected').style.display='flex';
-    document.getElementById('j_customer_search').style.display='none';
-  } else if(inputId==='j_vendor_search'){
-    // Add to vendor list if not already there
-    if(!selectedVendors.find(v=>v.id===id)){
-      selectedVendors.push({id,name});
-      renderVendorTags();
-    }
-    document.getElementById('j_vendor_search').value='';
-    document.getElementById('j_vendor_dropdown').innerHTML='';
-  }
-};
-
-window.clearCustomer=function(){
-  document.getElementById('j_customer_id').value='';
-  document.getElementById('j_customer_selected').style.display='none';
-  document.getElementById('j_customer_search').style.display='';
-  document.getElementById('j_customer_search').value='';
-};
-
 function renderVendorTags(){
-  document.getElementById('j_vendor_tags').innerHTML=selectedVendors.map((v,i)=>
-    `<div style="display:flex;align-items:center;gap:6px;background:#f3e6f3;border:1px solid #d4b8d4;border-radius:20px;padding:3px 10px;font-size:12px;color:#8B1A8B">
-      ${v.name}
-      <span onclick="removeVendor(${i})" style="cursor:pointer;color:#8B1A8B;font-weight:700">✕</span>
-    </div>`
-  ).join('');
+  document.getElementById('j_vend_tags').innerHTML=selectedVendors.map((v,i)=>
+    `<div style="display:flex;align-items:center;gap:5px;background:#F3E6F3;border:1px solid #d4b8d4;border-radius:20px;padding:3px 10px;font-size:12px;color:#8B1A8B">${v.name}<span onclick="window.removeVendor(${i})" style="cursor:pointer;font-weight:700">✕</span></div>`).join('');
+}
+window.removeVendor=function(i){selectedVendors.splice(i,1);renderVendorTags();};
+window.clearCust=function(){document.getElementById('j_cust_id').value='';document.getElementById('j_cust_sel').style.display='none';document.getElementById('j_cust_search').style.display='';document.getElementById('j_cust_search').value='';};
+
+function resetModal(){
+  selectedVendors=[];liCount=0;
+  document.getElementById('liBody').innerHTML='';
+  const fields=['j_ref','j_eta','j_validity','j_attn','j_your_ref','j_vessel','j_port','j_equip','j_make','j_model','j_task','j_memo','j_engineer','j_del_time','j_del_terms','j_courier_amt','j_packing_amt','j_freight_amt'];
+  fields.forEach(f=>{const el=document.getElementById(f);if(el)el.value='';});
+  document.getElementById('j_type').value='supply';
+  document.getElementById('j_currency').value='SGD';
+  document.getElementById('j_courier').value='TBA';
+  document.getElementById('j_packing').value='TBA';
+  document.getElementById('j_freight').value='TBA';
+  document.getElementById('j_bank_fee').value='0';
+  document.getElementById('j_gst').value='no';
+  document.getElementById('j_pay_terms').value='30 Days Nett';
+  ['courier','packing','freight'].forEach(f=>document.getElementById('j_'+f+'_wrap').style.display='none');
+  clearCust();renderVendorTags();
 }
 
-window.removeVendor=function(i){selectedVendors.splice(i,1);renderVendorTags();};
-
-// ── New / Edit job modal ──────────────────────────────────────
 window.openNewJob=function(){
   editJobId=null;
-  selectedVendors=[];
   document.getElementById('jobModalTitle').textContent='New Job';
-  // Auto-generate ref from today
+  resetModal();
   const now=new Date();
   const yy=String(now.getFullYear()).slice(2);
   const mm=String(now.getMonth()+1).padStart(2,'0');
   const existing=Object.values(jobs).filter(j=>j.ref&&j.ref.startsWith(yy+mm));
-  const next=String(existing.length+1).padStart(3,'0');
-  document.getElementById('j_ref').value=yy+mm+next;
+  document.getElementById('j_ref').value=yy+mm+String(existing.length+1).padStart(3,'0');
   document.getElementById('j_date').value=now.toISOString().slice(0,10);
-  document.getElementById('j_eta').value='';
-  document.getElementById('j_amount').value='';
-  document.getElementById('j_memo').value='';
-  document.getElementById('j_type').value='supply';
-  document.getElementById('j_currency').value='SGD';
-  clearCustomer();
-  renderVendorTags();
-  document.getElementById('j_customer_dropdown').innerHTML='';
-  document.getElementById('j_vendor_dropdown').innerHTML='';
+  addLineItem();
   document.getElementById('jobModal').classList.add('show');
 };
 
 window.openEditJob=function(id){
   editJobId=id;
   const j=jobs[id]||{};
-  selectedVendors=(j.vendors||[]).map((vid,i)=>({id:vid,name:(j.vendorNames||[])[i]||vid}));
   document.getElementById('jobModalTitle').textContent='Edit Job';
-  document.getElementById('j_ref').value=j.ref||'';
-  document.getElementById('j_date').value=j.date||'';
-  document.getElementById('j_eta').value=j.eta||'';
-  document.getElementById('j_amount').value=j.amount||'';
-  document.getElementById('j_memo').value=j.memo||'';
+  resetModal();
+  selectedVendors=(j.vendors||[]).map((vid,i)=>({id:vid,name:(j.vendorNames||[])[i]||vid}));
+  const sv={j_ref:j.ref,j_date:j.date,j_eta:j.eta,j_validity:j.validity,j_attn:j.attn,j_your_ref:j.yourRef,j_vessel:j.vessel,j_port:j.port,j_equip:j.equip,j_make:j.make,j_model:j.model,j_task:j.task,j_memo:j.memo,j_engineer:j.engineer,j_del_time:j.delTime,j_del_terms:j.delTerms,j_bank_fee:j.bankFee||'0',j_courier_amt:j.courierAmt,j_packing_amt:j.packingAmt,j_freight_amt:j.freightAmt};
+  Object.entries(sv).forEach(([k,v])=>{const el=document.getElementById(k);if(el&&v)el.value=v;});
   document.getElementById('j_type').value=j.type||'supply';
   document.getElementById('j_currency').value=j.currency||'SGD';
-  // Customer
-  if(j.customerId&&j.customerName){
-    document.getElementById('j_customer_id').value=j.customerId;
-    document.getElementById('j_customer_name').textContent=j.customerName;
-    document.getElementById('j_customer_selected').style.display='flex';
-    document.getElementById('j_customer_search').style.display='none';
-  } else {clearCustomer();}
+  document.getElementById('j_courier').value=j.courier||'TBA';
+  document.getElementById('j_packing').value=j.packing||'TBA';
+  document.getElementById('j_freight').value=j.freight||'TBA';
+  document.getElementById('j_gst').value=j.gst||'no';
+  document.getElementById('j_pay_terms').value=j.payTerms||'30 Days Nett';
+  ['courier','packing','freight'].forEach(f=>{document.getElementById('j_'+f+'_wrap').style.display=j[f]==='amount'?'block':'none';});
+  if(j.customerId&&j.customerName){document.getElementById('j_cust_id').value=j.customerId;document.getElementById('j_cust_name').textContent=j.customerName;document.getElementById('j_cust_sel').style.display='flex';document.getElementById('j_cust_search').style.display='none';}
+  (j.lineItems||[]).forEach(it=>addLineItem(it.desc,it.qty,it.unit,it.unitPrice));
+  if(!(j.lineItems||[]).length)addLineItem();
   renderVendorTags();
-  document.getElementById('j_customer_dropdown').innerHTML='';
-  document.getElementById('j_vendor_dropdown').innerHTML='';
   document.getElementById('jobModal').classList.add('show');
 };
 
@@ -543,84 +534,59 @@ window.closeJobModal=function(){document.getElementById('jobModal').classList.re
 
 window.saveJob=async function(){
   const jref=document.getElementById('j_ref').value.trim();
-  if(!jref){toast('Job reference is required');return;}
-  const customerId=document.getElementById('j_customer_id').value;
-  const customerName=document.getElementById('j_customer_name').textContent;
-  if(!customerId){toast('Please select a customer');return;}
+  if(!jref){toast('Job reference required');return;}
+  const custId=document.getElementById('j_cust_id').value;
+  if(!custId){toast('Please select a customer');return;}
+  const custName=document.getElementById('j_cust_name').textContent.trim();
+  const lineItems=getLIs();
+  const g=id=>document.getElementById(id)?.value.trim()||'';
 
   const data={
-    ref:jref,
-    date:document.getElementById('j_date').value,
-    customerId,customerName,
-    vendors:selectedVendors.map(v=>v.id),
-    vendorNames:selectedVendors.map(v=>v.name),
-    type:document.getElementById('j_type').value,
-    currency:document.getElementById('j_currency').value,
-    amount:parseFloat(document.getElementById('j_amount').value)||0,
-    eta:document.getElementById('j_eta').value,
-    memo:document.getElementById('j_memo').value.trim(),
+    ref:jref,date:g('j_date'),customerId:custId,customerName:custName,
+    attn:g('j_attn'),yourRef:g('j_your_ref'),
+    vessel:g('j_vessel'),port:g('j_port'),equip:g('j_equip'),make:g('j_make'),model:g('j_model'),task:g('j_task'),
+    vendors:selectedVendors.map(v=>v.id),vendorNames:selectedVendors.map(v=>v.name),
+    type:document.getElementById('j_type').value,currency:document.getElementById('j_currency').value,
+    eta:g('j_eta'),validity:g('j_validity'),memo:g('j_memo'),engineer:g('j_engineer'),
+    lineItems,
+    courier:document.getElementById('j_courier').value,courierAmt:g('j_courier_amt'),
+    packing:document.getElementById('j_packing').value,packingAmt:g('j_packing_amt'),
+    freight:document.getElementById('j_freight').value,freightAmt:g('j_freight_amt'),
+    bankFee:g('j_bank_fee')||'0',gst:document.getElementById('j_gst').value,
+    delTime:g('j_del_time'),delTerms:g('j_del_terms'),payTerms:document.getElementById('j_pay_terms').value,
     updatedAt:new Date().toISOString()
   };
 
   try{
     if(editJobId){
       await update(ref(db,'jobs/'+editJobId),data);
-      toast('Job updated ✓');
-      closeJobModal();
-      openDetail(editJobId);
+      toast('Job updated ✓');closeJobModal();openDetail(editJobId);
     } else {
-      data.status='quote';
-      data.createdAt=new Date().toISOString();
-      data.createdBy=rcStaff||'Manager';
-      // Check ref not duplicate
-      const exists=Object.values(jobs).find(j=>j.ref===jref);
-      if(exists){toast('Reference '+jref+' already exists');return;}
+      if(Object.values(jobs).find(j=>j.ref===jref)){toast('Ref '+jref+' already exists');return;}
+      data.status='quote';data.createdAt=new Date().toISOString();data.createdBy=rcStaff||'Manager';
       await push(ref(db,'jobs'),data);
-      toast('Job created ✓');
-      closeJobModal();
+      toast('Job created ✓');closeJobModal();
     }
   }catch(e){toast('Error: '+e.message);}
 };
 
-// ── Auth & Firebase ───────────────────────────────────────────
-document.getElementById('loadingScreen').classList.remove('hide');
+// ── Auth & Data ───────────────────────────────────────────────
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,user=>{
   if(!user)return;
   document.getElementById('loadingScreen').classList.add('hide');
-  onValue(ref(db,'.info/connected'),snap=>{
-    const b=document.getElementById('connBadge');
-    b.textContent=snap.val()?'Live':'Offline';
-    b.className='conn '+(snap.val()?'online':'offline');
-  });
+  onValue(ref(db,'.info/connected'),snap=>{const b=document.getElementById('connBadge');b.textContent=snap.val()?'Live':'Offline';b.className='conn '+(snap.val()?'online':'offline');});
   onValue(ref(db,'contacts'),snap=>{
     contacts=snap.val()||{};
+    setupSearch('j_cust_search','j_cust_drop',c=>(c.types||[]).includes('customer'),(id,name)=>{document.getElementById('j_cust_id').value=id;document.getElementById('j_cust_name').textContent=name;document.getElementById('j_cust_sel').style.display='flex';document.getElementById('j_cust_search').style.display='none';});
+    setupSearch('j_vend_search','j_vend_drop',c=>(c.types||[]).includes('vendor'),(id,name)=>{if(!selectedVendors.find(v=>v.id===id)){selectedVendors.push({id,name});renderVendorTags();}});
   });
-  onValue(ref(db,'jobs'),snap=>{
-    jobs=snap.val()||{};
-    renderList();
-    if(currentJobId&&jobs[currentJobId]) openDetail(currentJobId);
-  });
+  onValue(ref(db,'jobs'),snap=>{jobs=snap.val()||{};renderList();if(currentJobId&&jobs[currentJobId])openDetail(currentJobId);});
 });
 
-// Search
-const searchEl=document.getElementById('jobSearch');
-if(searchEl){
-  ['input','keyup','change'].forEach(evt=>searchEl.addEventListener(evt,()=>{
-    searchQ=searchEl.value;renderList();
-  }));
-}
-
-// Setup dropdowns after DOM ready
-setTimeout(()=>{
-  makeDropdown('j_customer_search','j_customer_dropdown',null,c=>(c.types||[]).includes('customer'));
-  makeDropdown('j_vendor_search','j_vendor_dropdown',null,c=>(c.types||[]).includes('vendor'));
-},500);
-
-// Close modal on bg click
-document.getElementById('jobModal').addEventListener('click',e=>{
-  if(e.target===document.getElementById('jobModal')) closeJobModal();
-});
+const se=document.getElementById('jobSearch');
+['input','keyup','change'].forEach(e=>se.addEventListener(e,()=>{searchQ=se.value;renderList();}));
+document.getElementById('jobModal').addEventListener('click',e=>{if(e.target===document.getElementById('jobModal'))closeJobModal();});
 </script>
 </body>
 </html>
