@@ -518,6 +518,16 @@ if(!sessionStorage.getItem('rc_staff')&&!sessionStorage.getItem('rc_manager')){
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,user=>{
   if(!user)return;
+
+  // Force logout if worker was removed by manager
+  onValue(ref(db,'config/removedWorkers'),snap=>{
+    const removed=snap.exists()?snap.val():[];
+    const staff=sessionStorage.getItem('rc_staff');
+    if(staff&&staff!=='ADMIN'&&removed.includes(staff)){
+      sessionStorage.removeItem('rc_staff');
+      window.location.href='https://aarkoh.github.io/Raycontrol/';
+    }
+  });
   onValue(ref(db,'.info/connected'),snap=>{
     const b=document.getElementById('connBadge');
     b.textContent=snap.val()?'Live':'Offline';

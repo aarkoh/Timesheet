@@ -218,6 +218,17 @@ onAuthStateChanged(auth,async user=>{
   onValue(ref(db,'workers'),snap=>{const w=snap.val()||{};document.getElementById('statIn').textContent=Object.values(w).filter(x=>x.status==='in').length;});
   onValue(ref(db,'stock/items'),snap=>{const items=snap.val()||{};const list=Object.values(items);document.getElementById('statItems').textContent=list.length;const low=list.filter(i=>i.minQty>0&&i.qty<=i.minQty).length;const el=document.getElementById('statLow');el.textContent=low;el.className='stat-val '+(low>0?'red':'green');});
   // Load staff PINs from Firebase - keeps login in sync with manager changes
+  onValue(ref(db,'config/removedWorkers'),snap=>{
+    const removed=snap.exists()?snap.val():[];
+    const staff=sessionStorage.getItem('rc_staff');
+    if(staff&&staff!=='ADMIN'&&removed.includes(staff)){
+      sessionStorage.removeItem('rc_staff');
+      loggedInStaff=null;
+      var lb=document.getElementById('logoutBtn');if(lb)lb.classList.remove('visible');
+      document.getElementById('loginOverlay').style.display='flex';
+      var el=document.getElementById('staffPin');if(el)el.focus();
+    }
+  });
   onValue(ref(db,'config/staffPins'),snap=>{
     if(snap.exists()) window.staffPins={...window.staffPins,...snap.val()};
   });

@@ -614,6 +614,16 @@ onAuthStateChanged(auth,async user=>{
     if(ws.exists()&&Array.isArray(ws.val())&&ws.val().length>0) WORKERS=ws.val();
   }catch(e){}
   // ADMIN has full access
+
+  // Force logout if worker was removed by manager
+  onValue(ref(db,'config/removedWorkers'),snap=>{
+    const removed=snap.exists()?snap.val():[];
+    const staff=sessionStorage.getItem('rc_staff');
+    if(staff&&staff!=='ADMIN'&&removed.includes(staff)){
+      sessionStorage.removeItem('rc_staff');
+      window.location.href='https://aarkoh.github.io/Raycontrol/';
+    }
+  });
   onValue(ref(db,'.info/connected'),snap=>{
     const b=document.getElementById('connBadge');
     b.textContent=snap.val()?'Live':'Offline';
@@ -639,7 +649,10 @@ onAuthStateChanged(auth,async user=>{
 renderWorkers();
 // Auto-select logged-in staff
 const _ss=sessionStorage.getItem('rc_staff');
-if(_ss&&_ss!=='ADMIN'&&WORKERS.includes(_ss)){sel=_ss;renderWorkers();} else if(_ss) renderWorkers();
+if(_ss&&_ss!=='ADMIN'){
+  if(!WORKERS.includes(_ss)) WORKERS=[...WORKERS,_ss];
+  sel=_ss;renderWorkers();
+} else if(_ss) renderWorkers();
 // Full reset on page load - clear any cached state
 document.getElementById('itemSearch').value='';
 document.getElementById('selectedItem').style.display='none';
