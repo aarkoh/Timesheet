@@ -615,24 +615,27 @@ onAuthStateChanged(auth,async user=>{
   }catch(e){}
   // ADMIN has full access
 
-  // Force logout if worker was removed by manager (check immediately + realtime)
-  const _checkRemoved=async()=>{
+  // Force logout if worker no longer in active workers list
+  const _checkActiveWorker=async()=>{
+    const staff=sessionStorage.getItem('rc_staff');
+    if(!staff||staff==='ADMIN') return;
     try{
-      const snap=await get(ref(db,'config/removedWorkers'));
-      const removed=snap.exists()?snap.val():[];
-      const staff=sessionStorage.getItem('rc_staff');
-      if(staff&&staff!=='ADMIN'&&removed.includes(staff)){
-        sessionStorage.removeItem('rc_staff');
-        window.location.href='https://aarkoh.github.io/Raycontrol/';
-        return;
+      const snap=await get(ref(db,'config/workers'));
+      if(snap.exists()&&Array.isArray(snap.val())){
+        if(!snap.val().includes(staff)){
+          sessionStorage.removeItem('rc_staff');
+          window.location.href='https://aarkoh.github.io/Raycontrol/';
+          return;
+        }
       }
     }catch(e){}
   };
-  await _checkRemoved();
-  onValue(ref(db,'config/removedWorkers'),snap=>{
-    const removed=snap.exists()?snap.val():[];
+  await _checkActiveWorker();
+  // Real-time check: if workers list changes, verify current user still in it
+  onValue(ref(db,'config/workers'),snap=>{
     const staff=sessionStorage.getItem('rc_staff');
-    if(staff&&staff!=='ADMIN'&&removed.includes(staff)){
+    if(!staff||staff==='ADMIN') return;
+    if(snap.exists()&&Array.isArray(snap.val())&&!snap.val().includes(staff)){
       sessionStorage.removeItem('rc_staff');
       window.location.href='https://aarkoh.github.io/Raycontrol/';
     }
