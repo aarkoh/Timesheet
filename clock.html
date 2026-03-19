@@ -226,7 +226,7 @@ onAuthStateChanged(auth,async user=>{
   });
   // Auto-select logged-in staff from session - redirect if no session
   const sessionStaff = sessionStorage.getItem('rc_staff');
-  if(!sessionStaff || !WORKERS.includes(sessionStaff)){
+  if(!sessionStaff){
     window.location.href='https://aarkoh.github.io/Raycontrol/';
     return;
   }
@@ -236,6 +236,10 @@ onAuthStateChanged(auth,async user=>{
     if(ws.exists()&&Array.isArray(ws.val())&&ws.val().length>0) WORKERS=ws.val();
   }catch(e){}
   sel = sessionStaff==='ADMIN' ? null : sessionStaff;
+  // Add new worker to WORKERS list if not already there (loaded before Firebase update)
+  if(sessionStaff!=='ADMIN'&&!WORKERS.includes(sessionStaff)){
+    WORKERS=[...WORKERS, sessionStaff];
+  }
   // Show logged-in staff tag
   const tag=document.getElementById('staffTag');
   if(tag){tag.textContent=sessionStaff==='ADMIN'?'🔑 Admin':'👤 '+sessionStaff;tag.style.display='inline';}

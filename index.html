@@ -129,7 +129,7 @@ var adminPin='9';
 var loggedInStaff=null;
 function initStaffLogin(){
   var saved=sessionStorage.getItem('rc_staff');
-  if(saved&&WORKERS_LIST.indexOf(saved)>=0){
+  if(saved){
     loggedInStaff=saved;
     document.getElementById('loginOverlay').style.display='none';
     var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
@@ -184,7 +184,8 @@ function doLogout(){
 // Firebase will update pins in background when ready
 (function(){
   var saved = sessionStorage.getItem('rc_staff');
-  if(saved && WORKERS_LIST.indexOf(saved) >= 0){
+  if(saved){
+    // Allow any saved session (staff, ADMIN, or newly added worker)
     loggedInStaff = saved;
     var ls = document.getElementById('loadingScreen');
     if(ls) ls.classList.add('hide');
