@@ -245,7 +245,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 const auth = getAuth(fbApp);
 
-const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
+let WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel=null, logTypeFilter='all';
 let workers={}, log=[], pin='1234';
 
@@ -790,6 +790,14 @@ onAuthStateChanged(auth,async user=>{
   if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+  onValue(ref(db,'config/workers'),snap=>{
+    if(snap.exists()&&Array.isArray(snap.val())&&snap.val().length>0){
+      WORKERS=snap.val();
+      renderWorkers();
+      if(document.getElementById('tab-manager').classList.contains('active')) renderManager();
+      if(document.getElementById('tab-summary').classList.contains('active')) renderSummary();
+    }
+  });
 
   // Load OT/OVS rates from Firebase - always re-render summary so inputs show saved values
   onValue(ref(db,'config/otRates'),snap=>{
