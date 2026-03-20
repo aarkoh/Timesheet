@@ -299,6 +299,7 @@ window.render=function(){
     const a=ageD(j.date||j.createdAt);
     const aStr=a===0?'Today':a===1?'Yesterday':a+' d ago';
     const aC=a>30&&jst!=='closed'?' ov':'';
+    const invoiced=['invoice','soa','closed'].includes(jst);
     /* Received */
     let rcvdCell='<span class="pn">—</span>';
     if(invoiced){
