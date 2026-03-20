@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Tracker — Manager</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:780px;margin:0 auto;padding:1.25rem 1rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
+.topbar h1{font-size:20px;font-weight:600;flex:1}
+.liveclock{font-size:13px;color:#888;font-variant-numeric:tabular-nums}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
+.tab{font-family:inherit;font-size:12px;padding:6px 13px;border:none;background:transparent;cursor:pointer;color:#666;transition:background 0.12s}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
+.panel{display:none}.panel.active{display:block}
+
+/* Worker cards */
+.worker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem}
+@media(max-width:480px){.worker-grid{grid-template-columns:repeat(2,1fr)}}
+.wcard{border:1px solid #ddd;border-radius:12px;padding:1rem 0.5rem;cursor:pointer;background:#fff;text-align:center;transition:border-color 0.12s,background 0.12s;-webkit-tap-highlight-color:transparent;user-select:none}
+.wcard:hover{border-color:#aaa;background:#fafafa}
+.wcard.sel{border:2px solid #185FA5;background:#E6F1FB}
+.wcard.ci{border-color:#3B6D11}
+.wcard.sel.ci{border:2px solid #3B6D11;background:#EAF3DE}
+.wav{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;margin:0 auto 8px;background:#eee;color:#555}
+.wcard.sel .wav{background:#B5D4F4;color:#185FA5}
+.wcard.ci .wav{background:#C0DD97;color:#3B6D11}
+.wcard.sel.ci .wav{background:#C0DD97;color:#3B6D11}
+.wnum{font-size:11px;color:#aaa;margin-bottom:2px}
+.wstat{font-size:11px;color:#999;margin-top:3px}
+.wstat.in{color:#3B6D11;font-weight:500}
+
+/* Buttons */
+button{font-family:inherit;font-size:13px;padding:9px 18px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer;transition:background 0.12s,transform 0.1s;-webkit-tap-highlight-color:transparent}
+button:hover{background:#f5f5f3}
+button:active{transform:scale(0.97)}
+button:disabled{opacity:0.35;cursor:default;transform:none}
+.btn-in{border-color:#185FA5;color:#185FA5;font-weight:500}.btn-in:hover{background:#E6F1FB}
+.btn-out{border-color:#A32D2D;color:#A32D2D;font-weight:500}.btn-out:hover{background:#FCEBEB}
+.btn-exp{border-color:#3B6D11;color:#3B6D11;font-weight:500}.btn-exp:hover{background:#EAF3DE}
+.btn-danger{border-color:#A32D2D;color:#A32D2D}.btn-danger:hover{background:#FCEBEB}
+
+/* Action panel */
+.apanel{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1.25rem;margin-bottom:1.25rem}
+.apanel h2{font-size:15px;font-weight:600;margin-bottom:4px}
+.apanel .sub{font-size:13px;color:#888;margin-bottom:1rem}
+.brow{display:flex;gap:8px;flex-wrap:wrap}
+.geost{font-size:12px;color:#888;margin-top:10px;display:flex;align-items:center;gap:6px;min-height:18px}
+.gdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
+.gdot.ok{background:#639922}.gdot.err{background:#E24B4A}.gdot.pulse{background:#BA7517;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* Manager tab */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:1.25rem}
+.mcard{border:1px solid #e0ddd6;border-radius:12px;padding:1rem;background:#fff}
+.mcard.in{border-left:3px solid #3B6D11}
+.mc-name{font-size:15px;font-weight:600;margin-bottom:4px}
+.mc-badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin-bottom:8px;font-weight:500}
+.mc-badge.in{background:#EAF3DE;color:#3B6D11}
+.mc-badge.out{background:#eee;color:#888}
+.mc-detail{font-size:12px;color:#888;line-height:1.7}
+
+/* Stat cards */
+.scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1.25rem}
+.scard{background:#efefed;border-radius:8px;padding:0.85rem}
+.sc-label{font-size:11px;color:#888;margin-bottom:4px}
+.sc-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.sc-sub{font-size:10px;color:#aaa;margin-top:2px}
+.sec-title{font-size:14px;font-weight:600;margin-bottom:0.75rem;margin-top:1.25rem}
+
+/* Table */
+.wtable{width:100%;border-collapse:collapse;font-size:12px}
+.wtable th{text-align:left;font-weight:600;font-size:11px;color:#888;padding:6px 8px;border-bottom:1px solid #e0ddd6;white-space:nowrap}
+.wtable td{padding:7px 8px;border-bottom:1px solid #f0ede6;color:#1a1a1a;vertical-align:middle}
+.wtable tr:last-child td{border:none}
+.tbl-wrap{overflow-x:auto}
+
+/* Summary period */
+.preset-btn{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;color:#666;cursor:pointer;transition:all 0.12s}
+.preset-btn:hover{border-color:#aaa;color:#1a1a1a}
+.preset-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,34px);gap:2px}
+.cal-cell{display:flex;flex-direction:column;align-items:center}
+.cal-day{width:34px;height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:6px;cursor:pointer;border:none;background:transparent;color:#1a1a1a;font-family:inherit}
+.cal-day:hover{background:#f0f0ee}
+.cal-day.today{font-weight:700;color:#185FA5}
+.cal-day.selected{background:#185FA5;color:#fff}
+.cal-day.in-range{background:#E6F1FB;color:#185FA5}
+.cal-day.other-month{color:#ccc}
+.cal-day.ph{color:#A32D2D}
+.cal-day.weekend{color:#888}
+.cal-day.birthday{position:relative}
+.cal-day.birthday::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#E91E8C}
+.cal-bday{font-size:9px;color:#E91E8C;font-weight:600;line-height:1;margin-top:1px}
+.cal-dow{width:34px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#aaa;font-weight:500}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-nav button{font-size:16px;padding:2px 8px;border:none;background:none;cursor:pointer;color:#666;border-radius:4px}
+.cal-nav button:hover{background:#eee}
+.cal-nav span{font-size:13px;font-weight:600}
+
+/* Log */
+select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer}
+.log-filters{display:flex;gap:6px;margin-bottom:0.75rem;flex-wrap:wrap}
+.fbtn{font-size:12px;padding:4px 10px;border-radius:20px}
+.fbtn.active{background:#efefed;border-color:#aaa;font-weight:500}
+.lempty{font-size:13px;color:#aaa;padding:1.5rem;text-align:center;border:1px solid #e0ddd6;border-radius:8px}
+.lentry{border:1px solid #e0ddd6;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:start;background:#fff}
+.ltype{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.ltype.in{background:#EAF3DE;color:#3B6D11}
+.ltype.out{background:#FCEBEB;color:#A32D2D}
+.lworker{font-size:13px;font-weight:600}
+.ltime{font-size:12px;color:#888;margin-top:2px}
+.lloc{font-size:11px;color:#aaa;margin-top:2px}
+.lts{font-size:12px;color:#aaa;white-space:nowrap}
+
+/* PIN modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:center;justify-content:center;z-index:100;padding:1rem}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:300px;border:1px solid #e0ddd6}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:6px}
+.modal p{font-size:13px;color:#888;margin-bottom:1rem}
+.pin-input{display:flex;gap:8px;margin-bottom:1rem}
+.pin-input input{width:100%;height:52px;text-align:center;font-size:22px;font-weight:600;border:1px solid #ccc;border-radius:8px;background:#fff;color:#1a1a1a;font-family:inherit}
+.pin-err{font-size:12px;color:#A32D2D;margin-bottom:0.75rem;min-height:16px}
+.modal-row{display:flex;gap:8px}
+
+/* Loading */
+.loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-screen.hide{display:none}
+.spinner{width:32px;height:32px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:14px;color:#888}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Connecting…</p></div>
+
+<div class="app">
+  <div class="topbar">
+    <h1>Work Tracker</h1>
+    <a href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/" style="font-size:12px;color:#888;text-decoration:none;padding:5px 10px;border:1px solid #ddd;border-radius:8px;white-space:nowrap">&#8962; Hub</a>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
+    <span class="liveclock" id="liveClock"></span>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('clock',this)">Clock in/out</button>
+      <button class="tab" onclick="switchTab('manager',this)">Manager</button>
+      <button class="tab" onclick="switchTab('summary',this)">Summary</button>
+      <button class="tab" onclick="switchTab('log',this)">Log</button>
+    </div>
+  </div>
+
+  <!-- CLOCK IN/OUT -->
+  <div class="panel active" id="tab-clock">
+    <div class="worker-grid" id="workerGrid"></div>
+    <div class="apanel">
+      <h2 id="panelTitle">Select your name</h2>
+      <p class="sub" id="panelSub">Tap your initials above, then clock in or out</p>
+      <div class="brow">
+        <button class="btn-in" id="btnIn" disabled onclick="doAction('in')">Clock in</button>
+        <button class="btn-out" id="btnOut" disabled onclick="doAction('out')">Clock out</button>
+      </div>
+      <div class="geost"><span class="gdot" id="geoDot"></span><span id="geoText">Geolocation ready</span></div>
+    </div>
+  </div>
+
+  <!-- MANAGER -->
+  <div class="panel" id="tab-manager">
+    <div class="scard-grid" id="mStats"></div>
+    <div class="sec-title">Current status</div>
+    <div class="mgrid" id="managerGrid"></div>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6;display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="openPin('change')">Change PIN</button>
+      <button class="btn-danger" id="clearLogBtn" onclick="clearAndRebuildLog()">Clear duplicate logs</button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="panel" id="tab-summary">
+    <div style="margin-bottom:1rem">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+        <button class="preset-btn active" onclick="setPreset('today',this)">Today</button>
+        <button class="preset-btn" onclick="setPreset('week',this)">This week</button>
+        <button class="preset-btn" onclick="setPreset('month',this)">This month</button>
+        <button class="preset-btn" onclick="setPreset('all',this)">All time</button>
+        <button class="preset-btn" onclick="setPreset('custom',this)">Custom range</button>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn-exp" onclick="exportExcel()">Export Excel</button>
+          <button class="btn-exp" onclick="exportCSV()">Export CSV</button>
+        </div>
+      </div>
+      <div id="calendarPicker" style="display:none;background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;margin-top:4px">
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+          <div><div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500">From</div><div id="calFrom"></div></div>
+          <div><div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500">To</div><div id="calTo"></div></div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:#888" id="rangeLabel"></div>
+        <div style="margin-top:6px;font-size:11px;color:#aaa">
+          <span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="color:#A32D2D;font-weight:600">●</span> Public holiday</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px"><span style="color:#888">●</span> Weekend</span>
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="color:#E91E8C;font-weight:600">●</span> Birthday</span>
+        </div>
+      </div>
+    </div>
+    <div id="summaryContent"></div>
+  </div>
+
+  <!-- LOG -->
+  <div class="panel" id="tab-log">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px">
+      <div class="log-filters">
+        <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+        <button class="fbtn" onclick="setFilter('in',this)">In</button>
+        <button class="fbtn" onclick="setFilter('out',this)">Out</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <select id="logWFilter" onchange="renderLog()"><option value="all">All workers</option></select>
+        <button class="btn-exp" onclick="exportExcel()">Export Excel</button>
+        <button class="btn-exp" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </div>
+    <div id="logList"></div>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal-bg" id="pinModal">
+  <div class="modal">
+    <h2 id="pinTitle">Manager PIN</h2>
+    <p id="pinSub">Enter 4-digit PIN to continue</p>
+    <div class="pin-input">
+      <input type="password" maxlength="1" inputmode="numeric" id="p0" oninput="pinInput(0)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p1" oninput="pinInput(1)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p2" oninput="pinInput(2)">
+      <input type="password" maxlength="1" inputmode="numeric" id="p3" oninput="pinInput(3)">
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="modal-row">
+      <button onclick="closePinModal()">Cancel</button>
+      <button id="pinSubmitBtn" onclick="submitPin()">Unlock</button>
+    </div>
+    <div id="newPinArea" style="display:none;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6">
+      <p style="font-size:12px;color:#888;margin-bottom:8px">Verify current PIN first, then enter new PIN above</p>
+      <button onclick="saveNewPin()">Set new PIN</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, push, update, remove, onValue, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
+  authDomain: "attendance-20d6a.firebaseapp.com",
+  databaseURL: "https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "attendance-20d6a",
+  storageBucket: "attendance-20d6a.firebasestorage.app",
+  messagingSenderId: "597668949951",
+  appId: "1:597668949951:web:f7fcc8c3b4450f8f80bb0a"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+const auth = getAuth(fbApp);
+
+const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
+let sel=null, logTypeFilter='all', pinTarget=null, settingNew=false;
+// Restore session: if manager was authenticated this session, all tabs are unlocked
+const _mgrAuth=sessionStorage.getItem('rc_manager')==='1';
+let unlocked=_mgrAuth?{clock:true,manager:true,summary:true,log:true}:{};
+let workers={}, log=[], pin='1234';
+
+// OT rates persisted in localStorage
+let otRates={}, ovsRates={};
+try{otRates=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');}catch(e){otRates={};}
+try{ovsRates=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');}catch(e){ovsRates={};}
+function saveOTRates(){try{localStorage.setItem('wt_ot_rates',JSON.stringify(otRates));}catch(e){}}
+function saveOVSRates(){try{localStorage.setItem('wt_ovs_rates',JSON.stringify(ovsRates));}catch(e){}}
+window.setOTRate=function(w,val){otRates[w]=parseFloat(val)||0;saveOTRates();renderSummary();};
+window.setOVSRate=function(w,val){ovsRates[w]=parseFloat(val)||0;saveOVSRates();renderSummary();};
+
+// ── SG Public Holidays ────────────────────────────────────────
+const SG_PH = new Set([
+  '2025-01-01','2025-01-29','2025-01-30','2025-03-31','2025-04-18','2025-05-01',
+  '2025-05-12','2025-06-06','2025-08-09','2025-08-11','2025-10-20','2025-10-21','2025-12-25',
+  '2026-01-01','2026-02-17','2026-02-18','2026-03-21','2026-04-03','2026-05-01',
+  '2026-05-27','2026-05-31','2026-06-01','2026-08-09','2026-08-10','2026-11-08','2026-11-09','2026-12-25'
+]);
+
+// ── Birthdays ─────────────────────────────────────────────────
+const BDAYS = {HS:{m:7,d:18},TM:{m:5,d:16},SA:{m:5,d:14},RG:{m:11,d:5},MU:{m:4,d:3},IL:{m:6,d:20},AY:{m:4,d:15},AN:{m:1,d:3}};
+function getBdays(month,day){return Object.entries(BDAYS).filter(([,b])=>b.m===month&&b.d===day).map(([w])=>w);}
+
+function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+
+// Get a Date object shifted to a specific IANA timezone for local hour/day checks
+function inTZ(dt, tz) {
+  if (!tz) return dt;
+  try {
+    // Use Intl to get the local time parts in the target timezone
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(dt).map(p=>[p.type,p.value]));
+    // Build a local Date using those parts (treated as local time)
+    return new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour==='24'?'00':parts.hour}:${parts.minute}:${parts.second}`);
+  } catch(e) { return dt; }
+}
+
+// Lookup timezone from country name in location string
+function tzFromLoc(locStr) {
+  if (!locStr) return null;
+  const s = locStr.toLowerCase();
+  // Common countries workers might visit
+  const TZ_MAP = [
+    ['singapore', 'Asia/Singapore'],
+    ['malaysia', 'Asia/Kuala_Lumpur'],
+    ['indonesia', 'Asia/Jakarta'],
+    ['thailand', 'Asia/Bangkok'],
+    ['vietnam', 'Asia/Ho_Chi_Minh'],
+    ['philippines', 'Asia/Manila'],
+    ['myanmar', 'Asia/Rangoon'],
+    ['cambodia', 'Asia/Phnom_Penh'],
+    ['laos', 'Asia/Vientiane'],
+    ['china', 'Asia/Shanghai'],
+    ['hong kong', 'Asia/Hong_Kong'],
+    ['taiwan', 'Asia/Taipei'],
+    ['japan', 'Asia/Tokyo'],
+    ['korea', 'Asia/Seoul'],
+    ['india', 'Asia/Kolkata'],
+    ['bangladesh', 'Asia/Dhaka'],
+    ['sri lanka', 'Asia/Colombo'],
+    ['pakistan', 'Asia/Karachi'],
+    ['uae', 'Asia/Dubai'],
+    ['dubai', 'Asia/Dubai'],
+    ['saudi', 'Asia/Riyadh'],
+    ['qatar', 'Asia/Qatar'],
+    ['kuwait', 'Asia/Kuwait'],
+    ['australia', 'Australia/Sydney'],
+    ['new zealand', 'Pacific/Auckland'],
+    ['uk', 'Europe/London'],
+    ['united kingdom', 'Europe/London'],
+    ['france', 'Europe/Paris'],
+    ['germany', 'Europe/Berlin'],
+    ['usa', 'America/New_York'],
+    ['united states', 'America/New_York'],
+    ['canada', 'America/Toronto'],
+  ];
+  for (const [key, tz] of TZ_MAP) {
+    if (s.includes(key)) return tz;
+  }
+  return null; // unknown — will fall back to device local time
+}
+// Singapore detection: coords first, fallback to address string
+function isInSingapore(lat, lon) {
+  if (lat != null && lon != null) return lat >= 1.15 && lat <= 1.48 && lon >= 103.59 && lon <= 104.10;
+  return null; // unknown
+}
+function isLocSingapore(locStr) {
+  if (!locStr) return null; // unknown
+  return locStr.toLowerCase().includes('singapore');
+}
+
+function isOT(dt, tz) {
+  // Convert timestamp to local time in the given timezone before checking hour/day
+  const local = tz ? inTZ(dt, tz) : dt;
+  const dow = local.getDay(), key = dateKey(local);
+  if (dow === 0 || dow === 6 || SG_PH.has(key)) return true;
+  const h = local.getHours() + local.getMinutes() / 60;
+  return h < 8 || h >= 18;
+}
+function calcOTMins(inT, outT, tz) {
+  const CHUNK = 5 * 60 * 1000;
+  let ot = 0, t = new Date(inT);
+  while (t < outT) {
+    const n = new Date(Math.min(t.getTime() + CHUNK, outT.getTime()));
+    if (isOT(t, tz)) ot += (n - t) / 60000;
+    t = n;
+  }
+  return ot;
+}
+
+// ── Geo ───────────────────────────────────────────────────────
+function setGeoUI(cls,msg){document.getElementById('geoDot').className='gdot '+cls;document.getElementById('geoText').textContent=msg;}
+function isInChina(lat,lon){return lat>=18&&lat<=53&&lon>=73&&lon<=135;}
+function revGeoOSM(lat,lon,cb){fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`).then(r=>r.json()).then(d=>{const a=d.address||{};const p=[a.house_number&&a.road?`${a.house_number} ${a.road}`:(a.road||a.pedestrian||a.footway||''),a.suburb||a.neighbourhood||a.quarter||'',a.city||a.town||a.village||a.county||'',a.postcode||'',a.country||''].filter(Boolean);cb(p.length?p.join(', '):`${lat.toFixed(5)}, ${lon.toFixed(5)}`);}).catch(()=>cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));}
+function wgs84ToGcj02(lat,lon){const PI=Math.PI,a=6378245.0,ee=0.00669342162296594323;function tLat(x,y){let r=-100+2*x+3*y+0.2*y*y+0.1*x*y+0.2*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(y*PI)+40*Math.sin(y/3*PI))*2/3;r+=(160*Math.sin(y/12*PI)+320*Math.sin(y*PI/30))*2/3;return r;}function tLon(x,y){let r=300+x+2*y+0.1*x*x+0.1*x*y+0.1*Math.sqrt(Math.abs(x));r+=(20*Math.sin(6*x*PI)+20*Math.sin(2*x*PI))*2/3;r+=(20*Math.sin(x*PI)+40*Math.sin(x/3*PI))*2/3;r+=(150*Math.sin(x/12*PI)+300*Math.sin(x*PI/30))*2/3;return r;}let dLat=tLat(lon-105,lat-35),dLon=tLon(lon-105,lat-35);const radLat=lat/180*PI;let magic=Math.sin(radLat);magic=1-ee*magic*magic;const sq=Math.sqrt(magic);return[lat+dLat*180/((a*(1-ee))/(magic*sq)*PI),lon+dLon*180/(a/sq*Math.cos(radLat)*PI)];}
+function revGeoAmap(lat,lon,cb){const[gLat,gLon]=wgs84ToGcj02(lat,lon);fetch(`https://restapi.amap.com/v3/geocode/regeo?key=4d33a38d9bf129094b75c1a267c82370&location=${gLon.toFixed(6)},${gLat.toFixed(6)}&extensions=base`).then(r=>r.json()).then(d=>{if(d.status==='1'&&d.regeocode)cb(d.regeocode.formatted_address||`${lat.toFixed(5)}, ${lon.toFixed(5)}`);else cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`);}).catch(()=>cb(`${lat.toFixed(5)}, ${lon.toFixed(5)}`));}
+function revGeo(lat,lon,cb){if(isInChina(lat,lon))revGeoAmap(lat,lon,r=>r===`${lat.toFixed(5)}, ${lon.toFixed(5)}`?revGeoOSM(lat,lon,cb):cb(r));else revGeoOSM(lat,lon,cb);}
+function getGeo(cb){if(!navigator.geolocation){cb(null,'Not supported');return;}setGeoUI('pulse','Getting precise location…');navigator.geolocation.getCurrentPosition(p=>cb({lat:p.coords.latitude,lon:p.coords.longitude,acc:Math.round(p.coords.accuracy)},null),()=>cb(null,'Location unavailable'),{timeout:15000,maximumAge:0,enableHighAccuracy:true});}
+
+// ── Utils ─────────────────────────────────────────────────────
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function liveClock(){document.getElementById('liveClock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function fmtDate(d){if(!d)return'—';return d.toLocaleDateString([],{day:'2-digit',month:'short',year:'numeric'});}
+
+// Format an ISO timestamp in a specific IANA timezone
+function fmtInTZ(isoStr, tz, opts) {
+  if (!isoStr) return '—';
+  try {
+    const d = new Date(isoStr);
+    const options = opts || {hour:'2-digit', minute:'2-digit', hour12:false};
+    return new Intl.DateTimeFormat('en-GB', {timeZone: tz || 'Asia/Singapore', ...options}).format(d);
+  } catch(e) { return new Date(isoStr).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+}
+
+// ── Calendar state ────────────────────────────────────────────
+let calState={preset:'today',fromDate:null,toDate:null,fromVM:new Date(),toVM:new Date(new Date().getFullYear(),new Date().getMonth()+1,1)};
+
+window.setPreset=function(p,el){
+  calState.preset=p;
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(p==='custom'){
+    document.getElementById('calendarPicker').style.display='block';
+    if(!calState.fromDate){const n=new Date();calState.fromDate=new Date(n.getFullYear(),n.getMonth(),1);calState.toDate=new Date(n);calState.fromVM=new Date(n.getFullYear(),n.getMonth(),1);calState.toVM=new Date(n.getFullYear(),n.getMonth()+1,1);}
+    renderCalendars();
+  }else{
+    document.getElementById('calendarPicker').style.display='none';
+  }
+  renderSummary();
+};
+
+function periodRange(){
+  const now=new Date(),p=calState.preset;
+  if(p==='today'){const s=new Date(now);s.setHours(0,0,0,0);return{start:s,end:now};}
+  if(p==='week'){const s=new Date(now);s.setDate(s.getDate()-s.getDay());s.setHours(0,0,0,0);return{start:s,end:now};}
+  if(p==='month'){return{start:new Date(now.getFullYear(),now.getMonth(),1),end:now};}
+  if(p==='custom'&&calState.fromDate&&calState.toDate){const s=new Date(calState.fromDate);s.setHours(0,0,0,0);const e=new Date(calState.toDate);e.setHours(23,59,59,999);return{start:s,end:e};}
+  return{start:new Date(0),end:now};
+}
+
+function renderCalendars(){
+  renderCal('calFrom',calState.fromVM,'from');
+  renderCal('calTo',calState.toVM,'to');
+  document.getElementById('rangeLabel').textContent=calState.fromDate&&calState.toDate?`${fmtDate(calState.fromDate)} → ${fmtDate(calState.toDate)}`:'Select start date';
+}
+function renderCal(id,vm,side){
+  const container=document.getElementById(id);
+  const year=vm.getFullYear(),month=vm.getMonth();
+  const today=new Date();today.setHours(0,0,0,0);
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let h=`<div class="cal-nav"><button onclick="calNav('${side}',-1)">&#8249;</button><span>${MN[month]} ${year}</span><button onclick="calNav('${side}',1)">&#8250;</button></div><div class="cal-grid">`;
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d=>{h+=`<div class="cal-dow">${d}</div>`;});
+  for(let i=0;i<firstDay;i++)h+='<div class="cal-cell"><button class="cal-day other-month"></button></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const dt=new Date(year,month,d),key=dateKey(dt),dow=dt.getDay();
+    const isPH=SG_PH.has(key),isWE=dow===0||dow===6,isToday=dt.getTime()===today.getTime();
+    const bdays=getBdays(month,d);
+    const isSel=(calState.fromDate&&dt.getTime()===new Date(calState.fromDate).setHours(0,0,0,0))||(calState.toDate&&dt.getTime()===new Date(calState.toDate).setHours(0,0,0,0));
+    const inRange=calState.fromDate&&calState.toDate&&dt>calState.fromDate&&dt<calState.toDate;
+    let cls='cal-day';
+    if(isSel)cls+=' selected';
+    else if(inRange)cls+=' in-range';
+    else if(isPH)cls+=' ph';
+    else if(isWE)cls+=' weekend';
+    if(isToday)cls+=' today';
+    if(bdays.length)cls+=' birthday';
+    const bdayTip=bdays.length?`<div class="cal-bday">${bdays.join(' ')}</div>`:'';
+    h+=`<div class="cal-cell"><button class="${cls}" onclick="calSelect(${year},${month},${d})" title="${bdays.length?'🎂 '+bdays.join(', '):isPH?'Public Holiday':''}">${d}</button>${bdayTip}</div>`;
+  }
+  h+='</div>';
+  container.innerHTML=h;
+}
+window.calNav=function(side,dir){
+  if(side==='from')calState.fromVM=new Date(calState.fromVM.getFullYear(),calState.fromVM.getMonth()+dir,1);
+  else calState.toVM=new Date(calState.toVM.getFullYear(),calState.toVM.getMonth()+dir,1);
+  renderCalendars();
+};
+window.calSelect=function(y,m,d){
+  const clicked=new Date(y,m,d);
+  if(!calState.fromDate||(calState.fromDate&&calState.toDate)){calState.fromDate=clicked;calState.toDate=null;}
+  else if(clicked<calState.fromDate){calState.fromDate=clicked;calState.toDate=null;}
+  else{calState.toDate=clicked;renderSummary();}
+  renderCalendars();
+};
+
+// ── Workers render ────────────────────────────────────────────
+function renderWorkers(){
+  document.getElementById('workerGrid').innerHTML=WORKERS.map((w,i)=>{
+    const wd=workers[w]||{},isSel=sel===w,isIn=wd.status==='in';
+    const since=wd.sinceLocal?(wd.sinceLocal.split(',')[1]||wd.sinceLocal).trim().slice(0,5):(wd.since?fmtInTZ(wd.since,wd.tz||'Asia/Singapore'):'');
+    const job=wd.job?` · ${wd.job}`:'';
+    return `<div class="wcard${isSel?' sel':''}${isIn?' ci':''}" onclick="selectW('${w}')"><div class="wav">${w}</div><div class="wnum">${i+1}</div><div class="wstat${isIn?' in':''}">${isIn?'In · '+since+job:'Off'}</div></div>`;
+  }).join('');
+}
+window.selectW=function(w){
+  sel=w;const wd=workers[w]||{},isIn=wd.status==='in';
+  document.getElementById('panelTitle').textContent=w;
+  const sinceDisplay = wd.sinceLocal ? (wd.sinceLocal.split(',')[1]||wd.sinceLocal).trim().slice(0,5) : (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore') : '');
+  const tzNote = wd.tz && wd.tz !== 'Asia/Singapore' ? ` (${wd.tz.split('/').pop().replace(/_/g,' ')} time)` : '';
+  document.getElementById('panelSub').textContent=isIn?`Clocked in at ${sinceDisplay}${tzNote}. Ready to clock out.`:'Not clocked in. Ready to clock in.';
+  document.getElementById('btnIn').disabled=isIn;
+  document.getElementById('btnOut').disabled=!isIn;
+  renderWorkers();
+};
+
+// ── Clock action ──────────────────────────────────────────────
+window.doAction=async function(type){
+  if(!sel)return;
+  const w=sel;
+  document.getElementById('btnIn').disabled=true;
+  document.getElementById('btnOut').disabled=true;
+  getGeo(async(geo,err)=>{
+    if(err)setGeoUI('err',err);
+    const now=new Date().toISOString();
+    const coordStr=geo?`${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}`:'';
+    await update(ref(db,'workers/'+w),{status:type,since:type==='in'?now:null,lastTime:now,loc:type==='in'?coordStr:''});
+    const entry={worker:w,type,time:now,lat:geo?geo.lat:null,lon:geo?geo.lon:null,acc:geo?geo.acc:null,loc:coordStr};
+    try{
+      const newRef=await push(ref(db,'log'),entry);
+      if(geo){
+        setGeoUI('ok',`${geo.lat.toFixed(4)}, ${geo.lon.toFixed(4)} (±${geo.acc}m)`);
+        revGeo(geo.lat,geo.lon,loc=>{update(newRef,{loc});if(type==='in')update(ref(db,'workers/'+w),{loc});});
+      }else setGeoUI('err','No location captured');
+      toast(`${w} clocked ${type==='in'?'in':'out'}`);
+      setTimeout(fetchLog,2000);
+      sel=null;renderWorkers();
+      document.getElementById('panelTitle').textContent='Select your name';
+      document.getElementById('panelSub').textContent='Tap your initials above, then clock in or out';
+      document.getElementById('btnIn').disabled=true;
+      document.getElementById('btnOut').disabled=true;
+    }catch(e){
+      setGeoUI('err','Write failed: '+e.message);
+      toast('Error: '+e.message);
+      document.getElementById('btnIn').disabled=type==='in';
+      document.getElementById('btnOut').disabled=type!=='in';
+    }
+  });
+};
+
+// ── Tab switching ─────────────────────────────────────────────
+window.switchTab=function(tab,el){
+  if((tab==='manager'||tab==='summary'||tab==='log')&&!unlocked[tab]){openPin(tab);return;}
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='manager')renderManager();
+  if(tab==='summary')renderSummary();
+  if(tab==='log')renderLog();
+};
+
+// ── Manager ───────────────────────────────────────────────────
+function renderManager(){
+  const inW=WORKERS.filter(w=>(workers[w]||{}).status==='in');
+  const todayShifts=()=>{const s=new Date();s.setHours(0,0,0,0);return log.filter(e=>e.type==='in'&&new Date(e.time)>=s).length;};
+  document.getElementById('mStats').innerHTML=`
+    <div class="scard"><div class="sc-label">Clocked in</div><div class="sc-val">${inW.length}</div><div class="sc-sub">of ${WORKERS.length} workers</div></div>
+    <div class="scard"><div class="sc-label">Off shift</div><div class="sc-val">${WORKERS.length-inW.length}</div></div>`;
+  document.getElementById('managerGrid').innerHTML=WORKERS.map(w=>{
+    const wd=workers[w]||{},isIn=wd.status==='in';
+    const since = wd.sinceLocal || (wd.since ? fmtInTZ(wd.since, wd.tz||'Asia/Singapore', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}) : '');
+    const tzNote = wd.tz && wd.tz !== 'Asia/Singapore' ? ` (${wd.tz.split('/').pop().replace(/_/g,' ')})` : '';
+    const lastE = log.find(e=>e.worker===w);
+    const lastSeen = lastE ? (lastE.localTime || fmtInTZ(lastE.time, lastE.tz||'Asia/Singapore', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})) : 'Never';
+    return `<div class="mcard${isIn?' in':''}"><div class="mc-name">${w}</div><span class="mc-badge ${wd.status||'out'}">${isIn?'Clocked in':'Off shift'}</span><div class="mc-detail">${isIn?`Since: ${since}${tzNote}<br>Job: ${wd.job||'—'}<br>Location: ${wd.loc||'—'}`:`Last seen: ${lastSeen}`}</div></div>`;
+  }).join('');
+}
+
+// ── Summary ───────────────────────────────────────────────────
+function renderSummary(){
+  const {start,end}=periodRange(),now=new Date();
+  const entries=log.filter(e=>new Date(e.time)>=start&&new Date(e.time)<=end);
+  const stats=WORKERS.map(w=>{
+    const wd=workers[w]||{},isIn=wd.status==='in';
+    const allEvents=log.filter(e=>e.worker===w).sort((a,b)=>new Date(a.time)-new Date(b.time));
+    const shifts=[];let openIn=null;
+    for(const e of allEvents){if(e.type==='in')openIn=e;else if(e.type==='out'&&openIn){shifts.push({in:openIn,out:e});openIn=null;}}
+    if(openIn)shifts.push({in:openIn,out:null});
+    let mins=0,otMins=0;
+    const ovsDaySet=new Set(); // unique calendar days (YYYY-MM-DD) worked overseas
+    for(const s of shifts){
+      const inT=new Date(s.in.time),outT=s.out?new Date(s.out.time):(isIn?now:null);
+      if(!outT||outT<start||inT>end)continue;
+      const eIn=inT<start?start:inT,eOut=outT>end?end:outT;
+      mins+=(eOut-eIn)/60000;
+      const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
+      const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
+      // Use saved timezone from device (most accurate), fallback to location-derived tz
+      const shiftTZ = s.in.tz || (overseas ? tzFromLoc(loc) : 'Asia/Singapore');
+      otMins+=calcOTMins(eIn,eOut,shiftTZ);
+      // OVS: count each calendar day within this shift if it's overseas
+      if(overseas){
+        // Walk each calendar day in this shift
+        let d=new Date(eIn);d.setHours(0,0,0,0);
+        while(d<=eOut){ovsDaySet.add(dateKey(d));d.setDate(d.getDate()+1);}
+      }
+    }
+    const hasNoLog=isIn&&wd.since&&!allEvents.find(e=>e.type==='in');
+    if(hasNoLog&&wd.since){
+      const sT=new Date(wd.since),eIn=sT<start?start:sT;
+      mins+=(now-eIn)/60000;
+      const noLogOverseas=wd.lat!=null?(isInSingapore(wd.lat,wd.lon)===false):(isLocSingapore(wd.loc)===false);
+      const noLogTZ=wd.tz||(noLogOverseas?tzFromLoc(wd.loc||''):'Asia/Singapore');
+      otMins+=calcOTMins(eIn,now,noLogTZ);
+      const overseas=wd.lat!=null?(isInSingapore(wd.lat,wd.lon)===false):(isLocSingapore(wd.loc)===false);
+      if(overseas){let d=new Date(eIn);d.setHours(0,0,0,0);while(d<=now){ovsDaySet.add(dateKey(d));d.setDate(d.getDate()+1);}}
+    }
+    const ovsDays=ovsDaySet.size;
+    const locs=[...new Set([...log.filter(e=>e.worker===w&&e.loc).map(e=>e.loc),...(wd.loc?[wd.loc]:[])])];
+    const otRate=otRates[w]||0,ovsRate=ovsRates[w]||0;
+    const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1));
+    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn};
+  });
+  const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0).toFixed(1);
+  const tnh=stats.reduce((a,s)=>a+parseFloat(s.normalHours),0).toFixed(1);
+  const tot=stats.reduce((a,s)=>a+parseFloat(s.otHours),0).toFixed(1);
+  const toc=stats.reduce((a,s)=>a+s.otCost,0);
+  const tovsd=stats.reduce((a,s)=>a+s.ovsDays,0);
+  const tovsc=stats.reduce((a,s)=>a+s.ovsCost,0);
+  const currentlyIn=WORKERS.filter(w=>(workers[w]||{}).status==='in').length;
+  document.getElementById('summaryContent').innerHTML=`
+    <div class="scard-grid">
+      <div class="scard"><div class="sc-label">Total hours</div><div class="sc-val">${th}h</div></div>
+      <div class="scard"><div class="sc-label">Normal hours</div><div class="sc-val">${tnh}h</div><div class="sc-sub">Mon–Fri 08:00–18:00</div></div>
+      <div class="scard"><div class="sc-label">OT hours</div><div class="sc-val" style="color:#A32D2D">${tot}h</div><div class="sc-sub">After 18:00, wknd & PH</div></div>
+      <div class="scard"><div class="sc-label">Total OT cost</div><div class="sc-val" style="color:#A32D2D">S$${toc.toFixed(2)}</div></div>
+      <div class="scard"><div class="sc-label">OVS days</div><div class="sc-val" style="color:#185FA5">${tovsd}</div><div class="sc-sub">Outside Singapore</div></div>
+      <div class="scard"><div class="sc-label">Total OVS cost</div><div class="sc-val" style="color:#185FA5">S$${tovsc.toFixed(2)}</div></div>
+      <div class="scard"><div class="sc-label">Clocked in now</div><div class="sc-val">${currentlyIn}</div><div class="sc-sub">of ${WORKERS.length} workers</div></div>
+    </div>
+    <div class="tbl-wrap"><table class="wtable">
+      <thead><tr><th>Worker</th><th>Status</th><th>Total hrs</th><th>Normal hrs</th><th>OT hrs</th><th>OT Rate (S$/hr)</th><th>OT Cost</th><th>OVS days</th><th>OVS Rate (S$/day)</th><th>OVS Cost</th><th>Last location</th></tr></thead>
+      <tbody>${stats.map(s=>`<tr>
+        <td style="font-weight:600">${s.w}</td>
+        <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn?'In':'Off'}</span></td>
+        <td>${s.hours}h</td>
+        <td>${s.normalHours}h</td>
+        <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h</td>
+        <td><input type="number" min="0" step="0.5" value="${s.otRate||''}" placeholder="0.00" onchange="setOTRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
+        <td style="font-weight:${s.otCost>0?'600':'400'};color:${s.otCost>0?'#A32D2D':'#888'}">${s.otCost>0?'S$'+s.otCost.toFixed(2):'—'}</td>
+        <td style="color:${s.ovsDays>0?'#185FA5':'#888'};font-weight:${s.ovsDays>0?'600':'400'}">${s.ovsDays}</td>
+        <td><input type="number" min="0" step="1" value="${s.ovsRate||''}" placeholder="0.00" onchange="setOVSRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
+        <td style="font-weight:${s.ovsCost>0?'600':'400'};color:${s.ovsCost>0?'#185FA5':'#888'}">${s.ovsCost>0?'S$'+s.ovsCost.toFixed(2):'—'}</td>
+        <td style="font-size:11px;color:#888">${s.locs.length?s.locs[0]:'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  // store stats for export
+  window._lastStats = stats;
+}
+
+// ── Log ───────────────────────────────────────────────────────
+window.setFilter=function(f,el){logTypeFilter=f;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderLog();};
+function renderLog(){
+  const wf=document.getElementById('logWFilter').value;
+  const entries=log.filter(e=>(logTypeFilter==='all'||e.type===logTypeFilter)&&(wf==='all'||e.worker===wf));
+  const list=document.getElementById('logList');
+  if(!entries.length){list.innerHTML='<div class="lempty">No entries found</div>';return;}
+  list.innerHTML=entries.slice(0,200).map(e=>{
+    const d=new Date(e.time);
+    const tzLabel=e.tz&&e.tz!=='Asia/Singapore'?` <span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 5px;border-radius:8px;font-weight:600">${e.tz.split('/').pop().replace(/_/g,' ')}</span>`:'';
+    const loc=e.loc||(e.lat!=null?`${e.lat.toFixed(4)}, ${e.lon.toFixed(4)}`:'No location');
+    // Local time display: use saved localTime or convert UTC to worker's tz
+    const displayTime = e.localTime || fmtInTZ(e.time, e.tz||'Asia/Singapore', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+    const shortTime = e.localTime ? e.localTime.split(',')[1]?.trim().slice(0,5) : fmtInTZ(e.time, e.tz||'Asia/Singapore');
+    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?`<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">${e.job}${e.vessel?' · '+e.vessel:''}</span>`:''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><span class="lts">${shortTime}</span></div>`;
+  }).join('');
+}
+
+// ── Fetch log via REST (bypasses SDK caching issue) ───────────
+async function fetchLog(){
+  try{
+    const user=auth.currentUser;
+    const token=user?await user.getIdToken():'';
+    const url='https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json'+(token?`?auth=${token}`:'');
+    const res=await fetch(url);
+    const data=await res.json();
+    log=[];
+    if(data)Object.entries(data).forEach(([k,v])=>log.push({id:k,...v}));
+    log.sort((a,b)=>new Date(b.time)-new Date(a.time));
+    renderLog();
+    if(document.getElementById('tab-summary').classList.contains('active'))renderSummary();
+    if(document.getElementById('tab-manager').classList.contains('active'))renderManager();
+  }catch(e){console.error('fetchLog error',e);}
+}
+
+// ── Excel Export ──────────────────────────────────────────────
+window.exportExcel=function(){
+  const XLSX=window.XLSX;
+  if(!XLSX){toast('Excel library not loaded yet, try again');return;}
+  const wb=XLSX.utils.book_new();
+  const {start,end}=periodRange();
+  const periodLabel=calState.preset==='custom'?`${fmtDate(calState.fromDate)} to ${fmtDate(calState.toDate)}`:calState.preset.charAt(0).toUpperCase()+calState.preset.slice(1);
+
+  // ── Sheet 1: Activity Log ──────────────────────────────────
+  const logData=[['Worker','Type','Job Number','Vessel','Date (Local)','Time (Local)','Timezone','Day','Latitude','Longitude','Accuracy (m)','Location']];
+  const filteredLog=log.filter(e=>{const t=new Date(e.time);return t>=start&&t<=end;});
+  filteredLog.forEach(e=>{
+    const d=new Date(e.time);
+    const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const localD = e.localTime ? e.localTime : d.toLocaleString([],{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    logData.push([e.worker,e.type==='in'?'Clock In':'Clock Out',e.job||'',e.vessel||'',localD,e.tz||'Asia/Singapore',days[d.getDay()],e.lat||'',e.lon||'',e.acc||'',e.loc||'']);
+  });
+  const wsLog=XLSX.utils.aoa_to_sheet(logData);
+  wsLog['!cols']=[{wch:8},{wch:12},{wch:14},{wch:16},{wch:28},{wch:22},{wch:10},{wch:12},{wch:12},{wch:12},{wch:14},{wch:45}];
+  // Header style
+  ['A1','B1','C1','D1','E1','F1','G1','H1','I1'].forEach(c=>{if(wsLog[c])wsLog[c].s={font:{bold:true},fill:{fgColor:{rgb:'1F3864'}},font:{bold:true,color:{rgb:'FFFFFF'}}};});
+  XLSX.utils.book_append_sheet(wb,wsLog,'Activity Log');
+
+  // ── Sheet 2: Summary ───────────────────────────────────────
+  const stats=window._lastStats||[];
+  const sumData=[['Work Tracker — '+periodLabel],[''],['Worker','Status','Total Hours','Normal Hours','OT Hours','OT Rate (S$/hr)','OT Cost (S$)','OVS Days','OVS Rate (S$/day)','OVS Cost (S$)','Last Location']];
+  stats.forEach(s=>{
+    sumData.push([s.w,s.isIn?'Clocked In':'Off Shift',parseFloat(s.hours),parseFloat(s.normalHours),parseFloat(s.otHours),s.otRate||'',s.otCost||'',s.ovsDays,s.ovsRate||'',s.ovsCost||'',s.locs.length?s.locs[0]:'—']);
+  });
+  // Totals row
+  sumData.push(['']);
+  const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0);
+  const tnh=stats.reduce((a,s)=>a+parseFloat(s.normalHours),0);
+  const tot=stats.reduce((a,s)=>a+parseFloat(s.otHours),0);
+  const toc=stats.reduce((a,s)=>a+s.otCost,0);
+  sumData.push(['TOTAL','',parseFloat(th),parseFloat(tnh),parseFloat(tot),'',parseFloat(toc.toFixed(2)),parseFloat(tovsh),'',parseFloat(tovsc.toFixed(2)),'']);
+  // OT rules note
+  sumData.push(['']);
+  sumData.push(['OT Definition: Weekdays before 08:00 or from 18:00; all day Saturday, Sunday and Singapore Public Holidays']);
+  const wsSum=XLSX.utils.aoa_to_sheet(sumData);
+  wsSum['!cols']=[{wch:10},{wch:14},{wch:12},{wch:13},{wch:10},{wch:18},{wch:14},{wch:10},{wch:18},{wch:14},{wch:45}];
+  wsSum['!merges']=[{s:{r:0,c:0},e:{r:0,c:10}}];
+  XLSX.utils.book_append_sheet(wb,wsSum,'Summary');
+
+  // ── Sheet 3: OT Rates ──────────────────────────────────────
+  const rateData=[['Worker','OT Rate (S$/hr)','OVS Rate (S$/day)','Note']];
+  WORKERS.forEach(w=>rateData.push([w,otRates[w]||0,ovsRates[w]||0,'']));
+  rateData.push(['']);
+  rateData.push(['','','','Rates saved in browser. Update in Summary tab.']);
+  rateData.push(['OVS = Hours worked outside Singapore','','','']);
+  const wsRates=XLSX.utils.aoa_to_sheet(rateData);
+  wsRates['!cols']=[{wch:10},{wch:18},{wch:20},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,wsRates,'Rates');
+
+  const filename=`WorkTracker_${periodLabel.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb,filename);
+  toast('Excel exported ✓');
+};
+
+// ── CSV Export ────────────────────────────────────────────────
+window.exportCSV=function(){
+  const {start,end}=periodRange();
+  const rows=[['Worker','Type','Job Number','Date','Time','Latitude','Longitude','Accuracy (m)','Location']];
+  log.filter(e=>{const t=new Date(e.time);return t>=start&&t<=end;}).forEach(e=>{
+    const d=new Date(e.time);
+    rows.push([e.worker,e.type,e.job||'',d.toLocaleDateString(),d.toLocaleTimeString(),e.lat||'',e.lon||'',e.acc||'',e.loc||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`WorkTracker_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();toast('CSV exported ✓');
+};
+
+// ── Clear duplicate logs ──────────────────────────────────────
+window.clearAndRebuildLog=async function(){
+  if(!confirm('Delete ALL log entries and rebuild from current worker status?'))return;
+  const btn=document.getElementById('clearLogBtn');
+  btn.disabled=true;btn.textContent='Clearing…';
+  try{
+    const user=auth.currentUser;
+    const token=user?await user.getIdToken():'';
+    const url='https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json'+(token?`?auth=${token}`:'');
+    await fetch(url,{method:'DELETE'});
+    for(const w of WORKERS){
+      const wd=workers[w]||{};
+      if(wd.status==='in'&&wd.since){
+        await push(ref(db,'log'),{worker:w,type:'in',time:wd.since,lat:null,lon:null,acc:null,loc:wd.loc||''});
+      }
+    }
+    await fetchLog();
+    btn.disabled=false;btn.textContent='Clear duplicate logs';
+    toast('Log cleared and rebuilt ✓');
+  }catch(e){
+    btn.disabled=false;btn.textContent='Clear duplicate logs';
+    toast('Error: '+e.message);
+  }
+};
+
+// ── PIN ───────────────────────────────────────────────────────
+function openPin(target){
+  pinTarget=target;settingNew=false;
+  document.getElementById('pinTitle').textContent=target==='change'?'Change PIN':'Manager PIN';
+  document.getElementById('pinSub').textContent=target==='change'?'Verify current PIN first':'Enter 4-digit PIN to continue';
+  document.getElementById('newPinArea').style.display=target==='change'?'block':'none';
+  document.getElementById('pinSubmitBtn').textContent='Unlock';
+  document.getElementById('pinSubmitBtn').onclick=submitPin;
+  clearPin();document.getElementById('pinErr').textContent='';
+  document.getElementById('pinModal').classList.add('show');
+  setTimeout(()=>document.getElementById('p0').focus(),80);
+}
+function closePinModal(){document.getElementById('pinModal').classList.remove('show');pinTarget=null;settingNew=false;}
+function clearPin(){[0,1,2,3].forEach(i=>document.getElementById('p'+i).value='');}
+function getPin(){return[0,1,2,3].map(i=>document.getElementById('p'+i).value).join('');}
+function pinInput(i){if(document.getElementById('p'+i).value&&i<3)setTimeout(()=>document.getElementById('p'+(i+1)).focus(),10);if(getPin().length===4)setTimeout(()=>{if(settingNew)saveNewPin();else submitPin();},100);}
+function submitPin(){
+  const p=getPin();
+  if(p.length<4){document.getElementById('pinErr').textContent='Enter all 4 digits';return;}
+  if(p===pin){
+    if(pinTarget==='change'){
+      settingNew=true;
+      document.getElementById('pinTitle').textContent='Set new PIN';
+      document.getElementById('pinSub').textContent='Enter your new 4-digit PIN';
+      document.getElementById('newPinArea').style.display='none';
+      document.getElementById('pinSubmitBtn').textContent='Save PIN';
+      document.getElementById('pinSubmitBtn').onclick=saveNewPin;
+      clearPin();document.getElementById('pinErr').textContent='';
+      document.getElementById('p0').focus();return;
+    }
+    unlocked[pinTarget]=true;sessionStorage.setItem('rc_manager','1');closePinModal();
+    const tabs=['clock','manager','summary','log'];
+    const idx=tabs.indexOf(pinTarget);
+    if(idx>=0)window.switchTab(pinTarget,document.querySelectorAll('.tab')[idx]);
+  }else{document.getElementById('pinErr').textContent='Incorrect PIN';clearPin();document.getElementById('p0').focus();}
+}
+function saveNewPin(){
+  const p=getPin();
+  if(p.length<4){document.getElementById('pinErr').textContent='Enter all 4 digits';return;}
+  set(ref(db,'config/pin'),p);closePinModal();toast('PIN updated ✓');
+}
+
+// ── Expose to window ──────────────────────────────────────────
+window.openPin=openPin;
+window.closePinModal=closePinModal;
+window.pinInput=pinInput;
+window.submitPin=submitPin;
+window.saveNewPin=saveNewPin;
+
+// ── Auth & Init ───────────────────────────────────────────────
+signInAnonymously(auth).catch(e=>{
+  document.getElementById('loadingScreen').innerHTML='<p style="color:#A32D2D;padding:2rem;text-align:center">Connection failed. Please refresh.</p>';
+});
+
+onAuthStateChanged(auth,async user=>{
+  if(!user)return;
+
+  onValue(ref(db,'.info/connected'),snap=>{
+    const online=snap.val(),b=document.getElementById('connBadge');
+    b.textContent=online?'Live':'Offline';
+    b.className='conn '+(online?'online':'offline');
+  });
+
+  // Init worker nodes
+  for(const w of WORKERS){const s=await get(ref(db,'workers/'+w));if(!s.exists())await set(ref(db,'workers/'+w),{status:'out',since:null,loc:'',lastTime:null});}
+  const pinSnap=await get(ref(db,'config/pin'));
+  if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
+
+  onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+
+  onValue(ref(db,'workers'),snap=>{
+    workers=snap.val()||{};
+    WORKERS.forEach(w=>{if(!workers[w])workers[w]={status:'out',since:null,loc:'',lastTime:null};});
+    renderWorkers();if(sel)window.selectW(sel);
+    if(document.getElementById('tab-manager').classList.contains('active'))renderManager();
+    if(document.getElementById('tab-summary').classList.contains('active'))renderSummary();
+    document.getElementById('loadingScreen').classList.add('hide');
+  });
+
+  await fetchLog();
+  setInterval(fetchLog,15000);
+
+  // Init log worker filter
+  WORKERS.forEach(w=>{const o=document.createElement('option');o.value=w;o.textContent=w;document.getElementById('logWFilter').appendChild(o);});
+  renderWorkers();
+  setGeoUI('','Geolocation ready');
+  liveClock();setInterval(liveClock,1000);
+});
+
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10000);
+</script>
+</body>
+</html>
