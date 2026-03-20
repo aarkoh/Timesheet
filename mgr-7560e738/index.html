@@ -27,6 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .module-card.clock{border-left:4px solid #185FA5}
 .module-card.stock{border-left:4px solid #8B1A8B}
 .module-card.worker-view{border-left:4px solid #3B6D11}
+.module-card.jobs{border-left:4px solid #1a6641}
 .mod-icon{font-size:28px;margin-bottom:10px;display:block}
 .mod-title{font-size:15px;font-weight:600;margin-bottom:3px}
 .mod-desc{font-size:12px;color:#888;line-height:1.5}
@@ -34,6 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .mod-badge.blue{background:#E6F1FB;color:#185FA5}
 .mod-badge.purple{background:#F3E6F3;color:#8B1A8B}
 .mod-badge.green{background:#EAF3DE;color:#3B6D11}
+.mod-badge.jobs{background:#EAF3DE;color:#1a6641}
 .scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1.5rem}
 .scard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:0.85rem;text-align:center}
 .sc-val{font-size:22px;font-weight:700;color:#1a1a1a}
@@ -101,6 +103,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="scard"><div class="sc-val red" id="statEmpty">—</div><div class="sc-label">Empty stock</div></div>
   </div>
 
+  <div class="section-title">Job Register</div>
+  <div class="module-grid">
+    <a href="jobs-manager.html" class="module-card jobs">
+      <span class="mod-icon">&#128188;</span>
+      <span class="mod-badge jobs">Manager</span>
+      <div class="mod-title">Job Register</div>
+      <div class="mod-desc">View all jobs, track invoices, record customer payments</div>
+    </a>
+    <a href="https://aarkoh.github.io/Raycontrol/jobs.html" class="module-card worker-view">
+      <span class="mod-icon">&#128196;</span>
+      <span class="mod-badge green">Staff</span>
+      <div class="mod-title">Jobs (Staff View)</div>
+      <div class="mod-desc">View staff job register page</div>
+    </a>
+  </div>
+
   <div class="section-title">Timesheet</div>
   <div class="module-grid">
     <a href="clock-manager.html" class="module-card clock">
@@ -117,15 +135,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </a>
   </div>
 
-  <div class="section-title">Jobs</div>
-  <div class="module-grid">
-    <a href="https://aarkoh.github.io/Raycontrol/jobs.html" class="module-card" style="border-left:4px solid #1a1a1a">
-      <span class="mod-icon">💼</span>
-      <span class="mod-badge manager">Manager</span>
-      <div class="mod-title">Job Register</div>
-      <div class="mod-desc">View and manage all jobs, pipeline status and documents</div>
-    </a>
-  </div>
   <div class="section-title">Stocktaking</div>
   <div class="module-grid">
     <a href="stock-manager.html" class="module-card stock">
@@ -192,28 +201,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-save" onclick="saveStaffPins()" style="margin-top:0.75rem">Save staff codes</button>
       <div id="pinSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
     </div>
-    <div class="section-title">Staff Management</div>
-  <div class="section-box">
-    <h2>&#128101; Manage workers</h2>
-    <p>Add or remove staff members. Changes take effect immediately across all pages.</p>
-    <div id="workerMgmtGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-      <div>
-        <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Initials (e.g. JT)</div>
-        <input type="text" id="newWorkerInitials" maxlength="4" placeholder="e.g. JT"
-          style="width:80px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:16px;font-weight:700;text-align:center;font-family:inherit;text-transform:uppercase">
-      </div>
-      <button class="btn-save" onclick="addWorker()">+ Add worker</button>
-    </div>
-    <div id="workerMgmtMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
   </div>
-
-</div>
 
 <script>
 var mgrPin='1234';
 function mgrInitLogin(){
-  if(sessionStorage.getItem('rc_manager')==='1'){return;}
+  if((function(){var t=localStorage.getItem('rc_manager');return t&&(Date.now()-parseInt(t))<28800000;})()){return;}
   document.getElementById('mgrLogin').style.display='flex';
   setTimeout(function(){var el=document.getElementById('mp0');if(el)el.focus();},200);
 }
@@ -226,7 +219,7 @@ function mgrPinInput(i){
 function mgrDoLogin(){
   var pin=[0,1,2,3].map(function(j){return document.getElementById('mp'+j).value;}).join('');
   if(pin===mgrPin){
-    sessionStorage.setItem('rc_manager','1');
+    localStorage.setItem('rc_manager',Date.now().toString());
     document.getElementById('mgrLogin').style.display='none';
   } else {
     document.getElementById('mgrPinErr').textContent='Incorrect PIN — try again';
@@ -251,7 +244,7 @@ const WORKERS=['HS','TM','RG','MU','AY','IL','SA','AN'];
 function liveClock(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleDateString([],{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 liveClock();setInterval(liveClock,1000);
 
-let WORKERS_ALL=['HS','TM','RG','MU','AY','IL','SA','AN'];
+const WORKERS_ALL=['HS','TM','RG','MU','AY','IL','SA','AN'];
 let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
 
 function renderStaffPins(){
@@ -319,78 +312,6 @@ window.togglePinFolder=function(){
   btn.textContent=open?'&#128193; Hide':'&#128193; Show';
 };
 
-// ── Worker Management ─────────────────────────────────────────
-function renderWorkerMgmt(){
-  const grid=document.getElementById('workerMgmtGrid');
-  if(!grid) return;
-  grid.innerHTML=WORKERS_ALL.map(w=>`
-    <div style="display:flex;align-items:center;gap:6px;background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;padding:6px 10px">
-      <span style="font-size:14px;font-weight:600;min-width:32px">${w}</span>
-      <button onclick="removeWorker('${w}')"
-        style="font-family:inherit;font-size:11px;padding:2px 8px;border:1px solid #A32D2D;color:#A32D2D;background:#fff;border-radius:6px;cursor:pointer">
-        Remove
-      </button>
-    </div>`).join('');
-}
-
-window.addWorker=async function(){
-  const msg=document.getElementById('workerMgmtMsg');
-  const initials=document.getElementById('newWorkerInitials').value.trim().toUpperCase();
-  if(!initials){msg.style.color='#A32D2D';msg.textContent='Enter initials first';return;}
-  if(WORKERS_ALL.includes(initials)){msg.style.color='#A32D2D';msg.textContent=initials+' already exists';return;}
-  const newList=[...WORKERS_ALL, initials];
-  try{
-    await set(ref(db,'config/workers'),newList);
-    WORKERS_ALL=newList;
-    // Auto-assign a PIN (next available digit)
-    const usedPins=Object.values(staffPins);
-    let newPin=null;
-    for(let d=0;d<=9;d++){
-      if(!usedPins.includes(String(d))){newPin=String(d);break;}
-    }
-    if(newPin){
-      staffPins[initials]=newPin;
-      await set(ref(db,'config/staffPins'),staffPins);
-    }
-    // Init worker status
-    await set(ref(db,'workers/'+initials),{status:'out',since:null,loc:'',lastTime:null});
-    // Clear from removed list if re-adding
-    const removedSnap=await get(ref(db,'config/removedWorkers'));
-    if(removedSnap.exists()){
-      const cleaned=removedSnap.val().filter(w=>w!==initials);
-      await set(ref(db,'config/removedWorkers'),cleaned);
-    }
-    document.getElementById('newWorkerInitials').value='';
-    renderWorkerMgmt();
-    renderStaffPins();
-    msg.style.color='#3B6D11';
-    msg.textContent='✓ '+initials+' added'+(newPin?' with PIN '+newPin:'');
-    setTimeout(()=>msg.textContent='',3000);
-  }catch(e){msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;}
-};
-
-window.removeWorker=async function(initials){
-  const msg=document.getElementById('workerMgmtMsg');
-  if(!confirm('Remove '+initials+' from the worker list? Their clock history is preserved.\nThey will be logged out immediately.')) return;
-  const newList=WORKERS_ALL.filter(w=>w!==initials);
-  try{
-    await set(ref(db,'config/workers'),newList);
-    WORKERS_ALL=newList;
-    // Remove their PIN
-    delete staffPins[initials];
-    await set(ref(db,'config/staffPins'),staffPins);
-    // Force logout - write to removedWorkers so their session is invalidated
-    const removedSnap=await get(ref(db,'config/removedWorkers'));
-    const removed=removedSnap.exists()?removedSnap.val():[];
-    if(!removed.includes(initials)) await set(ref(db,'config/removedWorkers'),[...removed,initials]);
-    renderWorkerMgmt();
-    renderStaffPins();
-    msg.style.color='#3B6D11';
-    msg.textContent='✓ '+initials+' removed and logged out';
-    setTimeout(()=>msg.textContent='',3000);
-  }catch(e){msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;}
-};
-
 window.changeManagerPin=async function(){
   const cur=document.getElementById('curPin').value.trim();
   const n=document.getElementById('newPin').value.trim();
@@ -418,7 +339,7 @@ window.changeManagerPin=async function(){
 };
 
 signInAnonymously(auth).catch(e=>console.error(e));
-onAuthStateChanged(auth,async user=>{
+onAuthStateChanged(auth,user=>{
   if(!user)return;
   onValue(ref(db,'.info/connected'),snap=>{
     const b=document.getElementById('connBadge');
@@ -432,20 +353,8 @@ onAuthStateChanged(auth,async user=>{
     document.getElementById('statIn').textContent=inCount;
     document.getElementById('statOff').textContent=WORKERS.length-inCount;
   });
-  // Seed workers list in Firebase if not yet set
-  try{
-    const ws=await get(ref(db,'config/workers'));
-    if(!ws.exists()) await set(ref(db,'config/workers'),WORKERS_ALL);
-  }catch(e){}
   onValue(ref(db,'config/pin'),snap=>{
     if(snap.exists()){managerPin=snap.val();mgrPin=snap.val();}
-  });
-  onValue(ref(db,'config/workers'),snap=>{
-    if(snap.exists()&&Array.isArray(snap.val())&&snap.val().length>0){
-      WORKERS_ALL=snap.val();
-      renderWorkerMgmt();
-      renderStaffPins();
-    }
   });
   onValue(ref(db,'config/adminPin'),snap=>{
     if(snap.exists()){adminPin=snap.val();const d=document.getElementById('adminPinDisplay');if(d)d.textContent=snap.val();}
