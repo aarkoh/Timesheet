@@ -571,61 +571,37 @@ window.printBatchAdvice=function(ids,pref,pdate){
   var cur=invoices[0].currency||'SGD';
   var total=invoices.reduce(function(s,v){return s+(parseFloat(v.amount)||0);},0);
   var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
-  function _fmt(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});}
-  function _fmtD(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
   var iRows=invoices.map(function(v,i){
+    var d=v.invDate;
+    var dStr=d?new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'-';
+    var amt=(parseFloat(v.amount)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
     var bg=i%2===1?'background:#fafaf8':'';
-    return '<tr style="'+bg+'"><td style="padding:5px 8px;font-weight:600">'+(v.invNo||'--')+'</td>'
-      +'<td style="padding:5px 8px">'+_fmtD(v.invDate)+'</td>'
-      +'<td style="padding:5px 8px">'+(v.jobRef||'--')+'</td>'
-      +'<td style="padding:5px 8px">'+(v.vessel||'--')+'</td>'
-      +'<td style="padding:5px 8px">'+(v.desc||'--')+'</td>'
-      +'<td style="padding:5px 8px;text-align:right">'+cur+' '+_fmt(v.amount)+'</td></tr>';
+    return '<tr style="'+bg+'"><td style="padding:5px 8px;font-weight:600">'+(v.invNo||'-')+'</td>'
+      +'<td style="padding:5px 8px">'+dStr+'</td>'
+      +'<td style="padding:5px 8px">'+(v.jobRef||'-')+'</td>'
+      +'<td style="padding:5px 8px">'+(v.vessel||'-')+'</td>'
+      +'<td style="padding:5px 8px">'+(v.desc||'-')+'</td>'
+      +'<td style="padding:5px 8px;text-align:right">'+cur+' '+amt+'</td></tr>';
   }).join('');
-  var css='*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:12mm 14mm 10mm 14mm}'
-    +'@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}'
-    +'.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:12px}'
-    +'.hdr td{vertical-align:middle;padding-bottom:8px}'
-    +'.c1{width:60%}.c2{width:40%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}'
-    +'.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}'
-    +'.ttl{font-size:16pt;font-weight:900;text-align:center;margin:10px 0 14px;border-bottom:2px solid #000;padding-bottom:8px}'
-    +'.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}'
-    +'.ib{border:1px solid #000;padding:8px 12px}'
-    +'.ib .lbl{font-size:8pt;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px}'
-    +'.ib .val{font-size:11pt;font-weight:700}.ib .sub{font-size:9pt;color:#333;margin-top:2px}'
-    +'table.dt{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px}'
-    +'table.dt th{font-weight:700;padding:6px 8px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}'
-    +'table.dt th.r{text-align:right}'
-    +'table.dt td{padding:5px 8px;border-bottom:1px solid #ddd}'
-    +'table.dt tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:7px 8px;font-size:11pt}'
-    +'.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}'
-    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a6641;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
+  var totalStr=(total).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var pdateStr=pdate?new Date(pdate+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'-';
+  var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10pt;color:#000;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:12px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:60%}.c2{width:40%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}.ttl{font-size:16pt;font-weight:900;text-align:center;margin:10px 0 14px;border-bottom:2px solid #000;padding-bottom:8px}.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.ib{border:1px solid #000;padding:8px 12px}.ib .lbl{font-size:8pt;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px}.ib .val{font-size:11pt;font-weight:700}.ib .sub{font-size:9pt;color:#333;margin-top:2px}table.dt{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px}table.dt th{font-weight:700;padding:6px 8px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}table.dt th.r{text-align:right}table.dt td{padding:5px 8px;border-bottom:1px solid #ddd}table.dt tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:7px 8px;font-size:11pt}.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a6641;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
   var bdy='<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +'<table class="hdr"><tr>'
-      +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px">'
-        +'<img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left">'
-        +'<span style="font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span>'
-      +'</div>'
-      +'<div class="addr">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N</div></td>'
+      +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px"><img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left"><span style="font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span></div>'
+        +'<div class="addr">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N</div></td>'
       +'<td class="c2">BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
     +'</tr></table>'
     +'<div class="ttl">PAYMENT ADVICE</div>'
     +'<div class="ig">'
       +'<div class="ib"><div class="lbl">Vendor</div><div class="val">'+vendorName+'</div></div>'
-      +'<div class="ib"><div class="lbl">Payment Reference</div><div class="val">'+(pref||'--')+'</div><div class="sub">Date: '+_fmtD(pdate)+'</div></div>'
+      +'<div class="ib"><div class="lbl">Payment Reference</div><div class="val">'+(pref||'-')+'</div><div class="sub">Date: '+pdateStr+'</div></div>'
     +'</div>'
-    +'<table class="dt"><thead><tr>'
-      +'<th>Invoice No.</th><th>Invoice Date</th><th>Job Ref</th><th>Vessel</th><th>Description</th><th class="r">Amount</th>'
-    +'</tr></thead>'
+    +'<table class="dt"><thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Job Ref</th><th>Vessel</th><th>Description</th><th class="r">Amount</th></tr></thead>'
     +'<tbody>'+iRows+'</tbody>'
-    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID ('+cur+')</td><td style="text-align:right">'+cur+' '+_fmt(total)+'</td></tr></tfoot></table>'
+    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID ('+cur+')</td><td style="text-align:right">'+cur+' '+totalStr+'</td></tr></tfoot></table>'
     +'<div class="sr">'
-      +'<div style="text-align:center;font-size:9pt">'
-        +'<img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>'
-        +'For Raycontrol Pte Ltd<br>'
-        +'<div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div>'
-      +'</div>'
+      +'<div style="text-align:center;font-size:9pt"><img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>For Raycontrol Pte Ltd<br><div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div></div>'
       +'<div style="text-align:right;font-size:9pt;color:#555">'
         +'<div>Document Date: '+todayFmt+'</div>'
         +(pref?'<div style="margin-top:6px">Payment Ref: '+pref+'</div>':'')
@@ -633,8 +609,8 @@ window.printBatchAdvice=function(ids,pref,pdate){
         +'<div style="margin-top:6px">Status: <strong style="color:#1a6641">PAID</strong></div>'
       +'</div>'
     +'</div>'
-    +'<div style="font-size:8pt;font-style:italic;color:#555;margin-top:10px;text-align:center">This is a computer-generated payment advice. Please contact us if there are any discrepancies.</div>';
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Advice - '+vendorName+'</title><style>'+css+'</style></head><body>'+bdy+'</body></html>';
+    +'<div style="font-size:8pt;font-style:italic;color:#555;margin-top:10px;text-align:center">Computer-generated payment advice. Contact us if there are any discrepancies.</div>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Advice</title><style>'+css+'</style></head><body>'+bdy+'</body></html>';
   var blob=new Blob([html],{type:'text/html'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
@@ -652,85 +628,41 @@ window.printPayAdvice=function(id){
   var vis=window._vi_vis||{};
   var v=vis[id]||{};
   var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
-  function _fmtD(d){if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
-  function fmt(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});}
-  var css='*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}'
-    +'@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}'
-    +'.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:12px}'
-    +'.hdr td{vertical-align:middle;padding-bottom:8px}'
-    +'.c1{width:60%}.c2{width:40%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}'
-    +'.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}'
-    +'.ttl{font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 14px;border-bottom:2px solid #000;padding-bottom:8px}'
-    +'.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}'
-    +'.info-box{border:1px solid #000;padding:8px 12px}'
-    +'.info-box .lbl{font-size:8pt;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px}'
-    +'.info-box .val{font-size:11pt;font-weight:700}'
-    +'.info-box .sub{font-size:9pt;color:#333;margin-top:2px}'
-    +'table.dt{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:12px}'
-    +'table.dt th{font-weight:700;padding:6px 8px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}'
-    +'table.dt th.r{text-align:right}'
-    +'table.dt td{padding:6px 8px;border-bottom:1px solid #ddd}'
-    +'table.dt td.r{text-align:right}'
-    +'table.dt tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:7px 8px;font-size:11pt}'
-    +'.stamp-row{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}'
-    +'.stamp-side{text-align:center;font-size:9pt}'
-    +'.note{font-size:8pt;font-style:italic;color:#555;margin-top:10px;text-align:center}'
-    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a6641;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
-  var body='<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+  var amt=(parseFloat(v.amount)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var invDateStr=v.invDate?new Date(v.invDate+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'-';
+  var paidDateStr=(v.paidAt||v.updatedAt)?new Date((v.paidAt||v.updatedAt).slice(0,10)+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'-';
+  var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:12px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:60%}.c2{width:40%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}.ttl{font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 14px;border-bottom:2px solid #000;padding-bottom:8px}.ig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}.ib{border:1px solid #000;padding:8px 12px}.ib .lbl{font-size:8pt;font-weight:700;text-transform:uppercase;color:#555;margin-bottom:4px}.ib .val{font-size:11pt;font-weight:700}.ib .sub{font-size:9pt;color:#333;margin-top:2px}table.dt{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px}table.dt th{font-weight:700;padding:6px 8px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}table.dt th.r{text-align:right}table.dt td{padding:6px 8px;border-bottom:1px solid #ddd}table.dt tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:7px 8px;font-size:11pt}.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a6641;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
+  var bdy='<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +'<table class="hdr"><tr>'
       +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px"><img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left"><span style="font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span></div>'
         +'<div class="addr">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N</div></td>'
       +'<td class="c2">BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
     +'</tr></table>'
     +'<div class="ttl">PAYMENT ADVICE</div>'
-    +'<div class="info-grid">'
-      +'<div class="info-box">'
-        +'<div class="lbl">Vendor</div>'
-        +'<div class="val">'+(v.vendorName||'—')+'</div>'
-      +'</div>'
-      +'<div class="info-box">'
-        +'<div class="lbl">Payment Reference</div>'
-        +'<div class="val">'+(v.paymentRef||'—')+'</div>'
-        +'<div class="sub">Date: '+_fmtD(v.paidAt||v.updatedAt)+'</div>'
-      +'</div>'
+    +'<div class="ig">'
+      +'<div class="ib"><div class="lbl">Vendor</div><div class="val">'+(v.vendorName||'-')+'</div></div>'
+      +'<div class="ib"><div class="lbl">Payment Reference</div><div class="val">'+(v.paymentRef||'-')+'</div><div class="sub">Date: '+paidDateStr+'</div></div>'
     +'</div>'
-    +'<table class="dt"><thead><tr>'
-      +'<th>Vendor Invoice No.</th>'
-      +'<th>Invoice Date</th>'
-      +'<th>Job Ref</th>'
-      +'<th>Vessel</th>'
-      +'<th>Description</th>'
-      +'<th class="r">Amount</th>'
-    +'</tr></thead>'
-    +'<tbody>'
-      +'<tr>'
-        +'<td style="font-weight:700">'+(v.invNo||'—')+'</td>'
-        +'<td>'+_fmtD(v.invDate)+'</td>'
-        +'<td>'+(v.jobRef||'—')+'</td>'
-        +'<td>'+(v.vessel||'—')+'</td>'
-        +'<td>'+(v.desc||'—')+'</td>'
-        +'<td class="r">'+(v.currency||'SGD')+' '+fmt(v.amount)+'</td>'
-      +'</tr>'
-    +'</tbody>'
-    +'<tfoot><tr>'
-      +'<td colspan="5" style="text-align:right">TOTAL PAID</td>'
-      +'<td style="text-align:right">'+(v.currency||'SGD')+' '+fmt(v.amount)+'</td>'
-    +'</tr></tfoot></table>'
-    +'<div class="stamp-row">'
-      +'<div class="stamp-side">'
-        +'<img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>'
-        +'For Raycontrol Pte Ltd<br>'
-        +'<div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div>'
-      +'</div>'
-      +'<div class="stamp-side" style="text-align:right;font-size:9pt;color:#555">'
+    +'<table class="dt"><thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Job Ref</th><th>Vessel</th><th>Description</th><th class="r">Amount</th></tr></thead>'
+    +'<tbody><tr>'
+      +'<td style="font-weight:700">'+(v.invNo||'-')+'</td>'
+      +'<td>'+invDateStr+'</td>'
+      +'<td>'+(v.jobRef||'-')+'</td>'
+      +'<td>'+(v.vessel||'-')+'</td>'
+      +'<td>'+(v.desc||'-')+'</td>'
+      +'<td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td>'
+    +'</tr></tbody>'
+    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr></tfoot></table>'
+    +'<div class="sr">'
+      +'<div style="text-align:center;font-size:9pt"><img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>For Raycontrol Pte Ltd<br><div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div></div>'
+      +'<div style="text-align:right;font-size:9pt;color:#555">'
         +'<div>Document Date: '+todayFmt+'</div>'
         +(v.paymentRef?'<div style="margin-top:6px">Payment Ref: '+v.paymentRef+'</div>':'')
         +'<div style="margin-top:6px">Status: <strong style="color:#1a6641">PAID</strong></div>'
       +'</div>'
     +'</div>'
-    +'<div class="note">This is a computer-generated payment advice. Please contact us if there are any discrepancies.</div>';
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Advice - '+v.invNo+'</title><style>'+css+'</style></head><body>'+body+'</body></html>';
+    +'<div style="font-size:8pt;font-style:italic;color:#555;margin-top:10px;text-align:center">Computer-generated payment advice. Contact us if there are any discrepancies.</div>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Payment Advice - '+(v.invNo||'')+'</title><style>'+css+'</style></head><body>'+bdy+'</body></html>';
   var blob=new Blob([html],{type:'text/html'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
