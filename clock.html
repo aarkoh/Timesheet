@@ -82,8 +82,9 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
     <div class="job-field" id="jobField" style="display:none">
       <label for="jobInput">Job number</label>
       <div style="position:relative">
-        <input type="text" id="jobInput" placeholder="Type job ref e.g. 2603001" autocomplete="off"
-          oninput="jobSearch(this.value);document.getElementById('jobReq').style.display='none'">
+        <input type="text" id="jobInput" placeholder="Type job ref e.g. 2603001" autocomplete="new-password"
+          onfocus="if(window.loadJobsCache)window.loadJobsCache();"
+          oninput="window.jobSearch(this.value);document.getElementById('jobReq').style.display='none'">
         <div id="jobDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:50;max-height:200px;overflow-y:auto;margin-top:2px"></div>
       </div>
       <div id="jobSel" style="display:none;margin-top:6px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:6px 10px;font-size:12px;color:#185FA5;display:flex;align-items:center;gap:8px">
@@ -342,10 +343,13 @@ onAuthStateChanged(auth,async user=>{
     }
   });
   // Load jobs for autocomplete
-    get(ref(db,'jobs')).then(snap=>{
-      jobsCache={};
-      if(snap.exists())Object.entries(snap.val()).forEach(([k,v])=>{jobsCache[k]=v;});
-    });
+    window.loadJobsCache=function loadJobsCache(){
+      get(ref(db,'jobs')).then(snap=>{
+        jobsCache={};
+        if(snap.exists())Object.entries(snap.val()).forEach(([k,v])=>{jobsCache[k]=v;});
+      }).catch(()=>{});
+    }
+    loadJobsCache();
     onValue(ref(db,'workers'),snap=>{
     workers=snap.val()||{};
     WORKERS.forEach(w=>{if(!workers[w])workers[w]={status:'out',since:null,loc:'',lastTime:null};});
