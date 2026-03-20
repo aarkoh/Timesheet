@@ -180,6 +180,10 @@ button:hover{background:#f0f0ee}
     <div class="fi"><label>Vessel</label><input type="text" id="j_vessel" placeholder="e.g. CAPE AROLA"></div>
     <div class="fi"><label>Port</label><input type="text" id="j_port" placeholder="e.g. SINGAPORE"></div>
   </div>
+  <div class="fr2">
+    <div class="fi"><label>Hull No.</label><input type="text" id="j_hull" placeholder="Hull number"></div>
+    <div class="fi"><label>Yard</label><input type="text" id="j_yard" placeholder="Shipyard name"></div>
+  </div>
   <div class="fr3">
     <div class="fi"><label>Equipment</label><input type="text" id="j_equip" placeholder="e.g. BWTS"></div>
     <div class="fi"><label>Make</label><input type="text" id="j_make" placeholder="e.g. HANLA"></div>
@@ -421,6 +425,8 @@ window.openDetail=function(id){
         +"</div><div>"
           +'<div class="ir"><span class="il">Vessel</span><span class="iv">'+(j.vessel||"&mdash;")+"</span></div>"
           +'<div class="ir"><span class="il">Port</span><span class="iv">'+(j.port||"&mdash;")+"</span></div>"
+          +(j.hull?'<div class="ir"><span class="il">Hull No.</span><span class="iv">'+j.hull+"</span></div>":"")
+          +(j.yard?'<div class="ir"><span class="il">Yard</span><span class="iv">'+j.yard+"</span></div>":"")
           +'<div class="ir"><span class="il">Equipment</span><span class="iv">'+(j.equip||"&mdash;")+"</span></div>"
           +'<div class="ir"><span class="il">Make / Model</span><span class="iv">'+[j.make,j.model].filter(Boolean).join(" / ")+"</span></div>"
           +'<div class="ir"><span class="il">Task</span><span class="iv">'+(j.task||"&mdash;")+"</span></div>"
@@ -597,7 +603,7 @@ window.clrCust=function(){document.getElementById("j_cs_id").value="";document.g
 function resetModal(){
   selVendors=[];liCount=0;
   document.getElementById("liBody").innerHTML="";
-  ["j_ref","j_date","j_eta","j_validity","j_attn","j_yref","j_cpo","j_cpoprice","j_vessel","j_port","j_equip","j_make","j_model","j_task","j_memo","j_eng","j_dtime","j_dterms","j_courier_a","j_packing_a","j_freight_a"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
+  ["j_ref","j_date","j_eta","j_validity","j_attn","j_yref","j_cpo","j_cpoprice","j_vessel","j_port","j_hull","j_yard","j_equip","j_make","j_model","j_task","j_memo","j_eng","j_dtime","j_dterms","j_courier_a","j_packing_a","j_freight_a"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("j_type").value="supply";
   document.getElementById("j_cur").value="SGD";
   document.getElementById("j_courier").value="TBA";
@@ -637,7 +643,7 @@ window.openEditJob=function(id){
   document.getElementById("mTitle").textContent="Edit Job";
   resetModal();
   selVendors=(j.vendors||[]).map(function(vid,i){return{id:vid,name:(j.vendorNames||[])[i]||vid,cost:(j.vendorCosts||[])[i]||""};});
-  var flds={j_ref:j.ref,j_date:j.date,j_eta:j.eta,j_validity:j.validity,j_attn:j.attn,j_yref:j.yourRef,j_cpo:j.custPO,j_cpoprice:j.poPrice,j_vessel:j.vessel,j_port:j.port,j_equip:j.equip,j_make:j.make,j_model:j.model,j_task:j.task,j_memo:j.memo,j_eng:j.engineer,j_dtime:j.delTime,j_dterms:j.delTerms,j_bankfee:j.bankFee||"0",j_courier_a:j.courierAmt,j_packing_a:j.packingAmt,j_freight_a:j.freightAmt};
+  var flds={j_ref:j.ref,j_date:j.date,j_eta:j.eta,j_validity:j.validity,j_attn:j.attn,j_yref:j.yourRef,j_cpo:j.custPO,j_cpoprice:j.poPrice,j_vessel:j.vessel,j_port:j.port,j_hull:j.hull,j_yard:j.yard,j_equip:j.equip,j_make:j.make,j_model:j.model,j_task:j.task,j_memo:j.memo,j_eng:j.engineer,j_dtime:j.delTime,j_dterms:j.delTerms,j_bankfee:j.bankFee||"0",j_courier_a:j.courierAmt,j_packing_a:j.packingAmt,j_freight_a:j.freightAmt};
   Object.entries(flds).forEach(function(e){var el=document.getElementById(e[0]);if(el&&e[1])el.value=e[1];});
   document.getElementById("j_type").value=j.type||"supply";
   document.getElementById("j_cur").value=j.currency||"SGD";
@@ -663,7 +669,7 @@ window.saveJob=async function(){
   var data={
     ref:jref,date:gv("j_date"),customerId:custId,customerName:custName,
     attn:gv("j_attn"),yourRef:gv("j_yref"),custPO:gv("j_cpo"),poPrice:gv("j_cpoprice"),
-    vessel:gv("j_vessel"),port:gv("j_port"),equip:gv("j_equip"),make:gv("j_make"),model:gv("j_model"),task:gv("j_task"),
+    vessel:gv("j_vessel"),port:gv("j_port"),hull:gv("j_hull"),yard:gv("j_yard"),equip:gv("j_equip"),make:gv("j_make"),model:gv("j_model"),task:gv("j_task"),
     vendors:selVendors.map(function(v){return v.id;}),vendorNames:selVendors.map(function(v){return v.name;}),vendorCosts:selVendors.map(function(v){return v.cost||""}),
     type:document.getElementById("j_type").value,currency:document.getElementById("j_cur").value,
     eta:gv("j_eta"),validity:gv("j_validity"),memo:gv("j_memo"),engineer:gv("j_eng"),
@@ -1779,8 +1785,8 @@ window.printRFQ = function(id) {
         +'<div style="font-size:8.5pt;color:#555">VESSEL / PROJECT</div>'
         +'<div style="font-weight:700;font-size:11pt;border-bottom:1px solid #000;padding-bottom:2px">'+(j.vessel||'').toUpperCase()+'</div>'
         +'<div style="display:flex;gap:20px;margin-top:6px">'
-          +'<span><span style="font-size:8.5pt;color:#555">HULL NO</span>&nbsp;&nbsp;___________</span>'
-          +'<span><span style="font-size:8.5pt;color:#555">YARD</span>&nbsp;&nbsp;___________</span>'
+          +'<span><span style="font-size:8.5pt;color:#555">HULL NO</span>&nbsp;&nbsp;'+(j.hull||'___________')+'</span>'
+          +'<span><span style="font-size:8.5pt;color:#555">YARD</span>&nbsp;&nbsp;'+(j.yard||'___________')+'</span>'
           +'<span><span style="font-size:8.5pt;color:#555">BUILT YEAR</span>&nbsp;&nbsp;_______</span>'
         +'</div>'
       +'</div>'
