@@ -120,6 +120,7 @@ button:hover{background:#f0f0ee}
     </div>
     <div class="toolbar">
       <input type="text" id="srch" placeholder="Search ref, customer, vessel, PO&hellip;" oninput="render()">
+    <button onclick="openSOA()" style="border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128196; SOA</button>
     </div>
     <div class="chips">
       <div class="chip on" onclick="setF('all',this)">All</div>
@@ -202,7 +203,7 @@ const db=getDatabase(initializeApp({
 const auth=getAuth();
 
 /* ── State ── */
-let jobs={}, filt='all', curId=null;
+let jobs={}, contacts={}, filt='all', curId=null;
 
 /* ── Constants ── */
 const SO=["quote","customer_po","vendor_po","do_wcc","invoice","soa","closed"];
@@ -217,8 +218,10 @@ function ageD(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d.length=
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 /* expose to plain scripts for print functions */
 window._mgr_fmt=fmt;
+window._mgr_fmtD=fmtD;
 window._mgr_totals=totals;
 window._mgr_jobs=jobs;
+window._mgr_contacts=contacts;
 window.toast=toast;
 function totals(j){
   var its=j.lineItems||[];
@@ -488,6 +491,10 @@ onAuthStateChanged(auth,user=>{
     b.className='conn '+(snap.val()?'online':'offline');
     document.getElementById('ls').classList.add('hide');
   });
+  onValue(ref(db,'contacts'),snap=>{
+    contacts=snap.val()||{};
+    window._mgr_contacts=contacts;
+  });
   onValue(ref(db,'jobs'),snap=>{
     jobs=snap.val()||{};
     window._mgr_jobs=jobs;
@@ -737,5 +744,292 @@ function printInvData(id, selectedItems, invType, invPct){
 }
 </script>
 
+<!-- SOA MODAL -->
+<div class="mbg" id="soaModal">
+  <div class="mbox" style="max-width:640px">
+    <h2>&#128196; Statement of Account</h2>
+    <div class="mfi" style="margin-bottom:.75rem">
+      <label>Customer</label>
+      <div style="position:relative">
+        <input type="text" id="soa_cs_inp" placeholder="Type customer name…" autocomplete="off" oninput="soaCsSearch()" onfocus="soaCsSearch()" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+        <div id="soa_cs_drop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:300;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="soa_cs_sel" style="display:none;align-items:center;gap:8px;padding:6px 10px;background:#EAF3DE;border-radius:8px;font-size:13px;font-weight:500;margin-top:6px">
+        <span id="soa_cs_nm" style="flex:1"></span>
+        <button onclick="soaCsClear()" style="font-size:11px;padding:2px 8px;color:#A32D2D;border-color:#A32D2D">&#10005;</button>
+      </div>
+      <input type="hidden" id="soa_cs_id">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.75rem">
+      <div class="mfi"><label>From date</label><input type="date" id="soa_from"></div>
+      <div class="mfi"><label>To date</label><input type="date" id="soa_to"></div>
+    </div>
+    <div id="soaPreview" style="display:none;margin-bottom:.75rem">
+      <div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.5rem">Preview</div>
+      <div id="soaPreviewTable" style="overflow-x:auto;border:1px solid #e0ddd6;border-radius:8px;font-size:12px"></div>
+      <div id="soaAgeing" style="margin-top:.75rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
+    </div>
+    <div class="pm-foot">
+      <button onclick="document.getElementById('soaModal').classList.remove('show')">Cancel</button>
+      <button onclick="generateSOAPreview()" style="border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128269; Preview</button>
+      <button class="btn-save" style="background:#A32D2D;border-color:#A32D2D" onclick="printSOA()">&#128424; Print / PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.openSOA = function() {
+  document.getElementById('soa_cs_inp').value = '';
+  document.getElementById('soa_cs_id').value = '';
+  document.getElementById('soa_cs_sel').style.display = 'none';
+  document.getElementById('soa_cs_inp').style.display = '';
+  document.getElementById('soaPreview').style.display = 'none';
+  var now = new Date();
+  document.getElementById('soa_from').value = now.getFullYear() + '-01-01';
+  document.getElementById('soa_to').value = now.toISOString().slice(0,10);
+  document.getElementById('soaModal').classList.add('show');
+};
+
+window.soaCsSearch = function() {
+  var q = document.getElementById('soa_cs_inp').value.toLowerCase();
+  var contacts = window._mgr_contacts||{};
+  var drop = document.getElementById('soa_cs_drop');
+  var matches = Object.entries(contacts).filter(function(e){
+    var c = e[1];
+    return (c.types||[]).includes('customer') && ((c.company||c.name||'').toLowerCase().includes(q));
+  }).slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  window._soaMatches = matches;
+  drop.innerHTML = matches.map(function(e,i){
+    var nm = e[1].company||e[1].name||'';
+    return '<div data-i="'+i+'" style="padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3">'+nm+'</div>';
+  }).join('');
+  drop.querySelectorAll('[data-i]').forEach(function(el){
+    el.addEventListener('click', function(){
+      var m = window._soaMatches[parseInt(this.getAttribute('data-i'))];
+      soaCsSelect(m[0], m[1].company||m[1].name||'');
+    });
+  });
+  drop.style.display = 'block';
+  setTimeout(function(){
+    document.addEventListener('click', function h(ev){
+      if(!drop.contains(ev.target) && ev.target.id !== 'soa_cs_inp'){drop.style.display='none';}
+      document.removeEventListener('click', h);
+    });
+  }, 10);
+};
+
+window.soaCsSelect = function(id, nm) {
+  document.getElementById('soa_cs_id').value = id;
+  document.getElementById('soa_cs_nm').textContent = nm;
+  document.getElementById('soa_cs_sel').style.display = 'flex';
+  document.getElementById('soa_cs_inp').style.display = 'none';
+  document.getElementById('soa_cs_drop').style.display = 'none';
+};
+
+window.soaCsClear = function() {
+  document.getElementById('soa_cs_id').value = '';
+  document.getElementById('soa_cs_sel').style.display = 'none';
+  document.getElementById('soa_cs_inp').style.display = '';
+  document.getElementById('soa_cs_inp').value = '';
+  document.getElementById('soa_cs_inp').focus();
+};
+
+function soaGetJobs() {
+  var jobs = window._mgr_jobs||{};
+  var totals = window._mgr_totals;
+  var custId = document.getElementById('soa_cs_id').value;
+  var from = document.getElementById('soa_from').value;
+  var to = document.getElementById('soa_to').value;
+  if(!custId){toast('Please select a customer.');return null;}
+  return Object.entries(jobs).filter(function(e){
+    var j = e[1];
+    if(j.customerId !== custId) return false;
+    var d = (j.date||j.createdAt||'').slice(0,10);
+    if(from && d < from) return false;
+    if(to && d > to) return false;
+    return totals(j).total > 0;
+  }).sort(function(a,b){
+    return (a[1].date||a[1].createdAt||'').localeCompare(b[1].date||b[1].createdAt||'');
+  });
+}
+
+function soaAge(d){
+  if(!d) return 999;
+  return Math.floor((Date.now() - new Date(d.slice(0,10)+'T00:00:00')) / 864e5);
+}
+
+window.generateSOAPreview = function() {
+  var rows = soaGetJobs();
+  if(!rows) return;
+  var fmt = window._mgr_fmt, fmtD = window._mgr_fmtD, totals = window._mgr_totals;
+  if(!fmt){toast('Page still loading, please wait.');return;}
+  var age0=0,age30=0,age60=0,age90=0,totalInv=0,totalRcvd=0;
+  var SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vendor PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
+  var tbl='<table style="width:100%;border-collapse:collapse">'
+    +'<thead style="background:#f9f9f7"><tr>'
+    +'<th style="padding:7px 10px;text-align:left;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Ref</th>'
+    +'<th style="padding:7px 10px;text-align:left;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Date</th>'
+    +'<th style="padding:7px 10px;text-align:left;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Status</th>'
+    +'<th style="padding:7px 10px;text-align:right;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Invoice</th>'
+    +'<th style="padding:7px 10px;text-align:right;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Paid</th>'
+    +'<th style="padding:7px 10px;text-align:right;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Balance</th>'
+    +'<th style="padding:7px 10px;text-align:center;font-size:11px;color:#888;border-bottom:2px solid #e0ddd6">Age</th>'
+    +'</tr></thead><tbody>';
+  rows.forEach(function(e){
+    var j=e[1], t=totals(j), cur=j.currency||'SGD';
+    var rcvd=parseFloat(j.paymentReceived)||0, bal=t.total-rcvd;
+    var age=soaAge(j.date||j.createdAt);
+    var ageCol=age>90?'#A32D2D':age>60?'#854F0B':age>30?'#185FA5':'#1a6641';
+    totalInv+=t.total; totalRcvd+=rcvd;
+    if(bal>0.005){if(age<=30)age0+=bal;else if(age<=60)age30+=bal;else if(age<=90)age60+=bal;else age90+=bal;}
+    var balStr=Math.abs(bal)<0.005?'<span style="color:#1a6641">Settled</span>':'<span style="color:#A32D2D;font-weight:600">'+cur+' '+fmt(bal)+'</span>';
+    tbl+='<tr style="border-bottom:1px solid #f0ede6">'
+      +'<td style="padding:6px 10px;font-weight:600">'+(j.ref||'--')+'</td>'
+      +'<td style="padding:6px 10px;color:#888;white-space:nowrap">'+(fmtD?fmtD(j.date||j.createdAt):j.date||j.createdAt||'--')+'</td>'
+      +'<td style="padding:6px 10px"><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#f0ede6">'+(SL[j.status]||j.status||'')+'</span></td>'
+      +'<td style="padding:6px 10px;text-align:right">'+cur+' '+fmt(t.total)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:#1a6641">'+(rcvd>0?cur+' '+fmt(rcvd):'--')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right">'+balStr+'</td>'
+      +'<td style="padding:6px 10px;text-align:center;font-size:11px;font-weight:600;color:'+ageCol+'">'+age+'d</td>'
+      +'</tr>';
+  });
+  var totalBal=totalInv-totalRcvd;
+  tbl+='<tr style="font-weight:700;background:#f9f9f7;border-top:2px solid #e0ddd6">'
+    +'<td colspan="3" style="padding:7px 10px">TOTAL</td>'
+    +'<td style="padding:7px 10px;text-align:right">SGD '+fmt(totalInv)+'</td>'
+    +'<td style="padding:7px 10px;text-align:right;color:#1a6641">SGD '+fmt(totalRcvd)+'</td>'
+    +'<td style="padding:7px 10px;text-align:right;color:#A32D2D">SGD '+fmt(totalBal)+'</td>'
+    +'<td></td></tr></tbody></table>';
+  document.getElementById('soaPreviewTable').innerHTML = rows.length ? tbl : '<div style="padding:2rem;text-align:center;color:#aaa">No invoices found.</div>';
+  var ac=[
+    {l:'Current (0-30d)',v:age0,c:'#1a6641'},
+    {l:'31-60 days',v:age30,c:'#185FA5'},
+    {l:'61-90 days',v:age60,c:'#854F0B'},
+    {l:'Over 90 days',v:age90,c:'#A32D2D'}
+  ];
+  document.getElementById('soaAgeing').innerHTML = ac.map(function(a){
+    return '<div style="background:#fff;border:1px solid #e0ddd6;border-radius:8px;padding:.6rem .75rem;border-top:3px solid '+a.c+'">'
+      +'<div style="font-size:14px;font-weight:700;color:'+a.c+'">SGD '+fmt(a.v)+'</div>'
+      +'<div style="font-size:10px;color:#888;margin-top:2px">'+a.l+'</div></div>';
+  }).join('');
+  document.getElementById('soaPreview').style.display = 'block';
+};
+
+window.printSOA = function() {
+  var rows = soaGetJobs();
+  if(!rows) return;
+  if(!rows.length){toast('No invoices found for this customer in the selected date range.');return;}
+  var fmt=window._mgr_fmt, totals=window._mgr_totals;
+  var custId=document.getElementById('soa_cs_id').value;
+  var custNm=document.getElementById('soa_cs_nm').textContent;
+  var contacts=window._mgr_contacts||{};
+  var custAddr=(contacts[custId]||{}).address||'';
+  var from=document.getElementById('soa_from').value;
+  var to=document.getElementById('soa_to').value;
+  var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+  function fmtD(d){if(!d)return'--';try{return new Date(d.slice(0,10)+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
+  var fromFmt=from?fmtD(from):'--', toFmt=to?fmtD(to):'--';
+  var age0=0,age30=0,age60=0,age90=0,totalInv=0,totalRcvd=0;
+  var SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vendor PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
+  var iRows=rows.map(function(e,i){
+    var j=e[1], t=totals(j), cur=j.currency||'SGD';
+    var rcvd=parseFloat(j.paymentReceived)||0, bal=t.total-rcvd;
+    var age=soaAge(j.date||j.createdAt);
+    var ageStr=age<=30?'0-30':age<=60?'31-60':age<=90?'61-90':'90+';
+    totalInv+=t.total; totalRcvd+=rcvd;
+    if(bal>0.005){if(age<=30)age0+=bal;else if(age<=60)age30+=bal;else if(age<=90)age60+=bal;else age90+=bal;}
+    var bg=i%2===1?'background:#fafaf8':'';
+    var balStr=Math.abs(bal)<0.005?'Settled':fmt(bal);
+    var balWt=Math.abs(bal)<0.005?'400':'700';
+    var balClr=Math.abs(bal)<0.005?'#1a6641':'#000';
+    return '<tr style="'+bg+'">'
+      +'<td style="padding:4px 6px;font-weight:600">'+(j.ref||'--')+'</td>'
+      +'<td style="padding:4px 6px;white-space:nowrap">'+fmtD(j.date||j.createdAt)+'</td>'
+      +'<td style="padding:4px 6px">'+(SL[j.status]||j.status||'')+'</td>'
+      +'<td style="padding:4px 6px">'+(j.custPO||'--')+'</td>'
+      +'<td style="padding:4px 6px;text-align:right">'+cur+' '+fmt(t.total)+'</td>'
+      +'<td style="padding:4px 6px;text-align:right">'+(rcvd>0?fmt(rcvd):'--')+'</td>'
+      +'<td style="padding:4px 6px;text-align:right;font-weight:'+balWt+';color:'+balClr+'">'+balStr+'</td>'
+      +'<td style="padding:4px 6px;text-align:center">'+ageStr+'</td>'
+      +'</tr>';
+  }).join('');
+  var totalBal=totalInv-totalRcvd;
+  var css='*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,sans-serif;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}'
+    +'@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}'
+    +'.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:10px}'
+    +'.hdr td{vertical-align:middle;padding-bottom:8px}'
+    +'.c1{width:45%}.c2{width:30%;text-align:center}'
+    +'.c3{width:25%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}'
+    +'.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}'
+    +'.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}'
+    +'.ttl{font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 8px}'
+    +'table.it{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:10px}'
+    +'table.it th{font-weight:700;padding:5px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}'
+    +'table.it th.r{text-align:right}table.it th.c{text-align:center}'
+    +'table.it td{padding:4px 6px;border-bottom:1px solid #eee}'
+    +'table.it tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:5px 6px}'
+    +'.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}'
+    +'.abox{border:1px solid #000;padding:6px 8px;text-align:center}'
+    +'.abox .av{font-size:11pt;font-weight:700}.abox .al{font-size:7.5pt;margin-top:2px}'
+    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
+  var bdy='<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +'<table class="hdr"><tr>'
+      +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px">'
+        +'<img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left">'
+        +'<span style="font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span>'
+      +'</div>'
+      +'<div class="addr">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N &nbsp; GST: M2-0074537-0</div></td>'
+      +'<td class="c2"><div class="logrid">'
+        +'<img src="'+LHA+'" style="height:30px;max-width:90px;object-fit:contain">'
+        +'<img src="'+LKR+'" style="height:24px;max-width:85px;object-fit:contain">'
+        +'<img src="'+LYO+'" style="height:24px;max-width:90px;object-fit:contain">'
+        +'<img src="'+LMA+'" style="height:38px;max-width:60px;object-fit:contain">'
+      +'</div></td>'
+      +'<td class="c3">BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
+    +'</tr></table>'
+    +'<div class="ttl">STATEMENT OF ACCOUNT</div>'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:9.5pt">'
+      +'<div><div>To:</div><div style="font-weight:700;font-size:11pt">'+custNm+'</div>'
+        +(custAddr?'<div style="font-size:9pt;margin-top:2px">'+custAddr+'</div>':'')
+      +'</div>'
+      +'<div><table style="border-collapse:collapse">'
+        +'<tr><td style="font-weight:700;padding:1px 6px">Date</td><td style="padding:1px 6px">'+todayFmt+'</td></tr>'
+        +'<tr><td style="font-weight:700;padding:1px 6px">Period</td><td style="padding:1px 6px">'+fromFmt+' - '+toFmt+'</td></tr>'
+        +'<tr><td style="font-weight:700;padding:1px 6px">Currency</td><td style="padding:1px 6px">SGD</td></tr>'
+      +'</table></div>'
+    +'</div>'
+    +'<table class="it"><thead><tr>'
+      +'<th>Ref No.</th><th>Date</th><th>Status</th><th>Cust PO</th>'
+      +'<th class="r">Invoice Amt</th><th class="r">Payment Rcvd</th><th class="r">Balance</th><th class="c">Ageing</th>'
+    +'</tr></thead>'
+    +'<tbody>'+iRows+'</tbody>'
+    +'<tfoot><tr>'
+      +'<td colspan="4">TOTAL</td>'
+      +'<td style="text-align:right">SGD '+fmt(totalInv)+'</td>'
+      +'<td style="text-align:right">SGD '+fmt(totalRcvd)+'</td>'
+      +'<td style="text-align:right">SGD '+fmt(totalBal)+'</td>'
+      +'<td></td>'
+    +'</tr></tfoot></table>'
+    +'<div class="agrid">'
+      +'<div class="abox"><div class="av">SGD '+fmt(age0)+'</div><div class="al">Current (0-30 days)</div></div>'
+      +'<div class="abox"><div class="av">SGD '+fmt(age30)+'</div><div class="al">31-60 days</div></div>'
+      +'<div class="abox"><div class="av">SGD '+fmt(age60)+'</div><div class="al">61-90 days</div></div>'
+      +'<div class="abox" style="border-color:#A32D2D"><div class="av" style="color:#A32D2D">SGD '+fmt(age90)+'</div><div class="al">Over 90 days</div></div>'
+    +'</div>'
+    +'<div style="font-size:8pt;font-style:italic;color:#555;margin-top:6px">* Ageing based on invoice date. Please disregard if payment has already been made.</div>'
+    +'<div style="border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:14px;text-align:center">E.&amp; O.E. | <em>Thank you for your continued support</em><br>'
+      +'<span style="font-size:7.5pt">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</span>'
+    +'</div>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SOA - '+custNm+'</title><style>'+css+'</style></head><body>'+bdy+'</body></html>';
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.target='_blank'; a.rel='noopener';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+};
+</script>
 </body>
 </html>
