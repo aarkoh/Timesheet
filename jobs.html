@@ -1146,7 +1146,15 @@ window.printQuoData=function(id,selectedItems,revNum){
     <h2>&#128221; CIPL — <span id="cipl_ref_title"></span></h2>
     <input type="hidden" id="cipl_jobid">
 
-    <div class="cipl-sec" style="margin-top:0;padding-top:0;border:none">Document Info</div>
+    <div class="cipl-sec" style="margin-top:0;padding-top:0;border:none">Select Line Items to Include</div>
+    <div id="cipl_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:4px"></div>
+    <div style="font-size:11px;color:#888;margin-bottom:4px">
+      <a href="#" onclick="window.ciplSelectAll(true);return false" style="color:#185FA5">Select all</a>
+      &nbsp;/&nbsp;
+      <a href="#" onclick="window.ciplSelectAll(false);return false" style="color:#185FA5">None</a>
+    </div>
+
+    <div class="cipl-sec">Document Info</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="cipl-fi"><label>CIPL / Invoice No.</label><input type="text" id="cipl_no"></div>
       <div class="cipl-fi"><label>Date</label><input type="date" id="cipl_date"></div>
@@ -1154,25 +1162,21 @@ window.printQuoData=function(id,selectedItems,revNum){
 
     <div class="cipl-sec">Consignee (Delivery To)</div>
     <div class="cipl-fi"><label>Company / Consignee Name</label><input type="text" id="cipl_consignee"></div>
-    <div class="cipl-fi"><label>Delivery Address</label><textarea id="cipl_addr" rows="3" placeholder="Full delivery address…"></textarea></div>
-    <div class="cipl-fi"><label>Marks &amp; Numbers</label><input type="text" id="cipl_marks" placeholder="e.g. RC/2603001/C1-C3"></div>
+    <div class="cipl-fi"><label>Delivery Address</label><textarea id="cipl_addr" rows="2" placeholder="Full delivery address…"></textarea></div>
+    <div class="cipl-fi"><label>Marks &amp; Numbers</label><input type="text" id="cipl_marks" placeholder="e.g. RC/2603001/C1"></div>
 
-    <div class="cipl-sec">Packing Details — one row per line item</div>
-    <div style="overflow-x:auto">
-      <table class="cipl-pack-tbl">
-        <thead><tr>
-          <th style="width:28px">#</th>
-          <th style="min-width:160px;text-align:left">Description</th>
-          <th style="width:70px">Qty / Unit</th>
-          <th style="width:52px">Pkgs</th>
-          <th style="width:56px">L (cm)</th>
-          <th style="width:56px">W (cm)</th>
-          <th style="width:56px">H (cm)</th>
-          <th style="width:70px">Gross Wt<br>(kg)</th>
-          <th style="width:70px">Net Wt<br>(kg)</th>
-        </tr></thead>
-        <tbody id="cipl_items"></tbody>
-      </table>
+    <div class="cipl-sec">Package Details (all items combined into 1 shipment)</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+      <div class="cipl-fi"><label>No. of Pkgs</label><input type="number" id="cipl_pkgs" min="1" step="1" value="1"></div>
+      <div class="cipl-fi"><label>L (cm)</label><input type="number" id="cipl_l" step="0.1" placeholder="—"></div>
+      <div class="cipl-fi"><label>W (cm)</label><input type="number" id="cipl_w" step="0.1" placeholder="—"></div>
+      <div class="cipl-fi"><label>H (cm)</label><input type="number" id="cipl_h" step="0.1" placeholder="—"></div>
+      <div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+      <div class="cipl-fi"><label>Gross Wt (kg)</label><input type="number" id="cipl_gw" step="0.01" placeholder="0.00"></div>
+      <div class="cipl-fi"><label>Net Wt (kg)</label><input type="number" id="cipl_nw" step="0.01" placeholder="0.00"></div>
+      <div></div><div></div><div></div>
     </div>
 
     <div class="cipl-sec">Additional</div>
@@ -1188,9 +1192,14 @@ window.printQuoData=function(id,selectedItems,revNum){
 <script>
 // ═══════════════════════ CIPL FUNCTIONS ═══════════════════════
 
+window.ciplSelectAll = function(v) {
+  document.querySelectorAll('[id^="cipl_ic_"]').forEach(function(cb){cb.checked=v;});
+};
+
 window.openCIPL = function(id) {
   var j = (window._jobs||{})[id] || {};
   if (!j.lineItems || !j.lineItems.length) { toast('No line items on this job'); return; }
+  var fmt = window._fmt || function(n){return(parseFloat(n)||0).toFixed(2);};
   document.getElementById('cipl_jobid').value = id;
   document.getElementById('cipl_ref_title').textContent = j.ref || '';
   document.getElementById('cipl_no').value = j.ref || '';
@@ -1199,24 +1208,18 @@ window.openCIPL = function(id) {
   document.getElementById('cipl_addr').value = '';
   document.getElementById('cipl_marks').value = 'RC/' + (j.ref || '');
   document.getElementById('cipl_remarks').value = '';
-
-  var tbody = document.getElementById('cipl_items');
-  tbody.innerHTML = '';
-  (j.lineItems || []).forEach(function(it, i) {
-    var n = i + 1;
-    var tr = document.createElement('tr');
-    tr.innerHTML =
-      '<td style="padding:4px 6px;font-size:11px;color:#888;text-align:center">' + n + '</td>'
-      + '<td style="padding:4px 5px;font-size:12px">' + (it.desc || '') + '</td>'
-      + '<td style="padding:4px 5px;font-size:12px;text-align:center;color:#555">' + (it.qty||'') + ' ' + (it.unit||'') + '</td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_p_'+n+'" min="1" step="1" value="1"></td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_l_'+n+'" step="0.1" placeholder="—"></td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_w_'+n+'" step="0.1" placeholder="—"></td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_h_'+n+'" step="0.1" placeholder="—"></td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_gw_'+n+'" step="0.01" placeholder="0.00"></td>'
-      + '<td style="padding:2px 3px"><input type="number" id="cp_nw_'+n+'" step="0.01" placeholder="0.00"></td>';
-    tbody.appendChild(tr);
-  });
+  document.getElementById('cipl_pkgs').value = '1';
+  ['cipl_l','cipl_w','cipl_h','cipl_gw','cipl_nw'].forEach(function(k){document.getElementById(k).value='';});
+  var list = document.getElementById('cipl_item_list');
+  list.innerHTML = (j.lineItems||[]).map(function(it,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;'+(i>0?'border-top:1px solid #f0ede6':'')+'">'
+      +'<input type="checkbox" id="cipl_ic_'+i+'" checked style="width:15px;height:15px;cursor:pointer;flex-shrink:0">'
+      +'<label for="cipl_ic_'+i+'" style="flex:1;font-size:13px;cursor:pointer;line-height:1.4">'+(it.desc||'(no description)')
+        +(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')
+      +'</label>'
+      +'<span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(it.unitPrice)+'</span>'
+    +'</div>';
+  }).join('');
   document.getElementById('ciplModal').classList.add('show');
 };
 
@@ -1224,207 +1227,134 @@ window.generateCIPL = function() {
   var id = document.getElementById('cipl_jobid').value;
   var j = (window._jobs||{})[id] || {};
   var cur = j.currency || 'SGD';
-  var ciplNo   = document.getElementById('cipl_no').value.trim() || j.ref || '';
-  var ciplDate = document.getElementById('cipl_date').value;
+  var ciplNo    = document.getElementById('cipl_no').value.trim() || j.ref || '';
+  var ciplDate  = document.getElementById('cipl_date').value;
   var consignee = document.getElementById('cipl_consignee').value.trim();
-  var addr     = document.getElementById('cipl_addr').value.trim().replace(/\n/g,'<br>');
-  var marks    = document.getElementById('cipl_marks').value.trim();
-  var remarks  = document.getElementById('cipl_remarks').value.trim();
+  var addr      = document.getElementById('cipl_addr').value.trim().replace(/\n/g,'<br>');
+  var marks     = document.getElementById('cipl_marks').value.trim();
+  var remarks   = document.getElementById('cipl_remarks').value.trim();
+  var pkgs      = parseInt(document.getElementById('cipl_pkgs').value)||1;
+  var dimL      = parseFloat(document.getElementById('cipl_l').value)||0;
+  var dimW      = parseFloat(document.getElementById('cipl_w').value)||0;
+  var dimH      = parseFloat(document.getElementById('cipl_h').value)||0;
+  var gw        = parseFloat(document.getElementById('cipl_gw').value)||0;
+  var nw        = parseFloat(document.getElementById('cipl_nw').value)||0;
 
-  // Format date nicely
-  var dObj = ciplDate ? new Date(ciplDate + 'T12:00:00') : new Date();
-  var dateFmt = dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
-
-  // Collect packing data
-  var items = j.lineItems || [];
-  var packRows = items.map(function(it, i) {
-    var n = i+1;
-    var pkgs = parseFloat((document.getElementById('cp_p_'+n)||{}).value) || 1;
-    var l    = parseFloat((document.getElementById('cp_l_'+n)||{}).value) || 0;
-    var w    = parseFloat((document.getElementById('cp_w_'+n)||{}).value) || 0;
-    var h    = parseFloat((document.getElementById('cp_h_'+n)||{}).value) || 0;
-    var gw   = parseFloat((document.getElementById('cp_gw_'+n)||{}).value) || 0;
-    var nw   = parseFloat((document.getElementById('cp_nw_'+n)||{}).value) || 0;
-    return { desc:it.desc||'', qty:it.qty||'', unit:it.unit||'', unitPrice:parseFloat(it.unitPrice)||0, pkgs:pkgs, l:l, w:w, h:h, gw:gw, nw:nw };
+  var selected = (j.lineItems||[]).filter(function(it,i){
+    var cb=document.getElementById('cipl_ic_'+i); return cb&&cb.checked;
   });
+  if(!selected.length){toast('Select at least one line item');return;}
 
-  var totalPkgs = packRows.reduce(function(s,r){return s+r.pkgs;},0);
-  var totalGW   = packRows.reduce(function(s,r){return s+r.gw;},0);
-  var totalNW   = packRows.reduce(function(s,r){return s+r.nw;},0);
-  var totalAmt  = packRows.reduce(function(s,r){return s+r.qty*r.unitPrice;},0);
+  var dObj = ciplDate?new Date(ciplDate+'T12:00:00'):new Date();
+  var dateFmt = dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  function fmtN(n){return(parseFloat(n)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
 
-  function fmtN(n,dp){return (dp===undefined?2:dp),n.toFixed(dp===undefined?2:dp).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  var totalAmt = selected.reduce(function(s,it){return s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);},0);
 
-  // Build CI rows
-  var ciRows = packRows.map(function(r,i){
-    var amt = parseFloat(r.qty||0)*r.unitPrice;
+  var ciRows = selected.map(function(it,i){
+    var amt=(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
     return '<tr>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:center">'+(i+1)+'</td>'
-      +'<td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:12px">'+(r.desc||'')+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+r.qty+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+(r.unit||'')+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right">'+fmtN(r.unitPrice)+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right;font-weight:500">'+fmtN(amt)+'</td>'
+      +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:center">'+(i+1)+'</td>'
+      +'<td style="padding:5px 7px;border-bottom:1px solid #eee;font-size:11px">'+(it.desc||'')+'</td>'
+      +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:center">'+(it.qty||'')+'</td>'
+      +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:center">'+(it.unit||'')+'</td>'
+      +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:right">'+fmtN(it.unitPrice)+'</td>'
+      +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:right;font-weight:600">'+fmtN(amt)+'</td>'
       +'</tr>';
   }).join('');
 
-  // Build PL rows
-  var plRows = packRows.map(function(r,i){
-    var dims = (r.l&&r.w&&r.h) ? r.l+'×'+r.w+'×'+r.h : '—';
-    return '<tr>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:center">'+(i+1)+'</td>'
-      +'<td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:12px">'+(r.desc||'')+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+r.qty+' '+(r.unit||'')+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+r.pkgs+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+dims+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right">'+fmtN(r.gw)+'</td>'
-      +'<td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right">'+fmtN(r.nw)+'</td>'
-      +'</tr>';
-  }).join('');
+  var dims=(dimL&&dimW&&dimH)?dimL+'×'+dimW+'×'+dimH:'—';
+  var plRow='<tr>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:center">1</td>'
+    +'<td style="padding:5px 7px;border-bottom:1px solid #eee;font-size:11px">All items as listed above</td>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:center">—</td>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:center">'+pkgs+'</td>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:center">'+dims+'</td>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:right">'+fmtN(gw)+'</td>'
+    +'<td style="padding:5px 5px;border-bottom:1px solid #eee;font-size:11px;text-align:right">'+fmtN(nw)+'</td>'
+    +'</tr>';
 
-  // Vessel/equipment block
-  var vesselLine = [j.vessel&&('Vessel: <strong>'+j.vessel+'</strong>'), j.port&&('Port of Discharge: <strong>'+j.port+'</strong>'), j.equip&&('Equipment: <strong>'+j.equip+'</strong>'), (j.make||j.model)&&('Make / Model: <strong>'+[j.make,j.model].filter(Boolean).join(' / ')+'</strong>')].filter(Boolean).join(' &nbsp;|&nbsp; ');
+  var vesselLine=[j.vessel&&('Vessel: <strong>'+j.vessel+'</strong>'),j.port&&('Port of Discharge: <strong>'+j.port+'</strong>'),j.equip&&('Equipment: <strong>'+j.equip+'</strong>'),(j.make||j.model)&&('Make/Model: <strong>'+[j.make,j.model].filter(Boolean).join(' / ')+'</strong>')].filter(Boolean).join('  |  ');
 
-  var html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
-    +'<title>CIPL '+ciplNo+'</title>'
-    +'<style>'
-    +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#111;background:#fff;padding:18mm 15mm}'
-    +'@page{size:A4;margin:18mm 15mm}'
+  var html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>CIPL '+ciplNo+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#111;background:#fff;padding:15mm 14mm}'
+    +'@page{size:A4;margin:15mm 14mm}'
     +'@media print{body{padding:0}}'
-    +'.page-title{font-size:18px;font-weight:700;letter-spacing:1px;text-align:right;color:#1a1a1a}'
-    +'.sub-title{font-size:10px;letter-spacing:2px;text-align:right;color:#555;margin-top:2px}'
-    +'.logo{max-height:52px;max-width:180px}'
-    +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid #1a1a1a}'
-    +'.co-addr{font-size:10px;color:#555;line-height:1.6;margin-top:4px}'
-    +'.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}'
-    +'.info-box{border:1px solid #ddd;border-radius:4px;padding:10px 12px}'
-    +'.info-box h4{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}'
-    +'.info-box .val{font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:2px}'
-    +'.info-box .sub{font-size:11px;color:#444;line-height:1.5}'
-    +'.vessel-bar{background:#f5f5f3;border:1px solid #e0ddd6;border-radius:4px;padding:8px 12px;font-size:11px;color:#444;margin-bottom:14px}'
+    +'.logo{max-height:48px;max-width:180px}'
+    +'.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;padding-bottom:10px;border-bottom:2.5px solid #1a1a1a}'
+    +'.page-title{font-size:16px;font-weight:700;text-align:right;color:#1a1a1a}'
+    +'.co-addr{font-size:10px;color:#555;line-height:1.6;margin-top:3px}'
+    +'.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}'
+    +'.info-box{border:1px solid #ddd;border-radius:3px;padding:8px 10px}'
+    +'.info-box h4{font-size:8.5px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}'
+    +'.info-box .val{font-size:11px;font-weight:600;color:#1a1a1a;margin-bottom:1px}'
+    +'.info-box .sub{font-size:10px;color:#444;line-height:1.5}'
+    +'.vessel-bar{background:#f5f5f3;border:1px solid #e0ddd6;border-radius:3px;padding:6px 10px;font-size:10px;color:#444;margin-bottom:10px}'
+    +'.section-hdr{font-size:10px;font-weight:700;color:#1a1a1a;letter-spacing:.1em;text-transform:uppercase;margin:14px 0 5px;padding-bottom:4px;border-bottom:2px solid #1a1a1a}'
     +'table{width:100%;border-collapse:collapse}'
-    +'th{background:#1a1a1a;color:#fff;font-size:10px;font-weight:600;padding:7px 8px;text-align:left;letter-spacing:.05em}'
-    +'th.nr{text-align:right}'
-    +'th.nc{text-align:center}'
-    +'.section-hdr{font-size:11px;font-weight:700;color:#1a1a1a;letter-spacing:.08em;text-transform:uppercase;margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid #1a1a1a}'
-    +'.totals-row{background:#f5f5f3}'
-    +'.totals-row td{padding:7px 8px;font-size:12px;font-weight:700;border-top:2px solid #1a1a1a}'
-    +'.disclaimer{margin-top:16px;border:1px solid #e0ddd6;border-radius:4px;padding:10px 14px;background:#fffdf5}'
-    +'.disclaimer p{font-size:11px;line-height:1.7;color:#444}'
-    +'.disclaimer strong{color:#1a1a1a}'
-    +'.sig-block{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}'
-    +'.sig-box{padding-top:40px;border-top:1px solid #1a1a1a;font-size:10px;color:#555}'
-    +'.marks-box{border:1px solid #ddd;border-radius:4px;padding:8px 12px;font-size:11px;color:#444;margin-bottom:8px}'
+    +'th{background:#1a1a1a;color:#fff;font-size:9px;font-weight:600;padding:6px 5px;text-align:left;letter-spacing:.04em;white-space:nowrap}'
+    +'th.nr{text-align:right}th.nc{text-align:center}'
+    +'.totals-row td{padding:6px 5px;font-size:11px;font-weight:700;border-top:2px solid #1a1a1a;background:#f5f5f3}'
+    +'.marks-box{border:1px solid #ddd;border-radius:3px;padding:6px 10px;font-size:10px;color:#444;margin-bottom:6px}'
+    +'.disclaimer{margin-top:14px;border:1px solid #e0ddd6;border-radius:3px;padding:8px 12px;background:#fffdf5}'
+    +'.disclaimer p{font-size:10px;line-height:1.7;color:#444}'
+    +'.sig-block{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:20px}'
+    +'.sig-box{padding-top:36px;border-top:1px solid #1a1a1a;font-size:10px;color:#555}'
     +'</style></head><body>'
-
-    // ── Header ──
-    +'<div class="hdr">'
-      +'<div>'
-        +'<img src="'+LRC+'" class="logo" alt="Raycontrol">'
-        +'<div class="co-addr">Raycontrol Pte. Ltd.<br>Singapore<br></div>'
-      +'</div>'
-      +'<div style="text-align:right">'
-        +'<div class="page-title">COMMERCIAL INVOICE</div>'
-        +'<div class="sub-title">&amp; PACKING LIST</div>'
-      +'</div>'
-    +'</div>'
-
-    // ── Doc info + parties ──
+    +'<div class="hdr"><div><img src="'+LRC+'" class="logo" alt="Raycontrol"><div class="co-addr">Raycontrol Pte. Ltd.<br>Singapore</div></div>'
+    +'<div style="text-align:right"><div class="page-title">COMMERCIAL INVOICE &amp; PACKING LIST</div></div></div>'
     +'<div class="info-grid">'
-      +'<div class="info-box">'
-        +'<h4>Shipper / Exporter</h4>'
-        +'<div class="val">Raycontrol Pte. Ltd.</div>'
-        +'<div class="sub">Singapore</div>'
-      +'</div>'
-      +'<div class="info-box">'
-        +'<h4>Invoice / CIPL Details</h4>'
-        +'<div class="sub"><strong>No.:</strong> '+ciplNo+'</div>'
-        +'<div class="sub"><strong>Date:</strong> '+dateFmt+'</div>'
-        +(j.yourRef?'<div class="sub"><strong>Your Ref:</strong> '+j.yourRef+'</div>':'')
-        +(j.attn?'<div class="sub"><strong>Attn:</strong> '+j.attn+'</div>':'')
-      +'</div>'
-    +'</div>'
-    +'<div class="info-grid">'
-      +'<div class="info-box">'
-        +'<h4>Consignee</h4>'
-        +'<div class="val">'+(consignee||'—')+'</div>'
-        +'<div class="sub">'+(addr||'—')+'</div>'
-      +'</div>'
-      +'<div class="info-box">'
-        +'<h4>Notify Party</h4>'
-        +'<div class="val">'+(consignee||'—')+'</div>'
-        +'<div class="sub">'+(addr||'—')+'</div>'
-      +'</div>'
-    +'</div>'
-
-    // ── Vessel bar ──
+    +'<div class="info-box"><h4>Shipper / Exporter</h4><div class="val">Raycontrol Pte. Ltd.</div><div class="sub">Singapore</div></div>'
+    +'<div class="info-box"><h4>Consignee / Notify Party</h4><div class="val">'+(consignee||'—')+'</div><div class="sub">'+(addr||'—')+'</div></div>'
+    +'<div class="info-box"><h4>CIPL / Invoice Details</h4>'
+    +'<div class="sub"><strong>No.:</strong> '+ciplNo+'</div>'
+    +'<div class="sub"><strong>Date:</strong> '+dateFmt+'</div>'
+    +(j.yourRef?'<div class="sub"><strong>Your Ref:</strong> '+j.yourRef+'</div>':'')
+    +(j.attn?'<div class="sub"><strong>Attn:</strong> '+j.attn+'</div>':'')
+    +'</div></div>'
     +(vesselLine?'<div class="vessel-bar">'+vesselLine+'</div>':'')
-
-    // ── Commercial Invoice table ──
     +'<div class="section-hdr">Commercial Invoice</div>'
-    +'<table>'
-      +'<thead><tr>'
-        +'<th style="width:28px;text-align:center">#</th>'
-        +'<th>Description of Goods</th>'
-        +'<th class="nc" style="width:52px">Qty</th>'
-        +'<th class="nc" style="width:52px">Unit</th>'
-        +'<th class="nr" style="width:90px">Unit Price ('+cur+')</th>'
-        +'<th class="nr" style="width:90px">Amount ('+cur+')</th>'
-      +'</tr></thead>'
-      +'<tbody>'+ciRows+'</tbody>'
-      +'<tfoot><tr class="totals-row">'
-        +'<td colspan="5" style="text-align:right;padding:7px 8px;font-size:12px;font-weight:700">TOTAL '+cur+'</td>'
-        +'<td style="text-align:right;padding:7px 8px;font-size:13px;font-weight:700">'+fmtN(totalAmt)+'</td>'
-      +'</tr></tfoot>'
-    +'</table>'
-
-    // ── Packing List table ──
-    +'<div class="section-hdr" style="margin-top:20px">Packing List</div>'
+    +'<table><thead><tr>'
+    +'<th style="width:24px;text-align:center">#</th><th>Description of Goods</th>'
+    +'<th class="nc" style="width:46px">Qty</th><th class="nc" style="width:44px">Unit</th>'
+    +'<th class="nr" style="width:90px">Unit Price ('+cur+')</th>'
+    +'<th class="nr" style="width:90px">Amount ('+cur+')</th>'
+    +'</tr></thead><tbody>'+ciRows+'</tbody>'
+    +'<tfoot><tr class="totals-row">'
+    +'<td colspan="5" style="text-align:right">TOTAL '+cur+'</td>'
+    +'<td style="text-align:right">'+fmtN(totalAmt)+'</td>'
+    +'</tr></tfoot></table>'
+    +'<div class="section-hdr">Packing List</div>'
     +(marks?'<div class="marks-box"><strong>Marks &amp; Numbers:</strong> '+marks+'</div>':'')
-    +'<table>'
-      +'<thead><tr>'
-        +'<th style="width:28px;text-align:center">#</th>'
-        +'<th>Description</th>'
-        +'<th class="nc" style="width:70px">Qty</th>'
-        +'<th class="nc" style="width:52px">Pkgs</th>'
-        +'<th class="nc" style="width:100px">Dimensions<br>(L×W×H cm)</th>'
-        +'<th class="nr" style="width:72px">Gross Wt<br>(kg)</th>'
-        +'<th class="nr" style="width:72px">Net Wt<br>(kg)</th>'
-      +'</tr></thead>'
-      +'<tbody>'+plRows+'</tbody>'
-      +'<tfoot><tr class="totals-row">'
-        +'<td colspan="3" style="text-align:right;padding:7px 8px;font-weight:700">TOTALS</td>'
-        +'<td style="text-align:center;padding:7px 8px;font-weight:700">'+totalPkgs+'</td>'
-        +'<td style="padding:7px 8px"></td>'
-        +'<td style="text-align:right;padding:7px 8px;font-weight:700">'+fmtN(totalGW)+'</td>'
-        +'<td style="text-align:right;padding:7px 8px;font-weight:700">'+fmtN(totalNW)+'</td>'
-      +'</tr></tfoot>'
-    +'</table>'
-
-    // ── Remarks ──
-    +(remarks?'<div style="margin-top:12px;font-size:11px;color:#444"><strong>Remarks:</strong> '+remarks+'</div>':'')
-
-    // ── Disclaimer ──
+    +'<table><thead><tr>'
+    +'<th style="width:24px;text-align:center">#</th><th>Contents</th>'
+    +'<th class="nc" style="width:46px">Qty</th><th class="nc" style="width:46px">Pkgs</th>'
+    +'<th class="nc" style="width:100px">Dimensions (L×W×H cm)</th>'
+    +'<th class="nr" style="width:76px">Gross Wt (kg)</th>'
+    +'<th class="nr" style="width:76px">Net Wt (kg)</th>'
+    +'</tr></thead><tbody>'+plRow+'</tbody>'
+    +'<tfoot><tr class="totals-row">'
+    +'<td colspan="3" style="text-align:right">TOTALS</td>'
+    +'<td style="text-align:center">'+pkgs+'</td><td></td>'
+    +'<td style="text-align:right">'+fmtN(gw)+'</td>'
+    +'<td style="text-align:right">'+fmtN(nw)+'</td>'
+    +'</tr></tfoot></table>'
+    +(remarks?'<div style="margin-top:10px;font-size:10px;color:#444"><strong>Remarks:</strong> '+remarks+'</div>':'')
     +'<div class="disclaimer">'
-      +'<p><strong>1. Commercial Value of Items: NONE</strong><br>'
-      +'&nbsp;&nbsp;&nbsp;&nbsp;(Value stated above only for customs clearance purpose)</p>'
-      +'<p style="margin-top:4px"><strong>2.</strong> Weight and Value estimated.</p>'
+    +'<p><strong>1. Commercial Value of Items: NONE</strong><br>    (Value stated above only for customs clearance purpose)</p>'
+    +'<p style="margin-top:3px"><strong>2.</strong> Weight and Value estimated.</p>'
     +'</div>'
-
-    // ── Signature ──
     +'<div class="sig-block">'
-      +'<div class="sig-box">Prepared by &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br>Date: '+dateFmt+'</div>'
-      +'<div class="sig-box">For and on behalf of <strong>Raycontrol Pte. Ltd.</strong><br><br><br>Authorised Signature / Company Stamp</div>'
+    +'<div class="sig-box">Prepared by:<br><br><br>Name / Designation      Date: '+dateFmt+'</div>'
+    +'<div class="sig-box">For and on behalf of <strong>Raycontrol Pte. Ltd.</strong><br><br><br>Authorised Signature / Company Stamp</div>'
     +'</div>'
-
     +'</body></html>';
 
-  var w = window.open('','_blank','width=900,height=700');
-  if (!w) { toast('Allow pop-ups to generate PDF'); return; }
-  w.document.write(html);
-  w.document.close();
-  w.onload = function() { w.focus(); w.print(); };
+  var w=window.open('','_blank','width=900,height=750');
+  if(!w){toast('Allow pop-ups to generate PDF');return;}
+  w.document.write(html);w.document.close();
+  w.onload=function(){w.focus();w.print();};
   document.getElementById('ciplModal').classList.remove('show');
 };
 </script>
