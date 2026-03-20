@@ -3,150 +3,148 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Job Register — Manager View</title>
+<title>Job Register — Manager</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
 .app{max-width:1200px;margin:0 auto;padding:1.25rem 1rem}
 .topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:3px solid #1a6641;padding-bottom:1rem;flex-wrap:wrap}
 .topbar h1{font-size:20px;font-weight:700;flex:1}
-.mgr-badge{background:#1a6641;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;letter-spacing:0.05em}
-.back-link{font-size:12px;text-decoration:none;padding:5px 12px;border-radius:8px;white-space:nowrap;font-weight:500}
-.back-mgr{color:#1a6641;background:#EAF3DE;border:1px solid #C0DD97}
-.back-staff{color:#666;background:#fff;border:1px solid #ccc}
+.mgr-tag{background:#1a6641;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
+.btn-hub{font-size:12px;text-decoration:none;padding:5px 12px;border-radius:8px;font-weight:500;color:#1a6641;background:#EAF3DE;border:1px solid #C0DD97;white-space:nowrap}
+.btn-staff{font-size:12px;text-decoration:none;padding:5px 12px;border-radius:8px;font-weight:500;color:#666;background:#fff;border:1px solid #ccc;white-space:nowrap}
 .conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
 .conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
-.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:1.5rem}
-.sum-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;border-top:3px solid #e0ddd6}
-.sum-card.green{border-top-color:#1a6641}.sum-card.amber{border-top-color:#854F0B}.sum-card.red{border-top-color:#A32D2D}.sum-card.blue{border-top-color:#185FA5}
-.sum-val{font-size:22px;font-weight:700;margin-bottom:2px}
-.sum-val.green{color:#1a6641}.sum-val.amber{color:#854F0B}.sum-val.red{color:#A32D2D}
-.sum-lbl{font-size:11px;color:#888}
+/* Summary */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
+.sc{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:.9rem 1rem;border-top:3px solid #e0ddd6}
+.sc.g{border-top-color:#1a6641}.sc.a{border-top-color:#854F0B}.sc.r{border-top-color:#A32D2D}.sc.b{border-top-color:#185FA5}
+.sv{font-size:20px;font-weight:700;margin-bottom:2px}
+.sv.g{color:#1a6641}.sv.a{color:#854F0B}.sv.r{color:#A32D2D}
+.sl{font-size:11px;color:#888}
+/* Toolbar */
 .toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
 .toolbar input{flex:1;min-width:180px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
 .toolbar input:focus{outline:none;border-color:#185FA5}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
 .chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#666;white-space:nowrap}
 .chip.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid #e0ddd6;background:#fff}
-table.jt{width:100%;border-collapse:collapse;font-size:13px}
-table.jt thead{background:#1a6641}
-table.jt th{color:#fff;font-size:11px;font-weight:600;padding:10px 12px;text-align:left;white-space:nowrap}
-table.jt th.nr{text-align:right}
-table.jt td{padding:10px 12px;border-bottom:1px solid #f0ede6;vertical-align:middle}
-table.jt tr:last-child td{border-bottom:none}
-table.jt tbody tr:hover td{background:#f5fbf5}
-.sl-bar{display:inline-block;width:4px;height:32px;border-radius:3px;vertical-align:middle;margin-right:8px}
+/* Table */
+.tw{overflow-x:auto;border-radius:12px;border:1px solid #e0ddd6}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:#1a6641}
+th{color:#fff;font-size:11px;font-weight:600;padding:10px 12px;text-align:left;white-space:nowrap}
+th.r{text-align:right}
+td{padding:10px 12px;border-bottom:1px solid #f0ede6;vertical-align:middle;background:#fff}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f5fbf5}
+td.r{text-align:right}
+.sbar{display:inline-block;width:4px;height:34px;border-radius:3px;vertical-align:middle;margin-right:8px;flex-shrink:0}
 .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
 .bq{background:#FAEEDA;color:#854F0B}.bcp{background:#E6F1FB;color:#185FA5}
-.bvp{background:#F3E6F3;color:#8B1A8B}.bdw{background:#CFFAFE;color:#0E7490}.bi{background:#FCEBEB;color:#A32D2D}
-.bs{background:#EAF3DE;color:#1a6641}.bc{background:#efefed;color:#666}
+.bvp{background:#F3E6F3;color:#8B1A8B}.bdw{background:#CFFAFE;color:#0E7490}
+.bi{background:#FCEBEB;color:#A32D2D}.bs{background:#EAF3DE;color:#1a6641}.bc{background:#efefed;color:#666}
 .ov{color:#A32D2D;font-weight:600}
-.pay-full{color:#1a6641;font-weight:600}.pay-part{color:#854F0B;font-weight:600}.pay-none{color:#bbb}
-.bal-pos{color:#A32D2D}
+.pf{color:#1a6641;font-weight:600}.pp{color:#854F0B;font-weight:600}.pn{color:#bbb}
 button{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;white-space:nowrap}
 button:hover{background:#f0f0ee}
 .btn-pay{background:#1a6641;color:#fff;border-color:#1a6641;font-size:11px;padding:5px 12px;font-weight:600}
 .btn-pay:hover{background:#145533}
-.empty{text-align:center;padding:3rem;color:#aaa;font-size:13px}
-.pm-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:200;padding:1rem}
-.pm-bg.show{display:flex}
-.pm-box{background:#fff;border-radius:16px;padding:1.75rem;width:100%;max-width:480px;border:1px solid #e0ddd6;box-shadow:0 8px 40px rgba(0,0,0,0.15)}
-.pm-box h2{font-size:17px;font-weight:700;margin-bottom:4px}
-.pm-sub{font-size:12px;color:#888;margin-bottom:1.25rem}
-.pm-summary{background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;padding:12px 14px;margin-bottom:1.1rem;font-size:13px}
-.ps-row{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
-.ps-row.big{font-weight:700;font-size:14px;border-top:1px solid #e0ddd6;margin-top:6px;padding-top:6px}
-.pm-fi{margin-bottom:0.85rem}
-.pm-fi label{font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500}
-.pm-fi input,.pm-fi select{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
-.pm-fi input:focus,.pm-fi select:focus{outline:none;border-color:#1a6641;background:#fff}
-.pm-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+.empty{text-align:center;padding:3rem;color:#aaa;font-size:13px;background:#fff}
+/* Payment modal */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:200;padding:1rem}
+.mbg.show{display:flex}
+.mbox{background:#fff;border-radius:16px;padding:1.75rem;width:100%;max-width:480px;border:1px solid #e0ddd6;box-shadow:0 8px 40px rgba(0,0,0,0.15)}
+.mbox h2{font-size:17px;font-weight:700;margin-bottom:4px}
+.msub{font-size:12px;color:#888;margin-bottom:1.1rem}
+.msum{background:#f9f9f7;border:1px solid #e0ddd6;border-radius:8px;padding:11px 13px;margin-bottom:1rem;font-size:13px}
+.msr{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
+.msr.big{font-weight:700;font-size:14px;border-top:1px solid #e0ddd6;margin-top:5px;padding-top:5px}
+.mfi{margin-bottom:.8rem}
+.mfi label{font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500}
+.mfi input,.mfi select{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
+.mfi input:focus,.mfi select:focus{outline:none;border-color:#1a6641;background:#fff}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
 .btn-save{background:#1a6641;color:#fff;border-color:#1a6641;font-weight:600}.btn-save:hover{background:#145533}
-
-
-
-
-
-
-
-
-
-.ls{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;gap:12px}
+/* Loading */
+.ls{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:12px}
 .ls.hide{display:none}
-.sp{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#1a6641;border-radius:50%;animation:spin 0.8s linear infinite}
+.sp{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#1a6641;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
-@media(max-width:700px){.hide-sm{display:none}}
+@media(max-width:700px){.hsm{display:none}}
 </style>
 </head>
 <body>
+<div class="ls" id="ls"><div class="sp"></div><p>Loading&hellip;</p></div>
 
-<div class="ls" id="ls"><div class="sp"></div><p>Loading jobs&hellip;</p></div>
-<div class="app" id="mainApp" style="display:none">
+<div class="app" id="app" style="display:none">
   <div class="topbar">
     <h1>&#128188; Job Register</h1>
-    <span class="mgr-badge">MANAGER VIEW</span>
-    <a href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/" class="back-link back-mgr">&#9651; Manager Hub</a>
-    <a href="../jobs.html" class="back-link back-staff">Staff View &rarr;</a>
+    <span class="mgr-tag">MANAGER</span>
+    <a href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/" class="btn-hub">&#9651; Manager Hub</a>
+    <a href="../jobs.html" class="btn-staff">Staff View &rarr;</a>
     <span class="conn syncing" id="connBadge">Connecting&hellip;</span>
   </div>
+
   <div class="sum-grid">
-    <div class="sum-card blue"><div class="sum-val" id="sTotalJobs">—</div><div class="sum-lbl">Total Jobs</div></div>
-    <div class="sum-card amber"><div class="sum-val amber" id="sOpen">—</div><div class="sum-lbl">Open (not closed)</div></div>
-    <div class="sum-card green"><div class="sum-val green" id="sTotalInv">—</div><div class="sum-lbl">Total Invoiced (SGD)</div></div>
-    <div class="sum-card green"><div class="sum-val green" id="sTotalRcvd">—</div><div class="sum-lbl">Total Received (SGD)</div></div>
-    <div class="sum-card red"><div class="sum-val red" id="sOutstanding">—</div><div class="sum-lbl">Outstanding (SGD)</div></div>
+    <div class="sc b"><div class="sv" id="sJobs">—</div><div class="sl">Total Jobs</div></div>
+    <div class="sc a"><div class="sv a" id="sOpen">—</div><div class="sl">Open Jobs</div></div>
+    <div class="sc g"><div class="sv g" id="sInv">—</div><div class="sl">Invoiced (SGD)</div></div>
+    <div class="sc g"><div class="sv g" id="sRcvd">—</div><div class="sl">Received (SGD)</div></div>
+    <div class="sc r"><div class="sv r" id="sOwed">—</div><div class="sl">Outstanding (SGD)</div></div>
   </div>
+
   <div class="toolbar">
-    <input type="text" id="jobSearch" placeholder="Search ref, customer, vessel, PO&hellip;" oninput="renderTable()">
+    <input type="text" id="srch" placeholder="Search ref, customer, vessel, PO&hellip;" oninput="render()">
   </div>
   <div class="chips">
-    <div class="chip on" onclick="setFilter('all',this)">All Jobs</div>
-    <div class="chip" onclick="setFilter('quote',this)">Quote</div>
-    <div class="chip" onclick="setFilter('customer_po',this)">Customer PO</div>
-    <div class="chip" onclick="setFilter('vendor_po',this)">Vendor PO</div>
-    <div class="chip" onclick="setFilter('do_wcc',this)">DO / WCC</div>
-    <div class="chip" onclick="setFilter('invoice',this)">Invoice</div>
-    <div class="chip" onclick="setFilter('soa',this)">SOA</div>
-    <div class="chip" onclick="setFilter('closed',this)">Closed</div>
-    <div class="chip" onclick="setFilter('_unpaid',this)" style="border-color:#A32D2D;color:#A32D2D">Unpaid</div>
-    <div class="chip" onclick="setFilter('_partial',this)" style="border-color:#854F0B;color:#854F0B">Partial</div>
-    <div class="chip" onclick="setFilter('_paid',this)" style="border-color:#1a6641;color:#1a6641">Fully Paid</div>
+    <div class="chip on" onclick="setF('all',this)">All</div>
+    <div class="chip" onclick="setF('quote',this)">Quote</div>
+    <div class="chip" onclick="setF('customer_po',this)">Customer PO</div>
+    <div class="chip" onclick="setF('vendor_po',this)">Vendor PO</div>
+    <div class="chip" onclick="setF('do_wcc',this)">DO / WCC</div>
+    <div class="chip" onclick="setF('invoice',this)">Invoice</div>
+    <div class="chip" onclick="setF('soa',this)">SOA</div>
+    <div class="chip" onclick="setF('closed',this)">Closed</div>
+    <div class="chip" onclick="setF('_unpaid',this)" style="border-color:#A32D2D;color:#A32D2D">Unpaid</div>
+    <div class="chip" onclick="setF('_partial',this)" style="border-color:#854F0B;color:#854F0B">Partial</div>
+    <div class="chip" onclick="setF('_paid',this)" style="border-color:#1a6641;color:#1a6641">Fully Paid</div>
   </div>
-  <div class="tbl-wrap">
-    <table class="jt">
+
+  <div class="tw">
+    <table>
       <thead>
         <tr>
           <th>Ref &amp; Customer</th>
-          <th class="hide-sm">Date</th>
-          <th class="hide-sm">Vessel / Equip</th>
+          <th class="hsm">Date</th>
+          <th class="hsm">Vessel / Equip</th>
           <th>Status</th>
-          <th class="nr">Invoice Amt</th>
-          <th class="nr" style="background:rgba(255,255,255,0.18)">Received</th>
-          <th class="nr" style="background:rgba(255,255,255,0.18)">Balance</th>
-          <th style="text-align:center;background:rgba(255,255,255,0.18)">Action</th>
+          <th class="r">Invoice</th>
+          <th class="r" style="background:rgba(255,255,255,0.15)">Received</th>
+          <th class="r" style="background:rgba(255,255,255,0.15)">Balance</th>
+          <th style="text-align:center;background:rgba(255,255,255,0.15)">Payment</th>
         </tr>
       </thead>
-      <tbody id="jobTbody">
-        <tr><td colspan="8" class="empty">Loading&hellip;</td></tr>
-      </tbody>
+      <tbody id="tbody"><tr><td colspan="8" class="empty">Loading&hellip;</td></tr></tbody>
     </table>
   </div>
-  <div style="font-size:11px;color:#aaa;margin-top:8px;text-align:right" id="rowCount"></div>
+  <div style="font-size:11px;color:#aaa;margin-top:8px;text-align:right" id="rc"></div>
 </div>
-<div class="pm-bg" id="pmModal">
-  <div class="pm-box">
+
+<!-- Payment Modal -->
+<div class="mbg" id="pmModal">
+  <div class="mbox">
     <h2>&#128176; Record Payment</h2>
-    <div class="pm-sub" id="pmSub">—</div>
-    <div class="pm-summary" id="pmSummary"></div>
-    <div class="pm-fi">
-      <label>New Payment Amount (<span id="pmCur">SGD</span>)</label>
+    <div class="msub" id="pmSub"></div>
+    <div class="msum" id="pmSum"></div>
+    <div class="mfi">
+      <label>Amount (<span id="pmCur">SGD</span>)</label>
       <input type="number" id="pmAmt" min="0" step="0.01" placeholder="0.00">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="pm-fi">
+      <div class="mfi">
         <label>Method</label>
         <select id="pmMethod">
           <option value="">— Select —</option>
@@ -157,87 +155,108 @@ button:hover{background:#f0f0ee}
           <option value="Other">Other</option>
         </select>
       </div>
-      <div class="pm-fi">
+      <div class="mfi">
         <label>Date</label>
         <input type="date" id="pmDate">
       </div>
     </div>
-    <div class="pm-fi">
-      <label>Reference / Notes (internal)</label>
-      <input type="text" id="pmNotes" placeholder="e.g. TT ref #12345, cheque no.">
+    <div class="mfi">
+      <label>Reference / Notes</label>
+      <input type="text" id="pmNotes" placeholder="e.g. TT ref #12345">
     </div>
-    <div class="pm-foot">
+    <div class="mfoot">
       <button onclick="document.getElementById('pmModal').classList.remove('show')">Cancel</button>
-      <button class="btn-save" onclick="savePayment()">&#10003; Save Payment</button>
+      <button class="btn-save" onclick="savePay()">&#10003; Save Payment</button>
     </div>
   </div>
 </div>
+
 <div class="toast" id="toast"></div>
+
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import{getDatabase,ref,onValue,update}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-const db=getDatabase(initializeApp({apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"}));
+
+/* ── Auth check — same mechanism as jobs.html ── */
+const _t=localStorage.getItem('rc_manager');
+const rcMgr=(_t&&(Date.now()-parseInt(_t))<28800000);
+if(!rcMgr){window.location.href='https://aarkoh.github.io/Raycontrol/mgr-7560e738/';}
+else{document.getElementById('app').style.display='block';}
+
+/* ── Firebase ── */
+const db=getDatabase(initializeApp({
+  apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
+  authDomain:"attendance-20d6a.firebaseapp.com",
+  databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"attendance-20d6a",
+  storageBucket:"attendance-20d6a.firebasestorage.app",
+  messagingSenderId:"597668949951",
+  appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"
+}));
 const auth=getAuth();
-let jobs={},sFilter='all',pmJobId=null;
+
+/* ── State ── */
+let jobs={}, filt='all', pmId=null;
+
+/* ── Constants ── */
 const SL={quote:'Quote',customer_po:'Customer PO',vendor_po:'Vendor PO',do_wcc:'DO / WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
 const BC={quote:'bq',customer_po:'bcp',vendor_po:'bvp',do_wcc:'bdw',invoice:'bi',soa:'bs',closed:'bc'};
-const SBC={quote:'#854F0B',customer_po:'#185FA5',vendor_po:'#8B1A8B',do_wcc:'#0E7490',invoice:'#A32D2D',soa:'#1a6641',closed:'#aaa'};
-const fmt=n=>(parseFloat(n)||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-const fmtD=s=>{if(!s)return'';try{return new Date(s+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return s;}};
-const ageD=s=>s?Math.floor((Date.now()-new Date(s+'T00:00:00'))/86400000):999;
-window.toast=function(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);};
+const SC={quote:'#854F0B',customer_po:'#185FA5',vendor_po:'#8B1A8B',do_wcc:'#0E7490',invoice:'#A32D2D',soa:'#1a6641',closed:'#aaa'};
+
+/* ── Helpers — identical to jobs.html ── */
+function fmt(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtD(d){if(!d)return'—';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+function ageD(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d.length===10?d+'T00:00:00':d))/864e5);}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function totals(j){
-  const items=j.lineItems||[];
-  const sub=items.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0),0)
-    +(j.courier==='TBA'?0:parseFloat(j.courierAmt)||0)
-    +(j.packing==='TBA'?0:parseFloat(j.packingAmt)||0)
-    +(j.freight==='TBA'?0:parseFloat(j.freightAmt)||0);
-  const gst=j.gst?sub*0.09:0;
-  const bf=parseFloat(j.bankFee)||0;
-  return{sub,gst,bf,total:sub+gst+bf};
+  var its=j.lineItems||[];
+  var iSub=its.reduce(function(s,i){return s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0);},0);
+  var ca=j.courier==='amt'?parseFloat(j.courierAmt)||0:0;
+  var pa=j.packing==='amt'?parseFloat(j.packingAmt)||0:0;
+  var fa=j.freight==='amt'?parseFloat(j.freightAmt)||0:0;
+  var sub=iSub+ca+pa+fa;
+  var gst=j.gst==='9'?sub*0.09:0;
+  var bf=parseFloat(j.bankFee)||0;
+  return{sub:sub,gst:gst,bf:bf,total:sub+gst+bf};
 }
 
-function checkSession(){
-  const t=localStorage.getItem('rc_manager');
-  if(t&&(Date.now()-parseInt(t))<28800000){
-    document.getElementById('mainApp').style.display='block';
-    return true;
-  }
-  // Not authenticated — redirect to manager hub
-  window.location.href='https://aarkoh.github.io/Raycontrol/mgr-7560e738/';
-  return false;
-}
-window.setFilter=function(f,el){
-  sFilter=f;
+/* ── Filter ── */
+window.setF=function(f,el){
+  filt=f;
   document.querySelectorAll('.chips .chip').forEach(c=>c.classList.remove('on'));
   el.classList.add('on');
-  renderTable();
+  render();
 };
-window.renderTable=function(){
-  const q=(document.getElementById('jobSearch').value||'').toLowerCase();
-  const filtered=Object.entries(jobs).filter(([id,j])=>{
+
+/* ── Render ── */
+window.render=function(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const rows=Object.entries(jobs).filter(([id,j])=>{
     const rcvd=parseFloat(j.paymentReceived)||0;
     const tot=totals(j).total;
-    if(sFilter==='_paid')return rcvd>=tot-0.005&&rcvd>0;
-    if(sFilter==='_partial')return rcvd>0&&rcvd<tot-0.005;
-    if(sFilter==='_unpaid')return rcvd<=0;
-    if(sFilter!=='all'&&j.status!==sFilter)return false;
+    if(filt==='_paid')   return rcvd>0&&rcvd>=tot-0.005;
+    if(filt==='_partial')return rcvd>0&&rcvd<tot-0.005;
+    if(filt==='_unpaid') return rcvd<=0;
+    if(filt!=='all'&&j.status!==filt)return false;
     if(q&&![j.ref,j.customerName,j.vessel,j.equip,j.memo,j.custPO].filter(Boolean).some(x=>x.toLowerCase().includes(q)))return false;
     return true;
   }).sort((a,b)=>(b[1].createdAt||'').localeCompare(a[1].createdAt||''));
+
+  /* Summary cards — always over all jobs */
   const all=Object.values(jobs);
-  document.getElementById('sTotalJobs').textContent=all.length;
+  document.getElementById('sJobs').textContent=all.length;
   document.getElementById('sOpen').textContent=all.filter(j=>j.status!=='closed').length;
-  const invTotal=all.filter(j=>['invoice','soa','closed'].includes(j.status)).reduce((s,j)=>s+totals(j).total,0);
-  const rcvdTotal=all.reduce((s,j)=>s+(parseFloat(j.paymentReceived)||0),0);
-  document.getElementById('sTotalInv').textContent=fmt(invTotal);
-  document.getElementById('sTotalRcvd').textContent=fmt(rcvdTotal);
-  document.getElementById('sOutstanding').textContent=fmt(Math.max(0,invTotal-rcvdTotal));
-  document.getElementById('rowCount').textContent=filtered.length+' job'+(filtered.length!==1?'s':'')+' shown';
-  const tbody=document.getElementById('jobTbody');
-  if(!filtered.length){tbody.innerHTML='<tr><td colspan="8" class="empty">No jobs match this filter.</td></tr>';return;}
-  tbody.innerHTML=filtered.map(([id,j])=>{
+  const invd=all.filter(j=>['invoice','soa','closed'].includes(j.status)).reduce((s,j)=>s+totals(j).total,0);
+  const rcvd=all.reduce((s,j)=>s+(parseFloat(j.paymentReceived)||0),0);
+  document.getElementById('sInv').textContent=fmt(invd);
+  document.getElementById('sRcvd').textContent=fmt(rcvd);
+  document.getElementById('sOwed').textContent=fmt(Math.max(0,invd-rcvd));
+  document.getElementById('rc').textContent=rows.length+' job'+(rows.length!==1?'s':'')+' shown';
+
+  const tbody=document.getElementById('tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" class="empty">No jobs match this filter.</td></tr>';return;}
+  tbody.innerHTML=rows.map(([id,j])=>{
     const t=totals(j);
     const cur=j.currency||'SGD';
     const rcvd=parseFloat(j.paymentReceived)||0;
@@ -246,92 +265,105 @@ window.renderTable=function(){
     const a=ageD(j.date||j.createdAt);
     const aStr=a===0?'Today':a===1?'Yesterday':a+' d ago';
     const aC=a>30&&jst!=='closed'?' ov':'';
-    const invAmt=t.total>0?cur+' '+fmt(t.total):'—';
-    let rcvdHtml='<span class="pay-none">—</span>';
-    if(rcvd>=t.total-0.005&&rcvd>0)rcvdHtml='<span class="pay-full">'+cur+' '+fmt(rcvd)+' &#10003;</span>';
-    else if(rcvd>0)rcvdHtml='<span class="pay-part">'+cur+' '+fmt(rcvd)+'</span>';
-    let balHtml='<span style="color:#bbb">—</span>';
-    if(t.total>0){
-      if(Math.abs(bal)<0.005)balHtml='<span class="pay-full">Settled &#10003;</span>';
-      else if(bal>0)balHtml='<span class="bal-pos">'+cur+' '+fmt(bal)+'</span>';
-      else balHtml='<span class="pay-full">Overpaid</span>';
-    }
     const hist=j.paymentHistory||[];
-    const histNote=hist.length?'<div style="font-size:10px;color:#1a6641;margin-top:1px">'+hist.length+' payment'+(hist.length>1?'s':'')+'</div>':'';
+    /* Invoice cell */
+    const invCell=t.total>0?cur+' '+fmt(t.total):'—';
+    /* Received cell */
+    let rcvdCell='<span class="pn">—</span>';
+    if(rcvd>0&&rcvd>=t.total-0.005) rcvdCell='<span class="pf">'+cur+' '+fmt(rcvd)+' &#10003;</span>';
+    else if(rcvd>0) rcvdCell='<span class="pp">'+cur+' '+fmt(rcvd)+'</span>';
+    if(hist.length>0) rcvdCell+='<br><span style="font-size:10px;color:#1a6641">'+hist.length+' payment'+(hist.length>1?'s':'')+'</span>';
+    /* Balance cell */
+    let balCell='<span style="color:#bbb">—</span>';
+    if(t.total>0){
+      if(Math.abs(bal)<0.005) balCell='<span class="pf">Settled &#10003;</span>';
+      else if(bal>0) balCell='<span style="color:#A32D2D;font-weight:600">'+cur+' '+fmt(bal)+'</span>';
+      else balCell='<span class="pf">Overpaid</span>';
+    }
     const eq=[j.equip,j.make,j.model].filter(Boolean).join(' ');
     const vs=j.vessel||(j.port||'');
-    return'<tr><td><div style="display:flex;align-items:center">'
-      +'<span class="sl-bar" style="background:'+SBC[jst]+'"></span>'
-      +'<div><div style="font-weight:700;font-size:14px">'+(j.ref||'—')+'</div>'
-      +'<div style="font-size:12px;color:#555">'+(j.customerName||'No customer')+'</div>'
-      +(j.custPO?'<div style="font-size:11px;color:#888">PO: '+j.custPO+'</div>':'')
-      +'</div></div></td>'
-      +'<td class="hide-sm" style="font-size:12px;color:#888;white-space:nowrap">'+fmtD(j.date||j.createdAt)+'<br><span class="'+aC+'" style="font-size:11px">'+aStr+'</span></td>'
-      +'<td class="hide-sm" style="font-size:12px;color:#555">'+(vs||'—')+(eq?'<br><span style="color:#888">'+eq+'</span>':'')+'</td>'
+    return '<tr>'
+      +'<td><div style="display:flex;align-items:center">'
+        +'<span class="sbar" style="background:'+SC[jst]+'"></span>'
+        +'<div><div style="font-weight:700;font-size:14px">'+(j.ref||'—')+'</div>'
+        +'<div style="font-size:12px;color:#555">'+(j.customerName||'—')+'</div>'
+        +(j.custPO?'<div style="font-size:11px;color:#888">PO: '+j.custPO+'</div>':'')
+        +'</div></div></td>'
+      +'<td class="hsm" style="font-size:12px;color:#888;white-space:nowrap">'+fmtD(j.date||j.createdAt)+'<br><span class="'+aC+'" style="font-size:11px">'+aStr+'</span></td>'
+      +'<td class="hsm" style="font-size:12px;color:#555">'+(vs||'—')+(eq?'<br><span style="color:#888;font-size:11px">'+eq+'</span>':'')+'</td>'
       +'<td><span class="badge '+(BC[jst]||'bc')+'">'+(SL[jst]||jst)+'</span></td>'
-      +'<td class="nr" style="font-weight:500;white-space:nowrap">'+invAmt+'</td>'
-      +'<td class="nr" style="white-space:nowrap">'+rcvdHtml+histNote+'</td>'
-      +'<td class="nr" style="white-space:nowrap">'+balHtml+'</td>'
+      +'<td class="r" style="font-weight:500;white-space:nowrap">'+invCell+'</td>'
+      +'<td class="r" style="white-space:nowrap">'+rcvdCell+'</td>'
+      +'<td class="r" style="white-space:nowrap">'+balCell+'</td>'
       +'<td style="text-align:center"><button class="btn-pay" onclick="openPay(\''+id+'\',event)">+ Pay</button></td>'
       +'</tr>';
   }).join('');
 };
+
+/* ── Payment modal ── */
 window.openPay=function(id,e){
   if(e)e.stopPropagation();
-  pmJobId=id;
+  pmId=id;
   const j=jobs[id]||{};
   const t=totals(j);
   const cur=j.currency||'SGD';
   const rcvd=parseFloat(j.paymentReceived)||0;
   const hist=j.paymentHistory||[];
+  const bal=t.total-rcvd;
   document.getElementById('pmSub').textContent=(j.ref||'—')+' — '+(j.customerName||'');
   document.getElementById('pmCur').textContent=cur;
-  const remaining=t.total-rcvd;
-  document.getElementById('pmAmt').value=remaining>0.005?remaining.toFixed(2):'';
+  document.getElementById('pmAmt').value=bal>0.005?bal.toFixed(2):'';
   document.getElementById('pmMethod').value='';
   document.getElementById('pmDate').value=new Date().toISOString().slice(0,10);
   document.getElementById('pmNotes').value='';
-  buildSummary(j,t,cur,rcvd,hist);
+  buildSum(t,cur,rcvd,hist);
   document.getElementById('pmModal').classList.add('show');
+  setTimeout(()=>document.getElementById('pmAmt').focus(),100);
 };
-function buildSummary(j,t,cur,rcvd,hist){
-  let html='';
-  if(t.total>0)html+='<div class="ps-row big"><span>Invoice Total ('+cur+')</span><span>'+fmt(t.total)+'</span></div>';
+
+function buildSum(t,cur,rcvd,hist){
+  let h='';
+  if(t.total>0) h+='<div class="msr big"><span>Invoice Total ('+cur+')</span><span>'+fmt(t.total)+'</span></div>';
   if(hist.length){
-    html+='<div style="font-size:11px;font-weight:600;color:#888;margin-top:8px;margin-bottom:2px">Payment History</div>';
-    hist.forEach(p=>{html+='<div class="ps-row"><span style="color:#888">'+(p.date||'')+' '+(p.method?'· '+p.method:'')+' '+(p.notes?'· '+p.notes:'')+'</span><span style="color:#1a6641">+'+cur+' '+fmt(p.amount)+'</span></div>';});
-    html+='<div class="ps-row" style="font-weight:600;border-top:1px solid #e0ddd6;margin-top:4px;padding-top:4px"><span>Total Received</span><span style="color:#1a6641">'+cur+' '+fmt(rcvd)+'</span></div>';
-    const bal=t.total-rcvd;
-    if(bal>0.005)html+='<div class="ps-row"><span>Outstanding</span><span style="color:#A32D2D">'+cur+' '+fmt(bal)+'</span></div>';
-    else html+='<div class="ps-row"><span>Status</span><span style="color:#1a6641">Fully Settled &#10003;</span></div>';
-  }else{
-    html+='<div style="font-size:12px;color:#aaa;margin-top:6px">No payments recorded yet.</div>';
+    h+='<div style="font-size:11px;font-weight:600;color:#888;margin-top:8px;margin-bottom:2px">Payment History</div>';
+    hist.forEach(p=>{
+      h+='<div class="msr"><span style="color:#888">'+(p.date||'')+' '+(p.method?'· '+p.method:'')+' '+(p.notes?'· '+p.notes:'')+'</span><span style="color:#1a6641">+'+cur+' '+fmt(p.amount)+'</span></div>';
+    });
+    const b=t.total-rcvd;
+    h+='<div class="msr" style="font-weight:600;border-top:1px solid #e0ddd6;margin-top:4px;padding-top:4px"><span>Total Received</span><span style="color:#1a6641">'+cur+' '+fmt(rcvd)+'</span></div>';
+    if(b>0.005) h+='<div class="msr"><span>Outstanding</span><span style="color:#A32D2D;font-weight:600">'+cur+' '+fmt(b)+'</span></div>';
+    else h+='<div class="msr"><span>Status</span><span style="color:#1a6641">Fully Settled &#10003;</span></div>';
+  } else {
+    h+='<div style="font-size:12px;color:#aaa;margin-top:6px">No payments recorded yet.</div>';
   }
-  document.getElementById('pmSummary').innerHTML=html;
+  document.getElementById('pmSum').innerHTML=h;
 }
-window.savePayment=async function(){
-  if(!pmJobId){toast('No job selected');return;}
+
+window.savePay=async function(){
+  if(!pmId){toast('No job selected');return;}
   const newAmt=parseFloat(document.getElementById('pmAmt').value);
   if(isNaN(newAmt)||newAmt<=0){toast('Enter a valid amount greater than 0');return;}
   const method=document.getElementById('pmMethod').value;
   const date=document.getElementById('pmDate').value;
   const notes=document.getElementById('pmNotes').value.trim();
-  const j=jobs[pmJobId]||{};
+  const j=jobs[pmId]||{};
   const t=totals(j);
   const cur=j.currency||'SGD';
   const hist=[...(j.paymentHistory||[])];
   hist.push({amount:newAmt,method,date,notes});
   const totalRcvd=hist.reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
-  const updates={paymentReceived:totalRcvd,paymentHistory:hist,updatedAt:new Date().toISOString()};
+  const upd={paymentReceived:totalRcvd,paymentHistory:hist,updatedAt:new Date().toISOString()};
   try{
-    await update(ref(db,'jobs/'+pmJobId),updates);
-    jobs[pmJobId]=Object.assign({},j,updates);
+    await update(ref(db,'jobs/'+pmId),upd);
+    jobs[pmId]=Object.assign({},j,upd);
     document.getElementById('pmModal').classList.remove('show');
-    renderTable();
+    render();
     const bal=t.total-totalRcvd;
-    toast(bal<0.005?'Fully paid — '+cur+' '+fmt(totalRcvd)+' received':'Payment saved — '+cur+' '+fmt(bal)+' outstanding');
+    toast(bal<0.005?'Fully paid \u2014 '+cur+' '+fmt(totalRcvd)+' received':'Saved \u2014 '+cur+' '+fmt(bal)+' outstanding');
   }catch(err){toast('Error: '+err.message);}
 };
+
+/* ── Firebase init ── */
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,user=>{
   if(!user)return;
@@ -341,11 +373,12 @@ onAuthStateChanged(auth,user=>{
     b.className='conn '+(snap.val()?'online':'offline');
     document.getElementById('ls').classList.add('hide');
   });
-  onValue(ref(db,'jobs'),snap=>{jobs=snap.val()||{};renderTable();});
-
+  onValue(ref(db,'jobs'),snap=>{
+    jobs=snap.val()||{};
+    render();
+  });
 });
 setTimeout(()=>document.getElementById('ls').classList.add('hide'),5000);
-checkSession();
 </script>
 </body>
 </html>
