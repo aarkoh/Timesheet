@@ -282,12 +282,28 @@ const _mgrAuth=(function(){var t=localStorage.getItem('rc_manager');return t&&(D
 let unlocked=_mgrAuth?{clock:true,manager:true,summary:true,log:true}:{};
 let workers={}, log=[], pin='1234';
 
-// OT rates persisted in localStorage
+// OT/OVS rates — stored in Firebase config/rates so they sync across devices
 let otRates={}, ovsRates={};
-try{otRates=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');}catch(e){otRates={};}
-try{ovsRates=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');}catch(e){ovsRates={};}
-function saveOTRates(){try{localStorage.setItem('wt_ot_rates',JSON.stringify(otRates));}catch(e){}}
-function saveOVSRates(){try{localStorage.setItem('wt_ovs_rates',JSON.stringify(ovsRates));}catch(e){}}
+// Migrate any existing localStorage rates to Firebase on first load
+let _migratedRates=false;
+function _migrateLocalRates(){
+  if(_migratedRates) return;
+  try{
+    const oldOT=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');
+    const oldOVS=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');
+    const hasOT=Object.keys(oldOT).length>0;
+    const hasOVS=Object.keys(oldOVS).length>0;
+    if(hasOT||hasOVS){
+      set(ref(db,'config/rates'),{ot:oldOT,ovs:oldOVS}).then(function(){
+        localStorage.removeItem('wt_ot_rates');
+        localStorage.removeItem('wt_ovs_rates');
+      });
+    }
+  }catch(e){}
+  _migratedRates=true;
+}
+function saveOTRates(){set(ref(db,'config/rates/ot'),otRates).catch(function(e){console.error('saveOTRates',e);});}
+function saveOVSRates(){set(ref(db,'config/rates/ovs'),ovsRates).catch(function(e){console.error('saveOVSRates',e);});}
 window.setOTRate=function(w,val){otRates[w]=parseFloat(val)||0;saveOTRates();renderSummary();};
 window.setOVSRate=function(w,val){ovsRates[w]=parseFloat(val)||0;saveOVSRates();renderSummary();};
 
@@ -859,6 +875,17 @@ onAuthStateChanged(auth,async user=>{
   if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+  onValue(ref(db,'config/rates'),snap=>{
+    if(snap.exists()){
+      const r=snap.val();
+      otRates=r.ot||{};
+      ovsRates=r.ovs||{};
+    } else {
+      // No Firebase rates yet — migrate from localStorage if available
+      _migrateLocalRates();
+    }
+    renderSummary();
+  });
 
   onValue(ref(db,'workers'),snap=>{
     workers=snap.val()||{};
