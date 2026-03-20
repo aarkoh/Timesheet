@@ -1189,7 +1189,7 @@ window.printQuoData=function(id,selectedItems,revNum){
 // ═══════════════════════ CIPL FUNCTIONS ═══════════════════════
 
 window.openCIPL = function(id) {
-  var j = jobs[id] || {};
+  var j = (window._jobs||{})[id] || {};
   if (!j.lineItems || !j.lineItems.length) { toast('No line items on this job'); return; }
   document.getElementById('cipl_jobid').value = id;
   document.getElementById('cipl_ref_title').textContent = j.ref || '';
@@ -1222,7 +1222,7 @@ window.openCIPL = function(id) {
 
 window.generateCIPL = function() {
   var id = document.getElementById('cipl_jobid').value;
-  var j = jobs[id] || {};
+  var j = (window._jobs||{})[id] || {};
   var cur = j.currency || 'SGD';
   var ciplNo   = document.getElementById('cipl_no').value.trim() || j.ref || '';
   var ciplDate = document.getElementById('cipl_date').value;
