@@ -217,6 +217,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 window._mgr_fmt=fmt;
 window._mgr_totals=totals;
 window._mgr_jobs=jobs;
+window.toast=toast;
 function totals(j){
   var its=j.lineItems||[];
   var iSub=its.reduce(function(s,i){return s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0);},0);
@@ -549,6 +550,7 @@ window.invSelAll = function(v){
 
 window.doPrintInv = function(){
   var id = document.getElementById('invPrintBtn').dataset.jid;
+  var jobs = window._mgr_jobs||{};
   var j = jobs[id]||{};
   var selected = (j.lineItems||[]).filter(function(it,i){
     var cb=document.getElementById('inv_ic_'+i); return cb&&cb.checked;
