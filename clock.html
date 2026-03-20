@@ -44,6 +44,11 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
 .job-field input{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;color:#1a1a1a;background:#f9f9f7;transition:border-color 0.12s}
 .job-field input:focus{outline:none;border-color:#185FA5;background:#fff}
 .job-req{font-size:11px;color:#A32D2D;margin-top:4px;display:none}
+.jdrop-item{padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3}
+.jdrop-item:hover{background:#f5f5f3}
+.jdrop-item:last-child{border:none}
+.jdrop-ref{font-weight:600;color:#1a1a1a}
+.jdrop-vessel{color:#888;font-size:11px;margin-left:6px}
 .geost{font-size:12px;color:#888;margin-top:10px;display:flex;align-items:center;gap:6px;min-height:18px}
 .gdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0}
 .gdot.ok{background:#639922}.gdot.err{background:#E24B4A}.gdot.pulse{background:#BA7517;animation:pulse 1s infinite}
@@ -76,7 +81,17 @@ button:disabled{opacity:0.35;cursor:default;transform:none}
     <p class="sub" id="panelSub">Tap your initials above, then clock in or out</p>
     <div class="job-field" id="jobField" style="display:none">
       <label for="jobInput">Job number</label>
-      <input type="text" id="jobInput" placeholder="Enter job number e.g. JOB-001" autocomplete="off" oninput="document.getElementById('jobReq').style.display='none'">
+      <div style="position:relative">
+        <input type="text" id="jobInput" placeholder="Type job ref e.g. 2603001" autocomplete="off"
+          oninput="jobSearch(this.value);document.getElementById('jobReq').style.display='none'">
+        <div id="jobDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:50;max-height:200px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="jobSel" style="display:none;margin-top:6px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:8px;padding:6px 10px;font-size:12px;color:#185FA5;display:flex;align-items:center;gap:8px">
+        <span id="jobSelTxt" style="flex:1"></span>
+        <span onclick="clearJobSel()" style="cursor:pointer;font-weight:700">&#10005;</span>
+      </div>
+      <input type="hidden" id="jobRef">
+      <input type="hidden" id="jobVessel">
       <div class="job-req" id="jobReq">Job number is required</div>
     </div>
     <div class="brow">
@@ -109,7 +124,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 const auth = getAuth(fbApp);
 let WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN']; // loaded from Firebase
-let sel = null, workers = {};
+let sel = null, workers = {}, jobsCache = {};
 
 // ── Geo ──────────────────────────────────────────────────────
 function setGeoUI(cls,msg){document.getElementById('geoDot').className='gdot '+cls;document.getElementById('geoText').textContent=msg;}
@@ -127,7 +142,7 @@ function getGeo(cb){if(!navigator.geolocation){cb(null,'Not supported');return;}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 function debug(msg){const d=document.getElementById('debugPanel');if(!d)return;const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});d.innerHTML=`[${t}] ${msg}<br>`+d.innerHTML;const lines=d.innerHTML.split('<br>');if(lines.length>5)d.innerHTML=lines.slice(0,5).join('<br>');}
 function liveClock(){document.getElementById('liveClock').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
-function resetPanel(){sel=null;renderWorkers();document.getElementById('panelTitle').textContent='Select your name';document.getElementById('panelSub').textContent='Tap your initials above, then clock in or out';document.getElementById('btnIn').disabled=true;document.getElementById('btnOut').disabled=true;document.getElementById('jobField').style.display='none';document.getElementById('jobInput').value='';}
+function resetPanel(){sel=null;renderWorkers();document.getElementById('panelTitle').textContent='Select your name';document.getElementById('panelSub').textContent='Tap your initials above, then clock in or out';document.getElementById('btnIn').disabled=true;document.getElementById('btnOut').disabled=true;document.getElementById('jobField').style.display='none';document.getElementById('jobInput').value='';if(window.clearJobSel)window.clearJobSel();}
 
 // ── Render ────────────────────────────────────────────────────
 function renderWorkers(){
@@ -162,14 +177,63 @@ window.selectW=function(w){
   // Show job field, pre-fill with current job if clocked in
   document.getElementById('jobField').style.display='block';
   document.getElementById('jobInput').value=wd.job||'';
+  document.getElementById('jobRef').value=wd.job||'';
+  document.getElementById('jobVessel').value=wd.vessel||'';
+  if(wd.job){
+    document.getElementById('jobSelTxt').textContent=wd.job+(wd.vessel?' · '+wd.vessel:'');
+    document.getElementById('jobSel').style.display='flex';
+  } else {
+    document.getElementById('jobSel').style.display='none';
+  }
   document.getElementById('jobReq').style.display='none';
   renderWorkers();
 };
 
+// ── Job autocomplete ─────────────────────────────────────────
+function jobSearch(q){
+  const drop=document.getElementById('jobDrop');
+  if(!q||q.length<2){drop.style.display='none';return;}
+  const ql=q.toLowerCase();
+  const matches=Object.entries(jobsCache).filter(([id,j])=>{
+    return j.ref&&(j.ref.toLowerCase().includes(ql)||(j.vessel||'').toLowerCase().includes(ql));
+  }).filter(([id,j])=>j.status!=='closed').slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML=matches.map(([id,j])=>{
+    const vessel=j.vessel?`<span class="jdrop-vessel">· ${j.vessel}</span>`:'';
+    return `<div class="jdrop-item" onclick="selectJob('${j.ref}','${(j.vessel||'').replace(/'/g,'\'')}')">
+      <span class="jdrop-ref">${j.ref}</span>${vessel}
+    </div>`;
+  }).join('');
+  drop.style.display='block';
+}
+window.selectJob=function(ref,vessel){
+  document.getElementById('jobInput').value=ref;
+  document.getElementById('jobRef').value=ref;
+  document.getElementById('jobVessel').value=vessel;
+  document.getElementById('jobSelTxt').textContent=ref+(vessel?' · '+vessel:'');
+  const sel=document.getElementById('jobSel');
+  sel.style.display='flex';
+  document.getElementById('jobDrop').style.display='none';
+  document.getElementById('jobReq').style.display='none';
+};
+window.clearJobSel=function(){
+  document.getElementById('jobInput').value='';
+  document.getElementById('jobRef').value='';
+  document.getElementById('jobVessel').value='';
+  document.getElementById('jobSel').style.display='none';
+  document.getElementById('jobDrop').style.display='none';
+};
+// Close dropdown on outside click
+document.addEventListener('click',function(e){
+  const inp=document.getElementById('jobInput');
+  const drop=document.getElementById('jobDrop');
+  if(inp&&drop&&!inp.contains(e.target)&&!drop.contains(e.target))drop.style.display='none';
+});
+
 // ── Action ────────────────────────────────────────────────────
 window.doAction=async function(type){
   if(!sel)return;
-  const jobNum=document.getElementById('jobInput').value.trim();
+  const jobNum=document.getElementById('jobRef').value.trim()||document.getElementById('jobInput').value.trim();
   if(!jobNum){
     document.getElementById('jobReq').style.display='block';
     document.getElementById('jobInput').focus();
@@ -191,7 +255,8 @@ window.doAction=async function(type){
     });
     const coordStr=geo?`${geo.lat.toFixed(5)}, ${geo.lon.toFixed(5)}`:'';
     await update(ref(db,'workers/'+w),{status:type,since:type==='in'?nowISO:null,sinceLocal:type==='in'?localTimeStr:null,lastTime:nowISO,loc:type==='in'?coordStr:'',job:type==='in'?jobNum:'',tz:localTZ});
-    const entry={worker:w,type,time:nowISO,localTime:localTimeStr,tz:localTZ,lat:geo?geo.lat:null,lon:geo?geo.lon:null,acc:geo?geo.acc:null,loc:coordStr,job:jobNum};
+    const jobVessel=document.getElementById('jobVessel')?document.getElementById('jobVessel').value:'';
+    const entry={worker:w,type,time:nowISO,localTime:localTimeStr,tz:localTZ,lat:geo?geo.lat:null,lon:geo?geo.lon:null,acc:geo?geo.acc:null,loc:coordStr,job:jobNum,vessel:type==='in'?jobVessel:''};
     try{
       debug(`Writing ${type} for ${w}…`);
       const newRef=await push(ref(db,'log'),entry);
@@ -276,7 +341,12 @@ onAuthStateChanged(auth,async user=>{
       renderWorkers();
     }
   });
-  onValue(ref(db,'workers'),snap=>{
+  // Load jobs for autocomplete
+    get(ref(db,'jobs')).then(snap=>{
+      jobsCache={};
+      if(snap.exists())Object.entries(snap.val()).forEach(([k,v])=>{jobsCache[k]=v;});
+    });
+    onValue(ref(db,'workers'),snap=>{
     workers=snap.val()||{};
     WORKERS.forEach(w=>{if(!workers[w])workers[w]={status:'out',since:null,loc:'',lastTime:null};});
     renderWorkers();if(sel)window.selectW(sel);
