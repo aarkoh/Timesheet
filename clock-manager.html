@@ -278,7 +278,7 @@ const auth = getAuth(fbApp);
 const WORKERS = ['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel=null, logTypeFilter='all', pinTarget=null, settingNew=false;
 // Restore session: if manager was authenticated this session, all tabs are unlocked
-const _mgrAuth=sessionStorage.getItem('rc_manager')==='1';
+const _mgrAuth=(function(){var t=localStorage.getItem('rc_manager');return t&&(Date.now()-parseInt(t))<28800000;})();
 let unlocked=_mgrAuth?{clock:true,manager:true,summary:true,log:true}:{};
 let workers={}, log=[], pin='1234';
 
@@ -820,7 +820,7 @@ function submitPin(){
       clearPin();document.getElementById('pinErr').textContent='';
       document.getElementById('p0').focus();return;
     }
-    unlocked[pinTarget]=true;sessionStorage.setItem('rc_manager','1');closePinModal();
+    unlocked[pinTarget]=true;localStorage.setItem('rc_manager',Date.now().toString());closePinModal();
     const tabs=['clock','manager','summary','log'];
     const idx=tabs.indexOf(pinTarget);
     if(idx>=0)window.switchTab(pinTarget,document.querySelectorAll('.tab')[idx]);
