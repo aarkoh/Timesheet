@@ -284,7 +284,7 @@ const _mgrT=localStorage.getItem("rc_manager");
 const rcMgr=(_mgrT&&(Date.now()-parseInt(_mgrT))<28800000)?"1":null;
 if(!rcStaff&&!rcMgr){window.location.href="https://aarkoh.github.io/Raycontrol/";}
 // Staff always go to staff hub — only pure manager sessions see manager dashboard
-if(rcMgr&&!rcStaff){const hl=document.getElementById("hubLink");hl.href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/";hl.textContent="Dashboard";}
+if(rcMgr){const hl=document.getElementById("hubLink");hl.href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/";hl.textContent="&#9651; Manager Hub";}
 
 function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2500);}
 function fmt(n){return(parseFloat(n)||0).toLocaleString("en-SG",{minimumFractionDigits:2,maximumFractionDigits:2});}
