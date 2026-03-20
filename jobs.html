@@ -474,7 +474,26 @@ window.openDetail=function(id){
       +'<div class="ir"><span class="il">Payment</span><span class="iv">'+(j.payTerms||"&mdash;")+"</span></div>"
       +'<div class="ir"><span class="il">Validity till</span><span class="iv">'+fmtD(j.validity)+"</span></div>"
     +"</div>"
-    +'<div class="sbox"><h3>Documents</h3>'
+    +(function(){
+    var allVI=window._vendorInvoices||{};
+    var jobVIs=Object.entries(allVI).filter(function(e){return e[1].jobRef===j.ref;});
+    if(!jobVIs.length) return '';
+    var fmt2=function(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    var fmtD2=function(d){if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}};
+    var rows=jobVIs.map(function(e){
+      var v=e[1];
+      var paid=v.status==='paid';
+      return '<div class="ir">'
+        +'<span class="il">'+v.invNo+'</span>'
+        +'<span class="iv" style="display:flex;align-items:center;gap:8px">'
+          +(v.currency||'SGD')+' '+fmt2(v.amount)
+          +'<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:'+(paid?'#EAF3DE':'#FCEBEB')+';color:'+(paid?'#1a6641':'#A32D2D')+'">'+(paid?'Paid':'Unpaid')+'</span>'
+        +'</span>'
+      +'</div>';
+    }).join('');
+    return '<div class="sbox"><h3>Vendor Invoices</h3>'+rows+'</div>';
+  })()
++'<div class="sbox"><h3>Documents</h3>'
       +'<div class="ditem"><span>&#128196;</span><span style="font-weight:500;flex:1">Quotation '+(j.ref||"")+"</span>"
         +'<button data-jid="'+id+'" onclick="window.openPrintQuo(this.dataset.jid)" style="font-size:12px;padding:4px 12px;border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128424; Print / PDF</button>'
       +'</div>'
@@ -718,6 +737,11 @@ onAuthStateChanged(auth,function(user){
     contacts=snap.val()||{};
     setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";});
     setupSearch("j_vs","j_vs_d",function(c){return(c.types||[]).includes("vendor");},function(id,nm){if(!selVendors.find(function(v){return v.id===id;})){selVendors.push({id:id,name:nm,cost:""});renderVTags();refreshLIVendors();}});
+  });
+  onValue(ref(db,'vendorInvoices'),function(snap){
+    window._vendorInvoices=snap.val()||{};
+    // Refresh detail if open
+    if(currentJobId) openDetail(currentJobId);
   });
   onValue(ref(db,"jobs"),function(snap){
     jobs=snap.val()||{};

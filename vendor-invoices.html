@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Invoices</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:960px;margin:0 auto;padding:1.25rem 1rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
+.topbar h1{font-size:20px;font-weight:700;flex:1}
+.back{font-size:12px;color:#185FA5;text-decoration:none;padding:5px 10px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+.toolbar{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input{flex:1;min-width:180px;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+.toolbar input:focus{outline:none;border-color:#185FA5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+.chip{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#666;white-space:nowrap}
+.chip.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+button{font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer;white-space:nowrap}
+button:hover{background:#f0f0ee}
+.bp{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}.bp:hover{background:#333}
+.bsm{font-size:11px;padding:4px 10px}
+.badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.b-paid{background:#EAF3DE;color:#1a6641}.b-unpaid{background:#FCEBEB;color:#A32D2D}
+.empty{text-align:center;padding:3rem;color:#aaa;font-size:13px;border:1px dashed #ddd;border-radius:12px}
+.vi-list{display:flex;flex-direction:column;gap:8px}
+.vi-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;border-left:4px solid #854F0B}
+.vi-card.paid{border-left-color:#1a6641}
+.vi-top{display:flex;align-items:flex-start;gap:10px}
+.vi-main{flex:1}
+.vi-ref{font-size:16px;font-weight:700}
+.vi-sub{font-size:12px;color:#555;margin-top:2px}
+.vi-meta{font-size:11px;color:#aaa;margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.vi-right{text-align:right;flex-shrink:0}
+.vi-amt{font-size:15px;font-weight:600}
+.vi-date{font-size:11px;color:#aaa;margin-top:2px}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
+.mbg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:600px;border:1px solid #e0ddd6;margin:auto}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.ms{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.08em;margin:1.1rem 0 .7rem;padding-top:1rem;border-top:1px solid #f0ede6}
+.fi{margin-bottom:.75rem}
+.fi label{font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500}
+.fi input,.fi select,.fi textarea{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
+.fi input:focus,.fi select:focus,.fi textarea:focus{outline:none;border-color:#185FA5;background:#fff}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+.ls{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.ls.hide{display:none}
+.sp{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+@media(max-width:500px){.fr2,.fr3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="ls" id="ls"><div class="sp"></div><p>Loading&hellip;</p></div>
+<div class="app">
+  <div class="topbar">
+    <h1>&#128467; Vendor Invoices</h1>
+    <a href="https://aarkoh.github.io/Raycontrol/" class="back">&#8962; Hub</a>
+    <span class="conn syncing" id="connBadge">Connecting&hellip;</span>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="srch" placeholder="Search vendor, job ref, invoice no&hellip;" oninput="renderList()">
+    <button class="bp" onclick="openAdd()">+ Add Invoice</button>
+  </div>
+  <div class="chips">
+    <div class="chip on" onclick="setF('all',this)">All</div>
+    <div class="chip" onclick="setF('unpaid',this)">Unpaid</div>
+    <div class="chip" onclick="setF('paid',this)">Paid</div>
+  </div>
+  <div class="vi-list" id="viList"><div class="empty">Loading&hellip;</div></div>
+</div>
+
+<!-- Add Modal -->
+<div class="mbg" id="addModal">
+  <div class="modal">
+    <h2 id="modalTitle">+ Add Vendor Invoice</h2>
+    <div class="fr2">
+      <div class="fi"><label>Vendor Name *</label><input type="text" id="f_vendor" placeholder="e.g. Hanla IMS"></div>
+      <div class="fi"><label>Invoice No. *</label><input type="text" id="f_invno" placeholder="e.g. HNL-2026-001"></div>
+    </div>
+    <div class="fr2">
+      <div class="fi"><label>Invoice Date *</label><input type="date" id="f_date"></div>
+      <div class="fi"><label>Job Reference</label><input type="text" id="f_jobref" placeholder="e.g. 2603016"></div>
+    </div>
+    <div class="fr2">
+      <div class="fi"><label>Currency</label>
+        <select id="f_cur">
+          <option value="SGD">SGD</option>
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="JPY">JPY</option>
+          <option value="CNY">CNY</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+      <div class="fi"><label>Amount *</label><input type="number" id="f_amt" min="0" step="0.01" placeholder="0.00"></div>
+    </div>
+    <div class="fi"><label>Description / Notes</label><textarea id="f_desc" rows="2" placeholder="e.g. Parts for steering gear repair"></textarea></div>
+    <div class="mfoot">
+      <button onclick="closeAdd()">Cancel</button>
+      <button class="bp" onclick="saveInv()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getDatabase,ref,onValue,push,update}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const rcStaff=sessionStorage.getItem('rc_staff');
+const _mgrT=localStorage.getItem('rc_manager');
+const rcMgr=(_mgrT&&(Date.now()-parseInt(_mgrT))<28800000)?'1':null;
+if(!rcStaff&&!rcMgr){window.location.href='https://aarkoh.github.io/Raycontrol/';}
+
+const db=getDatabase(initializeApp({
+  apiKey:'AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4',authDomain:'attendance-20d6a.firebaseapp.com',
+  databaseURL:'https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId:'attendance-20d6a',storageBucket:'attendance-20d6a.firebasestorage.app',
+  messagingSenderId:'597668949951',appId:'1:597668949951:web:f7fcc8c3b4450f8f80bb0a'
+}));
+const auth=getAuth();
+
+let vis={}, filt='all';
+
+const fmt=n=>(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtD=d=>{if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}};
+window.toast=function(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);};
+
+window.setF=function(f,el){
+  filt=f;
+  document.querySelectorAll('.chips .chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderList();
+};
+
+window.renderList=function(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const list=Object.entries(vis).filter(([id,v])=>{
+    if(filt==='paid'&&v.status!=='paid') return false;
+    if(filt==='unpaid'&&v.status==='paid') return false;
+    if(q&&![v.vendorName,v.invNo,v.jobRef,v.desc].filter(Boolean).some(x=>x.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a,b)=>(b[1].createdAt||'').localeCompare(a[1].createdAt||''));
+
+  const el=document.getElementById('viList');
+  if(!list.length){el.innerHTML='<div class="empty">No vendor invoices found.</div>';return;}
+  el.innerHTML=list.map(([id,v])=>{
+    const paid=v.status==='paid';
+    return '<div class="vi-card'+(paid?' paid':'')+'">'
+      +'<div class="vi-top">'
+        +'<div class="vi-main">'
+          +'<div class="vi-ref">'+v.invNo+'</div>'
+          +'<div class="vi-sub">'+v.vendorName+(v.jobRef?' &nbsp;·&nbsp; Job: '+v.jobRef:'')+'</div>'
+          +'<div class="vi-meta">'
+            +'<span>'+fmtD(v.invDate)+'</span>'
+            +(v.desc?'<span>'+v.desc+'</span>':'')
+            +'<span>By: '+(v.createdBy||'—')+'</span>'
+          +'</div>'
+        +'</div>'
+        +'<div class="vi-right">'
+          +'<div class="vi-amt">'+(v.currency||'SGD')+' '+fmt(v.amount)+'</div>'
+          +'<div style="margin-top:4px"><span class="badge '+(paid?'b-paid':'b-unpaid')+'">'+(paid?'Paid':'Unpaid')+'</span></div>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+};
+
+window.openAdd=function(){
+  document.getElementById('modalTitle').textContent='+ Add Vendor Invoice';
+  document.getElementById('f_vendor').value='';
+  document.getElementById('f_invno').value='';
+  document.getElementById('f_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('f_jobref').value='';
+  document.getElementById('f_cur').value='SGD';
+  document.getElementById('f_amt').value='';
+  document.getElementById('f_desc').value='';
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(()=>document.getElementById('f_vendor').focus(),100);
+};
+
+window.closeAdd=function(){document.getElementById('addModal').classList.remove('show');};
+
+window.saveInv=async function(){
+  const vendor=document.getElementById('f_vendor').value.trim();
+  const invno=document.getElementById('f_invno').value.trim();
+  const date=document.getElementById('f_date').value;
+  const amt=parseFloat(document.getElementById('f_amt').value);
+  if(!vendor){toast('Enter vendor name');return;}
+  if(!invno){toast('Enter invoice number');return;}
+  if(!date){toast('Select invoice date');return;}
+  if(isNaN(amt)||amt<=0){toast('Enter a valid amount');return;}
+  const data={
+    vendorName:vendor,
+    invNo:invno,
+    invDate:date,
+    jobRef:document.getElementById('f_jobref').value.trim(),
+    currency:document.getElementById('f_cur').value,
+    amount:amt,
+    desc:document.getElementById('f_desc').value.trim(),
+    status:'unpaid',
+    createdBy:rcStaff||'Manager',
+    createdAt:new Date().toISOString()
+  };
+  try{
+    await push(ref(db,'vendorInvoices'),data);
+    closeAdd();
+    toast('Vendor invoice saved ✓');
+  }catch(e){toast('Error: '+e.message);}
+};
+
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user)return;
+  onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
+    b.textContent=snap.val()?'Live':'Offline';
+    b.className='conn '+(snap.val()?'online':'offline');
+    document.getElementById('ls').classList.add('hide');
+  });
+  onValue(ref(db,'vendorInvoices'),snap=>{
+    vis=snap.val()||{};
+    renderList();
+  });
+});
+setTimeout(()=>document.getElementById('ls').classList.add('hide'),5000);
+</script>
+</body>
+</html>
