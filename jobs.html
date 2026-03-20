@@ -88,6 +88,8 @@ button:hover{background:#f0f0ee}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity 0.2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
+.inv-pct{font-family:inherit;font-size:13px;padding:6px 18px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;font-weight:600;color:#666}
+.inv-pct.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 /* CIPL Modal */
 .cipl-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:110;padding:1rem;overflow-y:auto}
 .cipl-modal-bg.show{display:flex}
@@ -1924,11 +1926,19 @@ window.printFeedback = function(id) {
     <h2>&#129534; Invoice — <span id="inv_ref_title"></span></h2>
     <div style="display:flex;gap:16px;margin-bottom:1rem">
       <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
-        <input type="radio" name="inv_type" id="inv_type_tax" value="TAX INVOICE" checked style="width:16px;height:16px"> Tax Invoice
+        <input type="radio" name="inv_type" id="inv_type_tax" value="TAX INVOICE" checked style="width:16px;height:16px" onchange="toggleInvPct()"> Tax Invoice
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
-        <input type="radio" name="inv_type" id="inv_type_pro" value="PROFORMA INVOICE" style="width:16px;height:16px"> Proforma Invoice
+        <input type="radio" name="inv_type" id="inv_type_pro" value="PROFORMA INVOICE" style="width:16px;height:16px" onchange="toggleInvPct()"> Proforma Invoice
       </label>
+    </div>
+    <div id="invPctRow" style="display:none;margin-bottom:1rem">
+      <div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500">Invoice percentage</div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="inv-pct on" data-pct="30" onclick="setInvPct(this)">30%</button>
+        <button type="button" class="inv-pct" data-pct="50" onclick="setInvPct(this)">50%</button>
+        <button type="button" class="inv-pct" data-pct="100" onclick="setInvPct(this)">100%</button>
+      </div>
     </div>
     <p style="font-size:12px;color:#888;margin-bottom:.6rem">Select line items to include.</p>
     <div id="inv_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:6px"></div>
@@ -1946,6 +1956,19 @@ window.printFeedback = function(id) {
 
 <script>
 // ═══════════════════════ INVOICE FUNCTIONS ═══════════════════════
+
+window.toggleInvPct = function() {
+  var isPro = document.getElementById("inv_type_pro").checked;
+  document.getElementById("invPctRow").style.display = isPro ? "block" : "none";
+};
+window.setInvPct = function(btn) {
+  document.querySelectorAll(".inv-pct").forEach(function(b){b.classList.remove("on");});
+  btn.classList.add("on");
+};
+window.getInvPct = function() {
+  var active = document.querySelector(".inv-pct.on");
+  return active ? (parseFloat(active.dataset.pct)/100) : 1;
+};
 
 window.invSelectAll = function(v) {
   document.querySelectorAll('[id^="inv_ic_"]').forEach(function(cb){cb.checked=v;});
@@ -1981,19 +2004,24 @@ window.doPrintInv = function() {
     var cb=document.getElementById('inv_ic_'+i); return cb&&cb.checked;
   });
   var invType = document.querySelector('input[name="inv_type"]:checked').value;
+  var invPct = invType==='PROFORMA INVOICE' ? window.getInvPct() : 1;
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){toast('Select at least one line item');return;}
-  window.printInvData(id, selected, invType);
+  window.printInvData(id, selected, invType, invPct);
 };
 
-window.printInvData = function(id, selectedItems, invType) {
+window.printInvData = function(id, selectedItems, invType, invPct) {
   invType = invType || 'TAX INVOICE';
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt, fmtD=window._fmtD, totals=window._totals;
   if(!fmt){alert('Please wait for page to load.');return;}
-  var jForTotals=Object.assign({},j,{lineItems:selectedItems});
+  invPct = invPct||1;
+  var pctLabel = invPct<1 ? " ("+Math.round(invPct*100)+"% advance)" : "";
+  var scaledItems=selectedItems.map(function(it){return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct,costPrice:it.costPrice});});
+  var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
   var t=totals(jForTotals);
+  var tOrig=totals(Object.assign({},j,{lineItems:selectedItems}));
   var cur=j.currency||'SGD';
   var today=new Date();
   var todayFmt=today.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
@@ -2001,7 +2029,7 @@ window.printInvData = function(id, selectedItems, invType) {
   function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
   function chg(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':a>0?fmt(a):'0.00';}
 
-  var iRows=selectedItems.map(function(it,i){
+  var iRows=scaledItems.map(function(it,i){
     return '<tr>'
       +'<td style="text-align:center;padding:5px 6px">'+(i+1)+'</td>'
       +'<td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td>'
@@ -2118,6 +2146,10 @@ window.printInvData = function(id, selectedItems, invType) {
         +gstRow
         +'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div>'
         +'<div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'
+      +(invPct<1?'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:9pt;color:#555"><span>Original Total '+cur+'</span><span>'+fmt(tOrig.total)+'</span></div>':'')
+      +(invPct>=1&&j.paymentReceived>0?'<div style="display:flex;justify-content:space-between;padding:3px 6px;font-size:10pt;color:#1a6641;font-weight:600"><span>PAYMENT RECEIVED</span><span>'+fmt(j.paymentReceived)+'</span></div>':'')
+      +(invPct>=1&&j.paymentReceived>0&&(j.paymentReceived)<t.total-0.005?'<div style="display:flex;justify-content:space-between;padding:3px 6px;font-size:10pt;font-weight:700;border-top:1px solid #000"><span>BALANCE DUE</span><span>'+fmt(t.total-j.paymentReceived)+'</span></div>':'')
+      +(invPct>=1&&j.paymentReceived>=t.total-0.005&&j.paymentReceived>0?'<div style="display:flex;justify-content:space-between;padding:3px 6px;font-size:10pt;color:#1a6641;font-weight:700;border-top:1px solid #000"><span>FULLY PAID &#10003;</span><span></span></div>':'')
       +'</div>'
     +'</div>'
 
