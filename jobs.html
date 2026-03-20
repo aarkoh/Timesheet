@@ -32,11 +32,11 @@ button:hover{background:#f0f0ee}
 .jcard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;cursor:pointer;transition:box-shadow 0.12s;border-left:4px solid #e0ddd6}
 .jcard:hover{box-shadow:0 2px 10px rgba(0,0,0,0.08)}
 .jcard.sq{border-left-color:#854F0B}.jcard.scp{border-left-color:#185FA5}
-.jcard.svp{border-left-color:#8B1A8B}.jcard.si{border-left-color:#A32D2D}
+.jcard.svp{border-left-color:#8B1A8B}.jcard.sdw{border-left-color:#0E7490}.jcard.si{border-left-color:#A32D2D}
 .jcard.ss{border-left-color:#1a6641}.jcard.sc{border-left-color:#aaa}
 .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
 .bq{background:#FAEEDA;color:#854F0B}.bcp{background:#E6F1FB;color:#185FA5}
-.bvp{background:#F3E6F3;color:#8B1A8B}.bi{background:#FCEBEB;color:#A32D2D}
+.bvp{background:#F3E6F3;color:#8B1A8B}.bdw{background:#CFFAFE;color:#0E7490}.bi{background:#FCEBEB;color:#A32D2D}
 .bs{background:#EAF3DE;color:#1a6641}.bc{background:#efefed;color:#666}
 .ov{color:#A32D2D;font-weight:600}
 .empty{text-align:center;padding:3rem;color:#aaa;font-size:13px;border:1px dashed #ddd;border-radius:12px}
@@ -129,6 +129,7 @@ button:hover{background:#f0f0ee}
       <div class="chip" onclick="setFilter('quote',this)">Quote</div>
       <div class="chip" onclick="setFilter('customer_po',this)">Customer PO</div>
       <div class="chip" onclick="setFilter('vendor_po',this)">Vendor PO</div>
+      <div class="chip" onclick="setFilter('do_wcc',this)">DO / WCC</div>
       <div class="chip" onclick="setFilter('invoice',this)">Invoice</div>
       <div class="chip" onclick="setFilter('soa',this)">SOA</div>
       <div class="chip" onclick="setFilter('closed',this)">Closed</div>
@@ -267,10 +268,10 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gsta
 const db=getDatabase(initializeApp({apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"}));
 const auth=getAuth();
 
-const SL={quote:"Quote",customer_po:"Customer PO",vendor_po:"Vendor PO",invoice:"Invoice Sent",soa:"SOA Sent",closed:"Closed"};
-const SO=["quote","customer_po","vendor_po","invoice","soa","closed"];
-const SC={quote:"sq",customer_po:"scp",vendor_po:"svp",invoice:"si",soa:"ss",closed:"sc"};
-const BC={quote:"bq",customer_po:"bcp",vendor_po:"bvp",invoice:"bi",soa:"bs",closed:"bc"};
+const SL={quote:"Quote",customer_po:"Customer PO",vendor_po:"Vendor PO",do_wcc:"DO / WCC",invoice:"Invoice Sent",soa:"SOA Sent",closed:"Closed"};
+const SO=["quote","customer_po","vendor_po","do_wcc","invoice","soa","closed"];
+const SC={quote:"sq",customer_po:"scp",vendor_po:"svp",do_wcc:"sdw",invoice:"si",soa:"ss",closed:"sc"};
+const BC={quote:"bq",customer_po:"bcp",vendor_po:"bvp",do_wcc:"bdw",invoice:"bi",soa:"bs",closed:"bc"};
 let jobs={},contacts={},currentJobId=null,editJobId=null,sFilter="all",sQ="",selVendors=[],liCount=0;
 
 const rcStaff=sessionStorage.getItem("rc_staff");
