@@ -270,6 +270,12 @@ window.saveInv=async function(){
   if(!invno){toast('Enter invoice number');return;}
   if(!date){toast('Select invoice date');return;}
   if(isNaN(amt)||amt<=0){toast('Enter a valid amount');return;}
+  // Duplicate check: same invoice number from same vendor
+  var duplicate=Object.values(vis).find(function(v){
+    return v.invNo.trim().toLowerCase()===invno.toLowerCase()&&
+      v.vendorName.trim().toLowerCase()===vendor.toLowerCase();
+  });
+  if(duplicate){toast('Duplicate: '+invno+' from '+vendor+' already exists');return;}
   const data={
     vendorName:vendor,
     invNo:invno,
