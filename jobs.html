@@ -1918,7 +1918,15 @@ window.printFeedback = function(id) {
 <div class="mbg" id="invModal">
   <div class="modal">
     <h2>&#129534; Invoice — <span id="inv_ref_title"></span></h2>
-    <p style="font-size:12px;color:#888;margin-bottom:1rem">Select line items to include on the invoice.</p>
+    <div style="display:flex;gap:16px;margin-bottom:1rem">
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
+        <input type="radio" name="inv_type" id="inv_type_tax" value="TAX INVOICE" checked style="width:16px;height:16px"> Tax Invoice
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
+        <input type="radio" name="inv_type" id="inv_type_pro" value="PROFORMA INVOICE" style="width:16px;height:16px"> Proforma Invoice
+      </label>
+    </div>
+    <p style="font-size:12px;color:#888;margin-bottom:.6rem">Select line items to include.</p>
     <div id="inv_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:6px"></div>
     <div style="font-size:11px;color:#888;margin-bottom:1rem">
       <a href="#" onclick="window.invSelectAll(true);return false" style="color:#185FA5">Select all</a>
@@ -1968,12 +1976,14 @@ window.doPrintInv = function() {
   var selected = (j.lineItems||[]).filter(function(it,i){
     var cb=document.getElementById('inv_ic_'+i); return cb&&cb.checked;
   });
+  var invType = document.querySelector('input[name="inv_type"]:checked').value;
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){toast('Select at least one line item');return;}
-  window.printInvData(id, selected);
+  window.printInvData(id, selected, invType);
 };
 
-window.printInvData = function(id, selectedItems) {
+window.printInvData = function(id, selectedItems, invType) {
+  invType = invType || 'TAX INVOICE';
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt, fmtD=window._fmtD, totals=window._totals;
@@ -2055,7 +2065,7 @@ window.printInvData = function(id, selectedItems) {
         +'<img src="'+LYO+'" style="height:24px;max-width:90px;object-fit:contain">'
         +'<img src="'+LMA+'" style="height:38px;max-width:60px;object-fit:contain">'
       +'</div></td>'
-      +'<td class="c3">INVOICE<br><br>BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
+      +'<td class="c3"><div style="font-size:14pt;font-weight:900;letter-spacing:1px;font-family:Arial,sans-serif;line-height:1.2">'+invType+'</div><br>BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
     +'</tr></table>'
 
     // ── Addressee + Invoice details ──
