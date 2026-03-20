@@ -93,8 +93,12 @@ button:hover{background:#f0f0ee}
 .empty{text-align:center;padding:3rem;color:#aaa;font-size:13px;background:#fff}
 .mbg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:1rem;overflow-y:auto}
 .mbg.show{display:flex}
-.modal{margin:auto}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:700px;border:1px solid #e0ddd6;margin:auto}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
 @media(max-width:700px){.hsm{display:none}}
+.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
+.tab{font-family:inherit;font-size:12px;padding:6px 14px;border:none;background:transparent;cursor:pointer;color:#666;white-space:nowrap}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
 </style>
 </head>
 <body>
@@ -749,14 +753,14 @@ function printInvData(id, selectedItems, invType, invPct){
 
 
 <!-- SOA MODAL -->
-<div class="mbg" id="soaModal" style="align-items:flex-start;padding:2rem 1rem;overflow-y:auto">
-  <div class="mbox" style="max-width:780px;width:100%;margin:auto;padding:2rem">
+<div class="mbg" id="soaModal">
+  <div class="modal" style="max-width:780px">
     <h2 style="margin-bottom:.75rem">&#128196; Statement of Account</h2>
 
     <!-- Tabs -->
-    <div style="display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed;margin-bottom:1rem;width:fit-content">
-      <button id="soaTab1" onclick="soaSwitchTab(1)" style="font-family:inherit;font-size:12px;padding:6px 16px;border:none;background:#1a1a1a;color:#fff;font-weight:600;cursor:pointer;border-radius:0">Overdue 30+ days</button>
-      <button id="soaTab2" onclick="soaSwitchTab(2)" style="font-family:inherit;font-size:12px;padding:6px 16px;border:none;background:transparent;color:#666;cursor:pointer;border-radius:0">By Customer</button>
+    <div class="tabs" style="margin-bottom:1rem">
+      <button id="soaTab1" class="tab active" onclick="soaSwitchTab(1)">Overdue 30+ days</button>
+      <button id="soaTab2" class="tab" onclick="soaSwitchTab(2)">By Customer</button>
     </div>
 
     <!-- Tab 1: Overdue list -->
@@ -796,10 +800,10 @@ function printInvData(id, selectedItems, invType, invPct){
       <div id="soaAgeing" style="margin-top:.75rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px"></div>
     </div>
 
-    <div class="pm-foot">
+    <div class="mfoot">
       <button onclick="document.getElementById('soaModal').classList.remove('show')">Cancel</button>
       <button onclick="generateSOAPreview()" style="border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128269; Preview</button>
-      <button class="btn-save" style="background:#A32D2D;border-color:#A32D2D" onclick="printSOA()">&#128424; Print / PDF</button>
+      <button class="bp" style="background:#A32D2D;border-color:#A32D2D" onclick="printSOA()">&#128424; Print / PDF</button>
     </div>
   </div>
 </div>
@@ -822,10 +826,8 @@ window.openSOA = function() {
 window.soaSwitchTab = function(n) {
   document.getElementById('soaPane1').style.display = n===1?'block':'none';
   document.getElementById('soaPane2').style.display = n===2?'block':'none';
-  document.getElementById('soaTab1').style.background = n===1?'#1a1a1a':'transparent';
-  document.getElementById('soaTab1').style.color     = n===1?'#fff':'#666';
-  document.getElementById('soaTab2').style.background = n===2?'#1a1a1a':'transparent';
-  document.getElementById('soaTab2').style.color     = n===2?'#fff':'#666';
+  document.getElementById('soaTab1').className = 'tab'+(n===1?' active':'');
+  document.getElementById('soaTab2').className = 'tab'+(n===2?' active':'');
 };
 
 function soaAge(d){if(!d)return 999;return Math.floor((Date.now()-new Date(d.slice(0,10)+'T00:00:00'))/864e5);}
