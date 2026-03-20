@@ -362,16 +362,17 @@ window.updateBatchBar=function updateBatchBar(){
   var fmt=function(n){return(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});};
   // Group by vendor
   var vendors={};
-  var totalSGD=0;
+  var totByCur={};
   chks.forEach(function(cb){
     var v=vis2[cb.dataset.id]||{};
     if(!vendors[v.vendorName]) vendors[v.vendorName]=0;
     vendors[v.vendorName]+=(parseFloat(v.amount)||0);
-    if((v.currency||'SGD')==='SGD') totalSGD+=(parseFloat(v.amount)||0);
+    var c=v.currency||'SGD';
+    totByCur[c]=(totByCur[c]||0)+(parseFloat(v.amount)||0);
   });
   var vendorNames=Object.keys(vendors);
   document.getElementById('batchCount').textContent=chks.length+' invoice'+(chks.length>1?'s':'')+' selected'+(vendorNames.length===1?' from '+vendorNames[0]:'');
-  document.getElementById('batchTotal').textContent='SGD '+fmt(totalSGD);
+  document.getElementById('batchTotal').textContent=Object.entries(totByCur).map(function(e){return e[0]+' '+fmt(e[1]);}).join(' · ');
   bar.style.display='flex';
 }
 
