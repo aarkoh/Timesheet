@@ -831,7 +831,7 @@ window.soaSwitchTab = function(n) {
   document.getElementById('soaTab2').className = 'tab'+(n===2?' active':'');
 };
 
-function soaAge(d){if(!d)return 999;return Math.floor((Date.now()-new Date(d.slice(0,10)+'T00:00:00'))/864e5);}
+function soaAge(d,j){var dateStr=(j&&j.invoiceDate)?j.invoiceDate:(j&&j.updatedAt)?j.updatedAt:(d||null);if(!dateStr)return 999;return Math.floor((Date.now()-new Date(dateStr.slice(0,10)+'T00:00:00'))/864e5);}
 
 window.soaBuildOverdueList = function() {
   var jobs = window._mgr_jobs||{};
@@ -851,7 +851,7 @@ window.soaBuildOverdueList = function() {
     var rcvd = parseFloat(j.paymentReceived)||0;
     var bal = t.total - rcvd;
     if(bal < 0.005) return; // fully paid
-    var age = soaAge(j.date||j.createdAt);
+    var age = soaAge(j.date||j.createdAt,j);
     if(age < 30) return; // not overdue
     var key = j.customerId;
     if(!byCustomer[key]){
@@ -989,7 +989,7 @@ window.generateSOAPreview = function() {
   rows.forEach(function(e){
     var j=e[1], t=totals(j), cur=j.currency||'SGD';
     var rcvd=parseFloat(j.paymentReceived)||0, bal=t.total-rcvd;
-    var age=soaAge(j.date||j.createdAt);
+    var age=soaAge(j.date||j.createdAt,j);
     var ageCol=age>90?'#A32D2D':age>60?'#854F0B':age>30?'#185FA5':'#1a6641';
     totalInv+=t.total; totalRcvd+=rcvd;
     if(bal>0.005){if(age<=30)age0+=bal;else if(age<=60)age30+=bal;else if(age<=90)age60+=bal;else age90+=bal;}
@@ -1040,7 +1040,7 @@ window.printSOA = function() {
   var iRows=rows.map(function(e,i){
     var j=e[1], t=totals(j), cur=j.currency||'SGD';
     var rcvd=parseFloat(j.paymentReceived)||0, bal=t.total-rcvd;
-    var age=soaAge(j.date||j.createdAt);
+    var age=soaAge(j.date||j.createdAt,j);
     var ageStr=age<=30?'0-30':age<=60?'31-60':age<=90?'61-90':'90+';
     totalInv+=t.total; totalRcvd+=rcvd;
     if(bal>0.005){if(age<=30)age0+=bal;else if(age<=60)age30+=bal;else if(age<=90)age60+=bal;else age90+=bal;}
