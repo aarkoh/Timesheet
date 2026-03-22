@@ -685,6 +685,7 @@ async function fetchLog(){
     log=[];
     if(data)Object.entries(data).forEach(([k,v])=>log.push({id:k,...v}));
     log.sort((a,b)=>new Date(b.time)-new Date(a.time));
+    window._clockLog=log;
     renderLog();
     if(document.getElementById('tab-summary').classList.contains('active'))renderSummary();
     if(document.getElementById('tab-manager').classList.contains('active'))renderManager();
@@ -923,7 +924,8 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10
 
 <script>
 function openEditLog(id){
-  var e = log.find(function(x){return x.id===id;});
+  var log2 = window._clockLog||[];
+  var e = log2.find(function(x){return x.id===id;});
   if(!e){toast('Entry not found');return;}
   // Convert UTC time to SGT for display
   var d = new Date(e.time);
@@ -958,7 +960,8 @@ async function saveEditLog(){
   var localTime = d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'})
     +', '+timeVal+':00';
   // Find the entry for context
-  var e = log.find(function(x){return x.id===id;});
+  var log2 = window._clockLog||[];
+  var e = log2.find(function(x){return x.id===id;});
   var upd = {
     time: utcTime,
     localTime: localTime,
