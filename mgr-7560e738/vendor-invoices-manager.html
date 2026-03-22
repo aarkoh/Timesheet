@@ -707,5 +707,36 @@ window.printPayAdvice=function(id){
     </div>
   </div>
 </div>
+
+<script>
+// ── Keyboard shortcuts: Escape = close modal, Enter = primary action ──
+(function(){
+  var MODAL_SELS = '.mbg.show, .cipl-modal-bg.show';
+  document.addEventListener('keydown', function(e){
+    // Find any open modal
+    var openModal = document.querySelector(MODAL_SELS);
+    if(!openModal) return;
+
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      // Click Cancel/close button if present, otherwise hide modal
+      var cancel = openModal.querySelector('.mfoot button:first-child, .cipl-mfoot button:first-child');
+      if(cancel) cancel.click();
+      else openModal.classList.remove('show');
+      return;
+    }
+
+    if(e.key === 'Enter'){
+      // Don't intercept Enter inside textarea
+      if(document.activeElement && (document.activeElement.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      // Click the primary action button (last in footer)
+      var primary = openModal.querySelector('.mfoot button:last-child, .cipl-mfoot button:last-child');
+      if(primary) primary.click();
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
