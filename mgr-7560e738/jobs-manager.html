@@ -96,6 +96,11 @@ button:hover{background:#f0f0ee}
 .modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:700px;border:1px solid #e0ddd6;margin:auto}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
 @media(max-width:700px){.hsm{display:none}}
+.pb{font-family:inherit;font-size:11px;padding:7px 12px;border:1px solid #ddd;background:#f9f9f7;cursor:pointer;color:#aaa;white-space:nowrap}
+.pb:first-child{border-radius:8px 0 0 8px}.pb:last-child{border-radius:0 8px 8px 0}
+.pb.dn{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97}
+.pb.ac{background:#185FA5;color:#fff;border-color:#185FA5;font-weight:600}
+.pb.ca{background:#1a1a1a;color:#fff;border-color:#1a1a1a;font-weight:600}
 .tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed}
 .tab{font-family:inherit;font-size:12px;padding:6px 14px;border:none;background:transparent;cursor:pointer;color:#666;white-space:nowrap}
 .tab.active{background:#fff;color:#1a1a1a;font-weight:600}
@@ -241,6 +246,18 @@ function totals(j){
 function chgL(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':fmt(a);}
 
 /* ── Navigate list / detail ── */
+window.mgrSetStatus=async function(id,s){
+  try{
+    const upd={status:s,updatedAt:new Date().toISOString()};
+    if(s==='invoice'&&!(jobs[id]||{}).invoiceDate) upd.invoiceDate=new Date().toISOString().slice(0,10);
+    await update(ref(db,'jobs/'+id),upd);
+    jobs[id]=Object.assign({},jobs[id],upd);
+    toast('Status → '+SL[s]);
+    buildDetail(id);
+    render();
+  }catch(e){toast('Error: '+e.message);}
+};
+
 window.showList=function(){
   document.getElementById('listPanel').classList.remove('hide');
   document.getElementById('detailPanel').classList.remove('show');
@@ -375,11 +392,20 @@ function buildDetail(id){
 
   document.getElementById('detailContent').innerHTML=
     /* Header */
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">'
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">'
       +'<button onclick="showList()" style="font-size:12px;padding:5px 10px">&larr; Back to List</button>'
       +'<div style="font-size:22px;font-weight:700;flex:1">'+(j.ref||'—')+'</div>'
-      +'<span class="badge '+(BC[jst]||'bc')+'" style="font-size:12px;padding:4px 12px">'+(SL[jst]||jst)+'</span>'
     +'</div>'
+
+    /* Status pipeline */
+    +'<div style="overflow-x:auto;margin-bottom:1rem"><div style="display:inline-flex">'
+    +SO.map(function(s,i){
+      var si=SO.indexOf(jst);
+      var cls=i<si?'dn':i===si?(s==='closed'?'ca':'ac'):'';
+      var arr=i<SO.length-1?'<span style="font-size:10px;color:#ccc;padding:0 2px">&#8250;</span>':'';
+      return '<button class="pb '+cls+'" onclick="mgrSetStatus(\''+id+'\',\''+s+'\')">'+SL[s]+'</button>'+arr;
+    }).join('')
+    +'</div></div>'
 
     /* Job info */
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">'
