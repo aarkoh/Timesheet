@@ -506,7 +506,7 @@ window.openDetail=function(id){
       +'<div class="ditem"><span>&#129534;</span><span style="font-weight:500;flex:1">Invoice '+(j.ref||"")+'</span>'
         +'<button data-jid="'+id+'" onclick="window.openPrintInv(this.dataset.jid)" style="font-size:12px;padding:4px 12px;border-color:#A32D2D;color:#A32D2D;background:#FCEBEB;font-weight:600">&#128424; Print / PDF</button>'
       +'</div>'
-      +'<div class="ditem"><span>&#128202;</span><span style="font-weight:500;flex:1">SOA '+(j.ref||"")+'</span><span style="font-size:11px;color:#aaa">Phase 5</span></div>'
+
       +'<div class="ditem"><span>&#128221;</span><span style="font-weight:500;flex:1">CIPL '+(j.ref||"")+'</span>'
         +'<button data-jid="'+id+'" onclick="window.openCIPL(this.dataset.jid)" style="font-size:12px;padding:4px 12px;border-color:#1a6641;color:#1a6641;background:#EAF3DE;font-weight:600">&#128424; Print / PDF</button>'
       +'</div>'
@@ -1405,6 +1405,485 @@ window.printSOA = function() {
   document.body.appendChild(a); a.click();
   setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
 };
+</script>
+
+
+<!-- ═══════════════════════════ CIPL MODAL ═══════════════════════════ -->
+<div class="cipl-modal-bg" id="ciplModal">
+  <div class="cipl-modal">
+    <h2>&#128221; CIPL &mdash; <span id="cipl_ref_title"></span></h2>
+    <input type="hidden" id="cipl_jobid">
+    <div class="cipl-sec" style="margin-top:0;padding-top:0;border:none">Document Info</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="cipl-fi"><label>CIPL / Invoice No.</label><input type="text" id="cipl_no"></div>
+      <div class="cipl-fi"><label>Date</label><input type="date" id="cipl_date"></div>
+    </div>
+    <div class="cipl-sec">Consignee (Delivery To)</div>
+    <div class="cipl-fi"><label>Company / Consignee Name</label><input type="text" id="cipl_consignee"></div>
+    <div class="cipl-fi"><label>Delivery Address</label><textarea id="cipl_addr" rows="3" placeholder="Full delivery address&hellip;"></textarea></div>
+    <div class="cipl-fi"><label>Marks &amp; Numbers</label><input type="text" id="cipl_marks" placeholder="e.g. RC/2603001/C1-C3"></div>
+    <div class="cipl-sec">Packing Details &mdash; one row per line item</div>
+    <div style="overflow-x:auto">
+      <table class="cipl-pack-tbl">
+        <thead><tr>
+          <th style="width:28px">#</th>
+          <th style="min-width:160px;text-align:left">Description</th>
+          <th style="width:70px">Qty / Unit</th>
+          <th style="width:52px">Pkgs</th>
+          <th style="width:56px">L (cm)</th>
+          <th style="width:56px">W (cm)</th>
+          <th style="width:56px">H (cm)</th>
+          <th style="width:70px">Gross Wt<br>(kg)</th>
+          <th style="width:70px">Net Wt<br>(kg)</th>
+        </tr></thead>
+        <tbody id="cipl_items"></tbody>
+      </table>
+    </div>
+    <div class="cipl-sec">Additional</div>
+    <div class="cipl-fi"><label>Remarks</label><textarea id="cipl_remarks" rows="2" placeholder="Any special remarks&hellip;"></textarea></div>
+    <div class="cipl-mfoot">
+      <button onclick="document.getElementById('ciplModal').classList.remove('show')">Cancel</button>
+      <button class="bp" onclick="window.generateCIPL()">&#128424; Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ DO/WCC MODAL ═══════════════════════════ -->
+<div class="cipl-modal-bg" id="dowccModal">
+  <div class="cipl-modal">
+    <h2>&#128196; DO / WCC &mdash; <span id="dowcc_ref_title"></span></h2>
+    <input type="hidden" id="dowcc_jobid">
+    <div class="cipl-sec" style="margin-top:0;padding-top:0;border:none">Document Type</div>
+    <div style="display:flex;gap:16px;margin-bottom:4px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
+        <input type="radio" name="dowcc_type" id="dowcc_type_do" value="DO" checked style="width:16px;height:16px"> Delivery Order (DO)
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;cursor:pointer">
+        <input type="radio" name="dowcc_type" id="dowcc_type_wcc" value="WCC" style="width:16px;height:16px"> Work Completion Certificate (WCC)
+      </label>
+    </div>
+    <div class="cipl-sec">Select Line Items to Include</div>
+    <div id="dowcc_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:4px"></div>
+    <div style="font-size:11px;color:#888;margin-bottom:4px">
+      <a href="#" onclick="window.dowccSelectAll(true);return false" style="color:#185FA5">Select all</a>
+      &nbsp;/&nbsp;
+      <a href="#" onclick="window.dowccSelectAll(false);return false" style="color:#185FA5">None</a>
+    </div>
+    <div class="cipl-sec">Document Info</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="cipl-fi"><label>DO / WCC No.</label><input type="text" id="dowcc_no"></div>
+      <div class="cipl-fi"><label>Date</label><input type="date" id="dowcc_date"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="cipl-fi"><label>Service Engineer</label><input type="text" id="dowcc_eng" placeholder="Name of engineer"></div>
+      <div class="cipl-fi"><label>Remarks</label><input type="text" id="dowcc_remarks" placeholder="Optional remarks"></div>
+    </div>
+    <div class="cipl-mfoot">
+      <button onclick="document.getElementById('dowccModal').classList.remove('show')">Cancel</button>
+      <button class="bp" onclick="window.generateDOWCC()">&#128424; Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ INVOICE MODAL ═══════════════════════════ -->
+<div class="mbg" id="invModal">
+  <div class="modal">
+    <h2>&#129534; Invoice &mdash; <span id="inv_ref_title"></span></h2>
+    <div style="display:flex;gap:20px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="radio" name="inv_type" id="inv_type_tax" value="TAX" checked style="width:15px;height:15px"> Tax Invoice
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+        <input type="radio" name="inv_type" id="inv_type_pro" value="PROFORMA" style="width:15px;height:15px"> Proforma Invoice
+      </label>
+    </div>
+    <div id="inv_pct_row" style="display:none;margin-bottom:12px;display:none">
+      <div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500">Percentage</div>
+      <div style="display:flex;gap:8px">
+        <button class="inv-pct" onclick="window.setInvPct(0.3,this)">30%</button>
+        <button class="inv-pct on" onclick="window.setInvPct(0.5,this)">50%</button>
+        <button class="inv-pct" onclick="window.setInvPct(1,this)">100%</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#888;margin-bottom:1rem">Select line items to include on the invoice.</p>
+    <div id="inv_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:6px"></div>
+    <div style="font-size:11px;color:#888;margin-bottom:1rem">
+      <a href="#" onclick="window.invSelectAll(true);return false" style="color:#185FA5">Select all</a>
+      &nbsp;/&nbsp;
+      <a href="#" onclick="window.invSelectAll(false);return false" style="color:#185FA5">None</a>
+    </div>
+    <div class="mfoot">
+      <button onclick="document.getElementById('invModal').classList.remove('show')">Cancel</button>
+      <button class="bp" style="background:#A32D2D;border-color:#A32D2D" onclick="window.doPrintInv()">&#128424; Print / PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════ SHARED HELPERS ═══════════════════════════
+function rcOpenBlob(html) {
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.target='_blank';a.rel='noopener';
+  document.body.appendChild(a);a.click();
+  setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+}
+function rcBaseStyle(pbColor) {
+  return '<style>*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Courier New,Courier,monospace;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}'
+    +'@page{size:A4;margin:0}'
+    +'@media print{body{padding:10mm 14mm}#pb{display:none}}'
+    +'.jbl{font-weight:700}'
+    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:'+(pbColor||'#1a1a1a')+';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
+    +'</style>';
+}
+function rcHeader(docTitle) {
+  return '<table style="width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:10px"><tr>'
+    +'<td style="width:42%;vertical-align:middle;padding-bottom:8px">'
+      +'<div style="display:flex;align-items:flex-end;gap:4px">'
+        +'<img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left">'
+        +'<span style="font-family:Arial,sans-serif;font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span>'
+      +'</div>'
+      +'<div style="font-size:7.5pt;margin-top:3px;line-height:1.5;font-family:Arial,sans-serif">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N &nbsp; GST: M2-0074537-0</div>'
+    +'</td>'
+    +'<td style="width:36%;text-align:center;vertical-align:middle;padding-bottom:8px">'
+      +'<div style="display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto">'
+        +'<img src="'+LHA+'" style="height:30px;max-width:90px;object-fit:contain">'
+        +'<img src="'+LKR+'" style="height:24px;max-width:85px;object-fit:contain">'
+        +'<img src="'+LYO+'" style="height:24px;max-width:90px;object-fit:contain">'
+        +'<img src="'+LMA+'" style="height:38px;max-width:60px;object-fit:contain">'
+      +'</div>'
+    +'</td>'
+    +'<td style="width:22%;text-align:right;font-family:Arial,sans-serif;font-size:8pt;font-weight:700;line-height:1.6;vertical-align:bottom;padding-bottom:8px">'+docTitle+'<br>BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
+  +'</tr></table>';
+}
+
+// ═══════════════════════════ CIPL FUNCTIONS ═══════════════════════════
+window.openCIPL = function(id) {
+  var j=(window._jobs||{})[id]||{};
+  if(!j.lineItems||!j.lineItems.length){window.toast('No line items on this job');return;}
+  document.getElementById('cipl_jobid').value=id;
+  document.getElementById('cipl_ref_title').textContent=j.ref||'';
+  document.getElementById('cipl_no').value=j.ref||'';
+  document.getElementById('cipl_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cipl_consignee').value=j.customerName||'';
+  document.getElementById('cipl_addr').value='';
+  document.getElementById('cipl_marks').value='RC/'+(j.ref||'');
+  document.getElementById('cipl_remarks').value='';
+  var tbody=document.getElementById('cipl_items');
+  tbody.innerHTML='';
+  (j.lineItems||[]).forEach(function(it,i){
+    var n=i+1;
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td style="padding:4px 6px;font-size:11px;color:#888;text-align:center">'+n+'</td>'
+      +'<td style="padding:4px 5px;font-size:12px">'+(it.desc||'')+'</td>'
+      +'<td style="padding:4px 5px;font-size:12px;text-align:center;color:#555">'+(it.qty||'')+' '+(it.unit||'')+'</td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_p_'+n+'" min="1" step="1" value="1"></td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_l_'+n+'" step="0.1" placeholder="&mdash;"></td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_w_'+n+'" step="0.1" placeholder="&mdash;"></td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_h_'+n+'" step="0.1" placeholder="&mdash;"></td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_gw_'+n+'" step="0.01" placeholder="0.00"></td>'
+      +'<td style="padding:2px 3px"><input type="number" id="cp_nw_'+n+'" step="0.01" placeholder="0.00"></td>';
+    tbody.appendChild(tr);
+  });
+  document.getElementById('ciplModal').classList.add('show');
+};
+
+window.generateCIPL = function() {
+  var id=document.getElementById('cipl_jobid').value;
+  var j=(window._jobs||{})[id]||{};
+  var cur=j.currency||'SGD';
+  var ciplNo=document.getElementById('cipl_no').value.trim()||j.ref||'';
+  var ciplDate=document.getElementById('cipl_date').value;
+  var consignee=document.getElementById('cipl_consignee').value.trim();
+  var addr=document.getElementById('cipl_addr').value.trim().replace(/\n/g,'<br>');
+  var marks=document.getElementById('cipl_marks').value.trim();
+  var remarks=document.getElementById('cipl_remarks').value.trim();
+  var dObj=ciplDate?new Date(ciplDate+'T12:00:00'):new Date();
+  var dateFmt=dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  var items=j.lineItems||[];
+  var packRows=items.map(function(it,i){
+    var n=i+1;
+    var pkgs=parseFloat((document.getElementById('cp_p_'+n)||{}).value)||1;
+    var l=parseFloat((document.getElementById('cp_l_'+n)||{}).value)||0;
+    var w=parseFloat((document.getElementById('cp_w_'+n)||{}).value)||0;
+    var h=parseFloat((document.getElementById('cp_h_'+n)||{}).value)||0;
+    var gw=parseFloat((document.getElementById('cp_gw_'+n)||{}).value)||0;
+    var nw=parseFloat((document.getElementById('cp_nw_'+n)||{}).value)||0;
+    return{desc:it.desc||'',qty:it.qty||'',unit:it.unit||'',unitPrice:parseFloat(it.unitPrice)||0,pkgs:pkgs,l:l,w:w,h:h,gw:gw,nw:nw};
+  });
+  var totalPkgs=packRows.reduce(function(s,r){return s+r.pkgs;},0);
+  var totalGW=packRows.reduce(function(s,r){return s+r.gw;},0);
+  var totalNW=packRows.reduce(function(s,r){return s+r.nw;},0);
+  var totalAmt=packRows.reduce(function(s,r){return s+(parseFloat(r.qty)||0)*r.unitPrice;},0);
+  function fmtN(n){return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  var vesselLine=[j.vessel&&('Vessel: <strong>'+j.vessel+'</strong>'),j.port&&('Port: <strong>'+j.port+'</strong>'),j.equip&&('Equip: <strong>'+j.equip+'</strong>')].filter(Boolean).join(' &nbsp;|&nbsp; ');
+  var ciRows=packRows.map(function(r,i){var amt=(parseFloat(r.qty)||0)*r.unitPrice;return'<tr><td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:center">'+(i+1)+'</td><td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:12px">'+(r.desc||'')+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+r.qty+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:center">'+(r.unit||'')+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right">'+fmtN(r.unitPrice)+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;font-size:12px;text-align:right;font-weight:500">'+fmtN(amt)+'</td></tr>';}).join('');
+  var plRows=packRows.map(function(r,i){var dims=(r.l&&r.w&&r.h)?r.l+'\u00d7'+r.w+'\u00d7'+r.h:'\u2014';return'<tr><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+(i+1)+'</td><td style="padding:5px 8px;border-bottom:1px solid #eee">'+(r.desc||'')+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+r.qty+' '+(r.unit||'')+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+r.pkgs+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+dims+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:right">'+fmtN(r.gw)+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:right">'+fmtN(r.nw)+'</td></tr>';}).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CIPL '+ciplNo+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:18mm 15mm}@page{size:A4;margin:18mm 15mm}@media print{body{padding:0}#pb{display:none}}th{background:#1a1a1a;color:#fff;font-size:10px;font-weight:600;padding:7px 8px;text-align:left}th.r{text-align:right}th.nc{text-align:center}.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
+    +'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +rcHeader('COMMERCIAL INVOICE<br>&amp; PACKING LIST')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
+      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Shipper</div><div style="font-weight:600">Raycontrol Pte. Ltd.</div><div style="font-size:11px;color:#444">Singapore</div></div>'
+      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Invoice Details</div><div style="font-size:11px"><strong>No.:</strong> '+ciplNo+'</div><div style="font-size:11px"><strong>Date:</strong> '+dateFmt+'</div>'+(j.yourRef?'<div style="font-size:11px"><strong>Your Ref:</strong> '+j.yourRef+'</div>':'')+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
+      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Consignee</div><div style="font-weight:600">'+(consignee||'&mdash;')+'</div><div style="font-size:11px;color:#444">'+(addr||'&mdash;')+'</div></div>'
+      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Notify Party</div><div style="font-weight:600">'+(consignee||'&mdash;')+'</div><div style="font-size:11px;color:#444">'+(addr||'&mdash;')+'</div></div>'
+    +'</div>'
+    +(vesselLine?'<div style="background:#f5f5f3;border:1px solid #e0ddd6;padding:8px 12px;font-size:11px;color:#444;margin-bottom:14px">'+vesselLine+'</div>':'')
+    +'<div style="font-size:11px;font-weight:700;color:#1a1a1a;text-transform:uppercase;margin:10px 0 6px;padding-bottom:4px;border-bottom:2px solid #1a1a1a">Commercial Invoice</div>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr><th style="width:28px;text-align:center">#</th><th>Description of Goods</th><th class="nc" style="width:52px">Qty</th><th class="nc" style="width:52px">Unit</th><th class="r" style="width:90px">Unit Price ('+cur+')</th><th class="r" style="width:90px">Amount ('+cur+')</th></tr></thead><tbody>'+ciRows+'</tbody><tfoot><tr><td colspan="5" style="text-align:right;padding:7px 8px;font-size:12px;font-weight:700;border-top:2px solid #1a1a1a">TOTAL '+cur+'</td><td style="text-align:right;padding:7px 8px;font-size:13px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(totalAmt)+'</td></tr></tfoot></table>'
+    +'<div style="font-size:11px;font-weight:700;color:#1a1a1a;text-transform:uppercase;margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid #1a1a1a">Packing List</div>'
+    +(marks?'<div style="border:1px solid #ddd;padding:8px 12px;font-size:11px;margin-bottom:8px"><strong>Marks &amp; Numbers:</strong> '+marks+'</div>':'')
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr><th style="width:28px;text-align:center">#</th><th>Description</th><th class="nc" style="width:70px">Qty</th><th class="nc" style="width:52px">Pkgs</th><th class="nc" style="width:100px">Dimensions<br>(L\u00d7W\u00d7H cm)</th><th class="r" style="width:72px">Gross Wt<br>(kg)</th><th class="r" style="width:72px">Net Wt<br>(kg)</th></tr></thead><tbody>'+plRows+'</tbody><tfoot><tr><td colspan="3" style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">TOTALS</td><td style="text-align:center;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+totalPkgs+'</td><td style="border-top:2px solid #1a1a1a"></td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(totalGW)+'</td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(totalNW)+'</td></tr></tfoot></table>'
+    +(remarks?'<div style="margin-top:12px;font-size:11px;color:#444"><strong>Remarks:</strong> '+remarks+'</div>':'')
+    +'<div style="margin-top:16px;border:1px solid #e0ddd6;padding:10px 14px;background:#fffdf5"><p style="font-size:11px;line-height:1.7;color:#444"><strong>1. Commercial Value of Items: NONE</strong><br>&nbsp;&nbsp;&nbsp;(Value stated above only for customs clearance purpose)</p><p style="font-size:11px;margin-top:4px;color:#444"><strong>2.</strong> Weight and Value estimated.</p></div>'
+    +'<div class="sr"><div style="text-align:center;font-size:9pt"><div style="height:40px"></div><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Prepared by / Date: '+dateFmt+'</div></div><div style="text-align:center;font-size:9pt">For and on behalf of <strong>Raycontrol Pte. Ltd.</strong><br><br><br><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature / Company Stamp</div></div></div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+  document.getElementById('ciplModal').classList.remove('show');
+};
+
+// ═══════════════════════════ DO/WCC FUNCTIONS ═══════════════════════════
+window.dowccSelectAll = function(v) {
+  document.querySelectorAll('[id^="dowcc_ic_"]').forEach(function(cb){cb.checked=v;});
+};
+
+window.openDOWCC = function(id) {
+  var j=(window._jobs||{})[id]||{};
+  if(!j.lineItems||!j.lineItems.length){window.toast('No line items on this job');return;}
+  document.getElementById('dowcc_jobid').value=id;
+  document.getElementById('dowcc_ref_title').textContent=j.ref||'';
+  document.getElementById('dowcc_no').value=j.ref||'';
+  document.getElementById('dowcc_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('dowcc_eng').value=j.engineer||'';
+  document.getElementById('dowcc_remarks').value='';
+  document.getElementById('dowcc_type_do').checked=true;
+  var list=document.getElementById('dowcc_item_list');
+  list.innerHTML=(j.lineItems||[]).map(function(it,i){
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;'+(i>0?'border-top:1px solid #f0ede6':'')+'"><input type="checkbox" id="dowcc_ic_'+i+'" checked style="width:15px;height:15px;cursor:pointer;flex-shrink:0"><label for="dowcc_ic_'+i+'" style="flex:1;font-size:13px;cursor:pointer">'+(it.desc||'(no description)')+(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')+'</label></div>';
+  }).join('');
+  document.getElementById('dowccModal').classList.add('show');
+};
+
+window.generateDOWCC = function() {
+  var id=document.getElementById('dowcc_jobid').value;
+  var j=(window._jobs||{})[id]||{};
+  var docType=document.querySelector('input[name="dowcc_type"]:checked').value;
+  var docNo=document.getElementById('dowcc_no').value.trim()||j.ref||'';
+  var docDate=document.getElementById('dowcc_date').value;
+  var engName=document.getElementById('dowcc_eng').value.trim();
+  var remarks=document.getElementById('dowcc_remarks').value.trim();
+  var selected=(j.lineItems||[]).filter(function(it,i){var cb=document.getElementById('dowcc_ic_'+i);return cb&&cb.checked;});
+  if(!selected.length){window.toast('Select at least one line item');return;}
+  var dObj=docDate?new Date(docDate+'T12:00:00'):new Date();
+  var dateFmt=dObj.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  var docTitle=docType==='DO'?'DELIVERY ORDER':'WORK COMPLETION CERTIFICATE';
+  var iRows=selected.map(function(it,i){return'<tr><td style="text-align:center;padding:5px 6px;border-bottom:1px solid #eee">'+(i+1)+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee;white-space:pre-wrap">'+(it.desc||'')+'</td><td style="text-align:right;padding:5px 6px;border-bottom:1px solid #eee">'+(it.qty||'')+'</td><td style="padding:5px 6px;border-bottom:1px solid #eee">'+(it.unit||'')+'</td></tr>';}).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+docTitle+' '+(j.ref||'')+'</title>'+rcBaseStyle()+'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +rcHeader(docTitle)
+    +'<div style="display:flex;gap:0;margin-bottom:8px"><div style="flex:1;font-size:9.5pt;line-height:1.7"><div class="jbl">MASTER AND OWNERS OF MV</div><div style="font-size:11pt;font-weight:700">'+(j.vessel||'').toUpperCase()+'</div>'+(j.attn?'<div style="margin-top:4px"><span class="jbl">ATTN : </span>'+j.attn+'</div>':'')+'</div>'
+    +'<div style="min-width:220px;font-size:9.5pt"><table style="border-collapse:collapse;width:100%"><tr><td style="font-weight:700;padding:1px 6px;white-space:nowrap">'+docType+' NO</td><td style="font-weight:900;font-size:11pt;padding:1px 6px">'+docNo+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">JOB NO</td><td style="font-weight:900;font-size:11pt;padding:1px 6px">'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td style="font-weight:700;padding:1px 6px">CUST PO</td><td style="padding:1px 6px">'+j.custPO+'</td></tr>':'')+'<tr><td style="font-weight:700;padding:1px 6px">DATE</td><td style="padding:1px 6px">'+dateFmt+'</td></tr></table></div></div>'
+    +'<div style="border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px;font-size:9.5pt"><div style="padding:4px 8px;border-right:1px solid #000"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div style="padding:4px 8px"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div style="padding:4px 8px;border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
+    +'<div style="font-size:9.5pt;margin-bottom:4px">'+(docType==='DO'?'Received the following goods in good order and condition :-':'Work carried out as follows :-')+'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:12px"><thead><tr><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:32px">ITEM</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000">DESCRIPTION</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:52px;text-align:right">QTY</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:52px">UNIT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
+    +(remarks?'<div style="font-size:9.5pt;margin-bottom:12px"><strong>Remarks:</strong> '+remarks+'</div>':'')
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px"><div style="font-size:9.5pt"><div class="jbl">ATTENDED BY</div><div style="height:70px"></div><div>'+(engName||'_________________________')+'</div><div>SERVICE ENGINEER</div><div>For Raycontrol Pte Ltd</div></div><div style="font-size:9.5pt"><div class="jbl">ACCEPTANCE BY</div><div style="height:70px"></div><div>Name / Rank :</div><div style="margin-top:6px">Ship Stamp :</div></div></div>'
+    +'<div style="border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:8px;text-align:center">E.&amp; O.E. &nbsp; <em>Thank you for your support</em></div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+  document.getElementById('dowccModal').classList.remove('show');
+};
+
+// ═══════════════════════════ INVOICE FUNCTIONS ═══════════════════════════
+var _invPct=1;
+window.setInvPct=function(p,el){
+  _invPct=p;
+  document.querySelectorAll('.inv-pct').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+};
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('input[name="inv_type"]').forEach(function(r){
+    r.addEventListener('change',function(){
+      var isPro=document.getElementById('inv_type_pro').checked;
+      document.getElementById('inv_pct_row').style.display=isPro?'block':'none';
+    });
+  });
+});
+
+window.invSelectAll=function(v){document.querySelectorAll('[id^="inv_ic_"]').forEach(function(cb){cb.checked=v;});};
+
+window.openPrintInv=function(id){
+  var j=(window._jobs||{})[id]||{};
+  if(!j.lineItems||!j.lineItems.length){window.toast('No line items on this job');return;}
+  var fmt=window._fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
+  document.getElementById('inv_ref_title').textContent=j.ref||'';
+  document.getElementById('inv_type_tax').checked=true;
+  document.getElementById('inv_pct_row').style.display='none';
+  _invPct=1;
+  document.querySelectorAll('.inv-pct').forEach(function(b){b.classList.remove('on');});
+  var half=document.querySelector('.inv-pct:nth-child(2)');if(half)half.classList.add('on');
+  var list=document.getElementById('inv_item_list');
+  list.innerHTML=(j.lineItems||[]).map(function(it,i){
+    return'<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;'+(i>0?'border-top:1px solid #f0ede6':'')+'"><input type="checkbox" id="inv_ic_'+i+'" data-jid="'+id+'" checked style="width:16px;height:16px;cursor:pointer;flex-shrink:0"><label for="inv_ic_'+i+'" style="flex:1;font-size:13px;cursor:pointer">'+(it.desc||'(no description)')+(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')+'</label><span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(it.unitPrice)+'</span></div>';
+  }).join('');
+  document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
+  document.getElementById('invModal').classList.add('show');
+};
+
+window.doPrintInv=function(){
+  var btn=document.querySelector('#invModal .mfoot button:last-child');
+  var id=btn.dataset.jid;
+  var j=(window._jobs||{})[id]||{};
+  var isPro=document.getElementById('inv_type_pro').checked;
+  var selected=(j.lineItems||[]).filter(function(it,i){var cb=document.getElementById('inv_ic_'+i);return cb&&cb.checked;});
+  document.getElementById('invModal').classList.remove('show');
+  if(!selected.length){window.toast('Select at least one line item');return;}
+  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct);
+};
+
+window.printInvData=function(id,selectedItems,invType,invPct){
+  var jobs=window._jobs||{};
+  var j=jobs[id]||{};
+  var fmt=window._fmt,fmtD=window._fmtD,totals=window._totals;
+  if(!fmt){alert('Please wait for page to load.');return;}
+  invPct=invPct||1;
+  var isPro=(invType||'').includes('PROFORMA');
+  var pctLabel=isPro&&invPct<1?'('+Math.round(invPct*100)+'% advance)':'';
+  var scaledItems=selectedItems.map(function(it){return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct});});
+  var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
+  var t=totals(jForTotals);
+  var tOrig=invPct<1?totals(Object.assign({},j,{lineItems:selectedItems})):null;
+  var cur=j.currency||'SGD';
+  var rcvd=parseFloat(j.paymentReceived)||0;
+  var bal=t.total-rcvd;
+  var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+  function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+  function chg(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':a>0?fmt(a):'0.00';}
+  var iRows=scaledItems.map(function(it,i){return'<tr><td style="text-align:center;padding:5px 6px">'+(i+1)+'</td><td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td><td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td><td style="padding:5px 6px">'+(it.unit||'')+'</td><td style="text-align:right;padding:5px 6px">'+fmt(it.unitPrice)+'</td><td style="text-align:right;padding:5px 6px;font-weight:500">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0))+'</td></tr>';}).join('');
+  var gstRow=t.gst>0?'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt"><span>GST (9%)</span><span>'+fmt(t.gst)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:8.5pt;color:#555;font-style:italic"><span>GST not included if applicable</span><span></span></div>';
+  var bankDetails='<div style="border:1px solid #000;padding:6px 10px;font-size:8pt;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;line-height:1.8">'
+    +'<div><strong>Bank Name:</strong> United Oversea Bank</div><div><strong>Branch Name:</strong> Bukit Timah</div>'
+    +'<div><strong>Bank Code:</strong> 7375</div><div><strong>Branch Code:</strong> 059</div>'
+    +'<div><strong>SWIFT Code:</strong> UOVBSGSG</div><div><strong>Bank Country:</strong> Singapore</div>'
+    +'<div><strong>Account Holder:</strong> RAYCONTROL PTE LTD</div><div><strong>PayNow UEN:</strong> 198602637N</div>'
+    +'<div><strong>SGD Acct No:</strong> 208-307-138-0</div><div><strong>USD Acct No:</strong> 208-900-381-6</div>'
+    +'</div>';
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+(invType||'Invoice')+' '+(j.ref||'')+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Courier New,Courier,monospace;font-size:10.5pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:8px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:42%}.c2{width:36%;text-align:center;vertical-align:middle}.c3{width:22%;text-align:right;font-family:Arial,sans-serif;font-size:8pt;font-weight:700;line-height:1.6;vertical-align:bottom!important}.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5;font-family:Arial,sans-serif}.tb{display:flex;gap:0;margin-bottom:8px}.cb{flex:1;font-size:9.5pt;line-height:1.5}.di{min-width:220px;font-size:9.5pt}.di table{border-collapse:collapse;width:100%}.di td{padding:1px 6px;vertical-align:top}.di td:first-child{font-weight:700;white-space:nowrap}.di td:last-child{font-weight:900;font-size:11pt}.jb{border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px;font-size:9.5pt}.jbc{padding:4px 8px;border-right:1px solid #000}.jbc:last-child{border-right:none}.jbl{font-weight:700}table.it2{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:4px}table.it2 th{font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left}table.it2 th.r{text-align:right}table.it2 td{padding:3px 6px;border-bottom:1px solid #eee;vertical-align:top}.tr2{display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt}.tfin{font-weight:900;font-size:12pt;border-top:2px solid #000;padding:4px 6px;display:flex;justify-content:space-between}.aw{font-size:9.5pt;border:1px solid #000;padding:5px 10px;margin-bottom:8px;font-style:italic}.fg{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}.tt{font-weight:700;text-decoration:underline;margin-bottom:3px}.bb{border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:4px;text-align:center}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
+    +'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +'<table class="hdr"><tr>'
+      +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px"><img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left"><span style="font-family:Arial,sans-serif;font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span></div><div class="addr">7 SOON LEE STREET, #05-31, SINGAPORE 627608<br>Tel: +65 88103634 &nbsp; sales@raycontrol.com<br>Reg No: 198602637N &nbsp; GST: M2-0074537-0</div></td>'
+      +'<td class="c2"><div class="logrid"><img src="'+LHA+'" style="height:30px;max-width:90px;object-fit:contain"><img src="'+LKR+'" style="height:24px;max-width:85px;object-fit:contain"><img src="'+LYO+'" style="height:24px;max-width:90px;object-fit:contain"><img src="'+LMA+'" style="height:38px;max-width:60px;object-fit:contain"></div></td>'
+      +'<td class="c3"><div style="font-size:16pt;font-weight:900;letter-spacing:1px;font-family:Arial,sans-serif">'+(invType||'INVOICE')+'</div>'+(pctLabel?'<div style="font-size:9pt">'+pctLabel+'</div>':'')+'<br>BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
+    +'</tr></table>'
+    +'<div class="tb"><div class="cb"><div style="font-weight:700">Messrs</div><div style="font-weight:700">'+(j.customerName||'')+'</div>'+(j.attn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+j.attn+'</div>':'')+'</div><div class="di"><table><tr><td>INV NO</td><td>'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td>CUST PO</td><td>'+j.custPO+'</td></tr>':'')+(j.yourRef?'<tr><td>YOUR REF</td><td>'+j.yourRef+'</td></tr>':'')+'<tr><td>DATE</td><td>'+todayFmt+'</td></tr><tr><td>PAGE</td><td>1 of 1</td></tr></table></div></div>'
+    +'<div class="jb"><div class="jbc"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
+    +'<div style="font-size:9.5pt;margin-bottom:4px">Being Invoice for the following :-</div>'
+    +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="min-width:260px"><div class="tr2"><span>Local Courier</span><span>'+chg(j.courier,t.ca)+'</span></div><div class="tr2"><span>Packing</span><span>'+chg(j.packing,t.pa)+'</span></div><div class="tr2"><span>Freight</span><span>'+chg(j.freight,t.fa)+'</span></div><div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'+gstRow+'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div><div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'+(tOrig?'<div class="tr2" style="font-size:9pt;color:#555"><span>Original Total '+cur+'</span><span>'+fmt(tOrig.total)+'</span></div>':'')+(isPro?'':rcvd>0&&bal>0.005?'<div class="tr2" style="color:#1a6641"><span>PAYMENT RECEIVED</span><span>'+cur+' '+fmt(rcvd)+'</span></div><div class="tr2" style="font-weight:700;font-size:11pt;border-top:1px solid #ccc;margin-top:2px"><span>BALANCE DUE</span><span>'+cur+' '+fmt(bal)+'</span></div>':'')+'</div></div>'
+    +'<div class="aw">['+amtWords(t.total,cur)+']</div>'
+    +bankDetails
+    +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+(j.payTerms||'').toUpperCase()+'</b></div></td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:80px;margin:4px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
+    +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your support</em></div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+};
+
+// ═══════════════════════════ TIMESHEET ═══════════════════════════
+window.printTimesheet=function(id){
+  var j=(window._jobs||{})[id]||{};
+  var rows='';
+  for(var i=0;i<25;i++){rows+='<tr style="height:22px"><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td></tr>';}
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Timesheet '+(j.ref||'')+'</title>'+rcBaseStyle()+'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +rcHeader('TIMESHEET')
+    +'<div style="display:flex;gap:0;margin-bottom:8px"><div style="flex:1;font-size:9.5pt;line-height:1.7"><div class="jbl">MASTER AND OWNERS OF MV</div><div style="font-size:11pt;font-weight:700">'+(j.vessel||'').toUpperCase()+'</div>'+(j.attn?'<div><span class="jbl">ATTN : </span>'+j.attn+'</div>':'')+'<div style="margin-top:4px"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div></div>'
+    +'<div style="min-width:220px;font-size:9.5pt"><table style="border-collapse:collapse;width:100%"><tr><td style="font-weight:700;padding:1px 6px;white-space:nowrap">JOBNO</td><td style="font-weight:900;font-size:11pt;padding:1px 6px">'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td style="font-weight:700;padding:1px 6px">PO NO</td><td style="font-weight:900;padding:1px 6px">'+j.custPO+'</td></tr>':'')+(j.attn?'<tr><td style="font-weight:700;padding:1px 6px">BUYER</td><td style="padding:1px 6px">'+j.attn+'</td></tr>':'')+'<tr><td style="font-weight:700;padding:1px 6px">SUPER</td><td style="padding:1px 6px"></td></tr><tr><td style="font-weight:700;padding:1px 6px">DATE</td><td style="padding:1px 6px"></td></tr><tr><td style="font-weight:700;padding:1px 6px">PAGE</td><td style="padding:1px 6px">1 of 1</td></tr></table></div></div>'
+    +'<div style="border:1px solid #000;padding:4px 8px;margin-bottom:8px;font-size:9.5pt;display:flex;gap:30px"><span><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</span><span><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</span><span><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</span></div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:10px"><thead><tr><th style="border:1px solid #000;padding:4px 6px;width:72px;text-align:left">DATE</th><th style="border:1px solid #000;padding:4px 6px;width:80px;text-align:left">STAFF</th><th style="border:1px solid #000;padding:4px 6px;width:52px;text-align:left">LOC</th><th style="border:1px solid #000;padding:4px 6px;width:44px;text-align:left">ST</th><th style="border:1px solid #000;padding:4px 6px;width:44px;text-align:left">END</th><th style="border:1px solid #000;padding:4px 6px;text-align:left">WORKDONE</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:16px"><div style="font-size:9.5pt"><div>Attended By</div><div style="height:50px"></div><div style="border-top:1px solid #000;padding-top:4px">Service Engineer</div></div><div style="font-size:9.5pt"><div>Verify by</div><div style="height:50px"></div><div style="border-top:1px solid #000;padding-top:4px">Name/Rank/Ship Stamp</div></div></div>'
+    +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:8px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+};
+
+// ═══════════════════════════ JOB/SPARE REQUISITION ═══════════════════════════
+window.printRFQ=function(id){
+  var j=(window._jobs||{})[id]||{};
+  var today=new Date().toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'});
+  var rows='';
+  for(var i=0;i<16;i++){rows+='<tr style="height:22px"><td style="border:1px solid #ccc;padding:2px 4px;width:36px"></td><td style="border:1px solid #ccc;padding:2px 4px"></td><td style="border:1px solid #ccc;padding:2px 4px;width:160px"></td></tr>';}
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Job Spare Requisition '+(j.ref||'')+'</title>'+rcBaseStyle()+'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +rcHeader('JOB | SPARE<br>REQUISITION')
+    +'<div style="display:flex;gap:20px;margin-bottom:8px;font-size:9.5pt"><div style="flex:1"><div style="font-size:8.5pt;color:#555">VESSEL / PROJECT</div><div style="font-weight:700;font-size:11pt;border-bottom:1px solid #000;padding-bottom:2px">'+(j.vessel||'').toUpperCase()+'</div><div style="display:flex;gap:20px;margin-top:6px"><span><span style="font-size:8.5pt;color:#555">HULL NO</span>&nbsp;&nbsp;___________</span><span><span style="font-size:8.5pt;color:#555">YARD</span>&nbsp;&nbsp;___________</span><span><span style="font-size:8.5pt;color:#555">BUILT YEAR</span>&nbsp;&nbsp;_______</span></div></div><div style="min-width:180px;text-align:right"><div><strong>OUR REF: </strong>'+(j.ref||'')+'</div><div style="margin-top:4px"><strong>DATE : </strong>'+today+'</div></div></div>'
+    +'<div style="border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;font-size:9.5pt;margin-bottom:8px"><div style="padding:4px 8px;border-right:1px solid #000"><span style="font-weight:700">SYSTEM | EQUIP</span><br>'+(j.equip||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000"><span style="font-weight:700">MAKE</span><br>'+(j.make||'').toUpperCase()+'</div><div style="padding:4px 8px"><span style="font-weight:700">MODEL</span><br>'+(j.model||'').toUpperCase()+'</div></div>'
+    +'<div style="font-size:9.5pt;margin-bottom:4px">Requisition for WORK AND SPARE after attendance finding :-</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:10px"><thead><tr><th style="border:1px solid #000;padding:4px 6px;width:36px;text-align:left">ITEM</th><th style="border:1px solid #000;padding:4px 6px;text-align:left">DESCRIPTION</th><th style="border:1px solid #000;padding:4px 6px;width:160px;text-align:left">REMARKS</th></tr></thead><tbody>'+rows+'</tbody></table>'
+    +'<div style="font-size:9pt;margin-bottom:20px;font-style:italic">Please note that if above recommendations are not carried out, we shall not be responsible for defects that may surface after this attendance.</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:8px"><div style="font-size:9.5pt;text-align:center"><div style="height:50px"></div><div>--------------------------</div><div>SERVICE ENGINEER</div></div><div style="font-size:9.5pt;text-align:center"><div style="height:50px"></div><div>--------------------------</div><div>NAME/RANK/SIGN/STAMP</div></div></div>'
+    +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:8px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+};
+
+// ═══════════════════════════ CUSTOMER FEEDBACK ═══════════════════════════
+window.printFeedback=function(id){
+  var j=(window._jobs||{})[id]||{};
+  var items=['Ability to meet product/service requirements','Ability to meet project delivery schedule','Responsiveness to request for services problem and complaint','Staff professionalism and competence'];
+  var ratingRows=items.map(function(txt,i){return'<tr><td style="border:1px solid #aaa;padding:8px 6px;font-size:9.5pt;font-weight:700;width:36px;text-align:center">'+(i+1)+'</td><td style="border:1px solid #aaa;padding:8px 6px;font-size:9.5pt;font-weight:700">'+txt+'</td><td style="border:1px solid #aaa;padding:8px 6px;width:70px"></td><td style="border:1px solid #aaa;padding:8px 6px;width:70px"></td><td style="border:1px solid #aaa;padding:8px 6px;width:55px"></td><td style="border:1px solid #aaa;padding:8px 6px;width:50px"></td><td style="border:1px solid #aaa;padding:8px 6px;width:50px"></td></tr>';}).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Customer Feedback '+(j.ref||'')+'</title>'+rcBaseStyle()+'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    +rcHeader('')
+    +'<div style="text-align:center;font-size:16pt;font-weight:700;margin-bottom:14px">CUSTOMER FEEDBACK FORM</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:8px"><tr><td colspan="2" style="border:2px solid #000;padding:5px 10px;font-weight:700">Client Name : '+(j.customerName||'')+'</td></tr><tr><td style="border:2px solid #000;padding:5px 10px;font-weight:700">Project / Vessel Name : '+(j.vessel||'').toUpperCase()+'</td><td style="border:2px solid #000;padding:5px 10px;font-weight:700;white-space:nowrap">JOB NO :&nbsp; '+(j.ref||'')+'</td></tr><tr><td colspan="2" style="border:2px solid #000;padding:5px 10px;font-weight:700">SYSTEM : '+(j.equip||'').toUpperCase()+'&nbsp;&nbsp;&nbsp; MAKE : '+(j.make||'').toUpperCase()+'&nbsp;&nbsp;&nbsp; MODEL : '+(j.model||'').toUpperCase()+'</td></tr></table>'
+    +'<p style="font-size:9pt;font-weight:700;margin-bottom:10px">For each item identified below, interview the client\'s representative during project closing meeting to solicit feedback. Indicate the rating given by the client representative in the \'Rating\' column.</p>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:14px"><thead><tr><th style="border:1px solid #aaa;padding:5px 6px;width:36px"></th><th style="border:1px solid #aaa;padding:5px 6px;font-size:9.5pt;text-align:left">Description of Survey Item</th><th colspan="5" style="border:1px solid #aaa;padding:5px 6px;font-size:9.5pt;text-align:center">Rating</th></tr><tr><th style="border:1px solid #aaa;padding:3px"></th><th style="border:1px solid #aaa;padding:3px"></th><th style="border:1px solid #aaa;padding:4px 6px;font-size:9pt;text-align:center;width:70px">Excellent<br>(5)</th><th style="border:1px solid #aaa;padding:4px 6px;font-size:9pt;text-align:center;width:70px">Very Good<br>(4)</th><th style="border:1px solid #aaa;padding:4px 6px;font-size:9pt;text-align:center;width:55px">Good<br>(3)</th><th style="border:1px solid #aaa;padding:4px 6px;font-size:9pt;text-align:center;width:50px">Fair<br>(2)</th><th style="border:1px solid #aaa;padding:4px 6px;font-size:9pt;text-align:center;width:50px">Poor<br>(1)</th></tr></thead><tbody>'+ratingRows+'<tr><td colspan="2" style="border:1px solid #aaa;padding:8px 6px;font-size:9.5pt;font-weight:700">Overall rating</td><td style="border:1px solid #aaa;padding:8px 6px"></td><td style="border:1px solid #aaa;padding:8px 6px"></td><td style="border:1px solid #aaa;padding:8px 6px"></td><td style="border:1px solid #aaa;padding:8px 6px"></td><td style="border:1px solid #aaa;padding:8px 6px"></td></tr></tbody></table>'
+    +'<p style="font-size:9.5pt;font-weight:700;margin-bottom:5px">Remarks :</p>'
+    +'<div style="border-bottom:1px solid #000;margin-bottom:8px;height:22px"></div><div style="border-bottom:1px solid #000;margin-bottom:16px;height:22px"></div>'
+    +'<div style="font-size:9.5pt;margin-bottom:4px"><strong>Likelihood to make repeat order:</strong>&nbsp;&nbsp;&nbsp; YES &nbsp;/&nbsp; NO</div>'
+    +'<div style="font-size:9.5pt;line-height:2.2;margin-top:8px"><div><strong>Feedback by [sign] :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Name :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Job Title :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Date :</strong>&nbsp;&nbsp;___________________________________</div></div>'
+    +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:14px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
+    +'</body></html>';
+  rcOpenBlob(html);
+};
+</script>
+
+<script>
+// ── Keyboard shortcuts: Escape = close modal, Enter = primary action ──
+(function(){
+  var MODAL_SELS = '.mbg.show, .cipl-modal-bg.show';
+  document.addEventListener('keydown', function(e){
+    // Find any open modal
+    var openModal = document.querySelector(MODAL_SELS);
+    if(!openModal) return;
+
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      // Click Cancel/close button if present, otherwise hide modal
+      var cancel = openModal.querySelector('.mfoot button:first-child, .cipl-mfoot button:first-child');
+      if(cancel) cancel.click();
+      else openModal.classList.remove('show');
+      return;
+    }
+
+    if(e.key === 'Enter'){
+      // Don't intercept Enter inside textarea
+      if(document.activeElement && (document.activeElement.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+      // Click the primary action button (last in footer)
+      var primary = openModal.querySelector('.mfoot button:last-child, .cipl-mfoot button:last-child');
+      if(primary) primary.click();
+    }
+  });
+})();
 </script>
 
 </body>
