@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manager Dashboard</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:1.5rem 1rem}
+.topbar{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid #e0ddd6;display:flex;flex-direction:column;align-items:center;gap:6px}
+.topbar h1{font-size:24px;font-weight:700;letter-spacing:-0.5px}
+.topbar p{font-size:13px;color:#888}
+.liveclock{font-size:13px;color:#888;font-variant-numeric:tabular-nums}
+.conn{display:inline-block;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500;margin-top:4px}
+.conn.online{background:#EAF3DE;color:#3B6D11}
+.conn.offline{background:#FCEBEB;color:#A32D2D}
+.conn.syncing{background:#FAEEDA;color:#854F0B}
+.worker-link{display:block;text-align:center;font-size:12px;color:#aaa;text-decoration:none;margin-top:6px}
+.worker-link:hover{color:#888}
+.section-title{font-size:11px;font-weight:600;color:#aaa;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem;margin-top:1.5rem}
+.module-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1rem}
+@media(max-width:400px){.module-grid{grid-template-columns:1fr}}
+.module-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:1.25rem;cursor:pointer;text-decoration:none;color:inherit;display:block;transition:transform 0.12s,box-shadow 0.12s,border-color 0.12s;position:relative;overflow:hidden}
+.module-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.08);border-color:#ccc}
+.module-card:active{transform:scale(0.98)}
+.module-card.clock{border-left:4px solid #185FA5}
+.module-card.stock{border-left:4px solid #8B1A8B}
+.module-card.worker-view{border-left:4px solid #3B6D11}
+.mod-icon{font-size:28px;margin-bottom:10px;display:block}
+.mod-title{font-size:15px;font-weight:600;margin-bottom:3px}
+.mod-desc{font-size:12px;color:#888;line-height:1.5}
+.mod-badge{position:absolute;top:12px;right:12px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.mod-badge.blue{background:#E6F1FB;color:#185FA5}
+.mod-badge.purple{background:#F3E6F3;color:#8B1A8B}
+.mod-badge.green{background:#EAF3DE;color:#3B6D11}
+.scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1.5rem}
+.scard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:0.85rem;text-align:center}
+.sc-val{font-size:22px;font-weight:700;color:#1a1a1a}
+.sc-val.green{color:#3B6D11}.sc-val.red{color:#A32D2D}.sc-val.amber{color:#854F0B}
+.sc-label{font-size:11px;color:#888;margin-top:3px}
+.loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-screen.hide{display:none}
+.spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:13px;color:#888}
+.pin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1rem}
+.pin-card{background:#fff;border:1px solid #e0ddd6;border-radius:10px;padding:10px 12px}
+.pin-card-label{font-size:12px;font-weight:600;color:#888;margin-bottom:6px}
+.pin-card input{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:20px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7}
+.pin-card input:focus{outline:none;border-color:#185FA5;background:#fff}
+.section-box{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.section-box h2{font-size:14px;font-weight:600;margin-bottom:4px}
+.section-box p{font-size:12px;color:#888;margin-bottom:1rem}
+.btn-save{font-family:inherit;font-size:13px;font-weight:600;padding:10px 20px;border:none;border-radius:8px;background:#1a1a1a;color:#fff;cursor:pointer}
+.btn-save:hover{background:#333}
+
+/* Manager login */
+.mgr-login{position:fixed;top:0;left:0;right:0;bottom:0;background:#f5f5f3;display:none;align-items:center;justify-content:center;z-index:600;padding:1rem}
+.mgr-login-card{background:#fff;border:1px solid #e0ddd6;border-radius:16px;padding:2rem;width:100%;max-width:340px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+.mgr-login-card h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.mgr-login-card p{font-size:13px;color:#888;margin-bottom:1.5rem;line-height:1.5}
+.mgr-pin-row{display:flex;gap:8px;justify-content:center;margin-bottom:1rem}
+.mgr-pin-row input{width:52px;height:60px;text-align:center;font-size:22px;font-weight:700;border:2px solid #ddd;border-radius:10px;background:#f9f9f7;font-family:inherit;color:#1a1a1a}
+.mgr-pin-row input:focus{outline:none;border-color:#185FA5;background:#fff}
+.mgr-pin-err{font-size:12px;color:#A32D2D;min-height:16px;margin-bottom:0.75rem}
+.mgr-login-btn{width:100%;padding:12px;border:none;border-radius:8px;font-family:inherit;font-size:14px;font-weight:600;background:#1a1a1a;color:#fff;cursor:pointer}
+.mgr-login-btn:disabled{opacity:0.35;cursor:default}
+</style>
+</head>
+<body>
+<div class="mgr-login" id="mgrLogin">
+  <div class="mgr-login-card">
+    <h2>&#128202; Manager Access</h2>
+    <p>Enter your 4-digit manager PIN<br>to access this dashboard</p>
+    <div class="mgr-pin-row">
+      <input type="password" maxlength="1" inputmode="numeric" id="mp0" oninput="mgrPinInput(0)">
+      <input type="password" maxlength="1" inputmode="numeric" id="mp1" oninput="mgrPinInput(1)">
+      <input type="password" maxlength="1" inputmode="numeric" id="mp2" oninput="mgrPinInput(2)">
+      <input type="password" maxlength="1" inputmode="numeric" id="mp3" oninput="mgrPinInput(3)">
+    </div>
+    <div class="mgr-pin-err" id="mgrPinErr"></div>
+    <button class="mgr-login-btn" id="mgrLoginBtn" onclick="mgrDoLogin()">Unlock</button>
+  </div>
+</div>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading…</p></div>
+<div class="app">
+  <div class="topbar">
+    <h1>&#128202; Manager Hub</h1>
+    <p>Restricted access — managers only</p>
+    <div class="liveclock" id="liveClock"></div>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
+    <a href="https://aarkoh.github.io/Raycontrol/" class="worker-link">&#8594; Go to worker dashboard</a>
+  </div>
+
+  <div class="section-title">Live overview</div>
+  <div class="scard-grid">
+    <div class="scard"><div class="sc-val green" id="statIn">—</div><div class="sc-label">Clocked in</div></div>
+    <div class="scard"><div class="sc-val" id="statOff">—</div><div class="sc-label">Off shift</div></div>
+    <div class="scard"><div class="sc-val amber" id="statLow">—</div><div class="sc-label">Low stock</div></div>
+    <div class="scard"><div class="sc-val red" id="statEmpty">—</div><div class="sc-label">Empty stock</div></div>
+  </div>
+
+  <div class="section-title">Timesheet</div>
+  <div class="module-grid">
+    <a href="clock-manager.html" class="module-card clock">
+      <span class="mod-icon">&#128202;</span>
+      <span class="mod-badge blue">Manager</span>
+      <div class="mod-title">Timesheet Manager</div>
+      <div class="mod-desc">View hours, OT, OVS costs and export reports</div>
+    </a>
+    <a href="https://aarkoh.github.io/Raycontrol/clock.html" class="module-card worker-view">
+      <span class="mod-icon">&#9200;</span>
+      <span class="mod-badge green">Workers</span>
+      <div class="mod-title">Clock In / Out</div>
+      <div class="mod-desc">View worker clock in/out page</div>
+    </a>
+  </div>
+
+  <div class="section-title">Stocktaking</div>
+  <div class="module-grid">
+    <a href="stock-manager.html" class="module-card stock">
+      <span class="mod-icon">&#128179;</span>
+      <span class="mod-badge purple">Manager</span>
+      <div class="mod-title">Stock Manager</div>
+      <div class="mod-desc">Add items, set prices, view history and export reports</div>
+    </a>
+    <a href="https://aarkoh.github.io/Raycontrol/stocktaking.html" class="module-card worker-view">
+      <span class="mod-icon">&#128230;</span>
+      <span class="mod-badge green">Workers</span>
+      <div class="mod-title">Stock In / Out</div>
+      <div class="mod-desc">View worker stock recording page</div>
+    </a>
+  </div>
+  <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+    <span>PIN Management</span>
+    <button onclick="togglePinFolder()" id="pinFolderBtn"
+      style="font-family:inherit;font-size:11px;padding:3px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#666;cursor:pointer">
+      &#128193; Show
+    </button>
+  </div>
+  <div id="pinFolder" style="display:none">
+    <div class="section-box" style="margin-bottom:0.75rem">
+      <h2>&#128274; Manager PIN</h2>
+      <p>Protects the Timesheet Manager and Stock Manager pages.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:0.75rem">
+        <div>
+          <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Current PIN</div>
+          <input type="password" id="curPin" maxlength="4" inputmode="numeric" placeholder="••••"
+            style="width:90px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:18px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7">
+        </div>
+        <div>
+          <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">New PIN</div>
+          <input type="password" id="newPin" maxlength="4" inputmode="numeric" placeholder="••••"
+            style="width:90px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:18px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7">
+        </div>
+        <div>
+          <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Confirm PIN</div>
+          <input type="password" id="confirmPin" maxlength="4" inputmode="numeric" placeholder="••••"
+            style="width:90px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:18px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7">
+        </div>
+        <button class="btn-save" onclick="changeManagerPin()">Update PIN</button>
+      </div>
+      <div id="pinChangeMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+    </div>
+    <div class="section-box" style="margin-bottom:0.75rem">
+      <h2>&#128272; Admin PIN (staff dashboard)</h2>
+      <p>This PIN grants full access to the staff dashboard without being tied to a specific worker. Currently: <strong id="adminPinDisplay">•</strong></p>
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-top:0.75rem;flex-wrap:wrap">
+        <div>
+          <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">New admin PIN (4 digits)</div>
+          <input type="text" id="newAdminPin" maxlength="4" inputmode="numeric" placeholder="0000-9999"
+            style="width:70px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:20px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7">
+        </div>
+        <button class="btn-save" onclick="changeAdminPin()">Update admin PIN</button>
+      </div>
+      <div id="adminPinMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+    </div>
+    <div class="section-box">
+      <h2>&#128100; Staff login codes</h2>
+      <p>Each staff member uses their 4-digit code to log in to Clock and Stocktaking. Codes must be unique.</p>
+      <div class="pin-grid" id="staffPinGrid"></div>
+      <button class="btn-save" onclick="saveStaffPins()" style="margin-top:0.75rem">Save staff codes</button>
+      <div id="pinSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+    </div>
+  </div>
+
+<script>
+var mgrPin='1234';
+function mgrInitLogin(){
+  if((function(){var t=localStorage.getItem('rc_manager');return t&&(Date.now()-parseInt(t))<28800000;})()){return;}
+  document.getElementById('mgrLogin').style.display='flex';
+  setTimeout(function(){var el=document.getElementById('mp0');if(el)el.focus();},200);
+}
+function mgrPinInput(i){
+  var el=document.getElementById('mp'+i);
+  if(el.value&&i<3) setTimeout(function(){document.getElementById('mp'+(i+1)).focus();},10);
+  var pin=[0,1,2,3].map(function(j){return document.getElementById('mp'+j).value;}).join('');
+  if(pin.length===4) setTimeout(mgrDoLogin,100);
+}
+function mgrDoLogin(){
+  var pin=[0,1,2,3].map(function(j){return document.getElementById('mp'+j).value;}).join('');
+  if(pin===mgrPin){
+    localStorage.setItem('rc_manager',Date.now().toString());
+    document.getElementById('mgrLogin').style.display='none';
+  } else {
+    document.getElementById('mgrPinErr').textContent='Incorrect PIN — try again';
+    [0,1,2,3].forEach(function(j){document.getElementById('mp'+j).value='';});
+    document.getElementById('mp0').focus();
+  }
+}
+// Show login immediately using default PIN, Firebase will update
+mgrInitLogin();
+</script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
+const fbApp=initializeApp(firebaseConfig);
+const db=getDatabase(fbApp);
+const auth=getAuth(fbApp);
+const WORKERS=['HS','TM','RG','MU','AY','IL','SA','AN'];
+
+function liveClock(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleDateString([],{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+liveClock();setInterval(liveClock,1000);
+
+const WORKERS_ALL=['HS','TM','RG','MU','AY','IL','SA','AN'];
+let staffPins={HS:'1111',TM:'2222',RG:'3333',MU:'4444',AY:'5555',IL:'6666',SA:'7777',AN:'8888'};
+
+function renderStaffPins(){
+  document.getElementById('staffPinGrid').innerHTML=WORKERS_ALL.map(w=>`
+    <div class="pin-card">
+      <div class="pin-card-label">${w}</div>
+      <input type="text" id="sp_${w}" value="${staffPins[w]||''}" maxlength="4" inputmode="numeric" placeholder="0000">
+    </div>`).join('');
+}
+
+window.saveStaffPins=async function(){
+  const newPins={};
+  for(const w of WORKERS_ALL){
+    const val=(document.getElementById('sp_'+w).value||'').trim();
+    if(!val||!/^[0-9]{4}$/.test(val)){
+      document.getElementById('pinSaveMsg').style.color='#A32D2D';
+      document.getElementById('pinSaveMsg').textContent='Code for '+w+' must be exactly 4 digits';
+      return;
+    }
+    newPins[w]=val;
+  }
+  const vals=Object.values(newPins);
+  if(new Set(vals).size!==vals.length){
+    document.getElementById('pinSaveMsg').style.color='#A32D2D';
+    document.getElementById('pinSaveMsg').textContent='Each staff member must have a unique code';
+    return;
+  }
+  try{
+    await set(ref(db,'config/staffPins'),newPins);
+    staffPins={...newPins};
+    document.getElementById('pinSaveMsg').style.color='#3B6D11';
+    document.getElementById('pinSaveMsg').textContent='✓ Staff codes saved successfully';
+    setTimeout(()=>document.getElementById('pinSaveMsg').textContent='',3000);
+  }catch(e){
+    document.getElementById('pinSaveMsg').style.color='#A32D2D';
+    document.getElementById('pinSaveMsg').textContent='Error: '+e.message;
+  }
+};
+
+let managerPin='1234';
+let adminPin='9';
+
+window.changeAdminPin=async function(){
+  const n=document.getElementById('newAdminPin').value.trim();
+  const msg=document.getElementById('adminPinMsg');
+  if(!n||!/^[0-9]{4}$/.test(n)){msg.style.color='#A32D2D';msg.textContent='Must be exactly 4 digits';return;}
+  // Make sure it doesn't clash with a staff PIN
+  const clash=Object.entries(staffPins).find(([,v])=>v===n);
+  if(clash){msg.style.color='#A32D2D';msg.textContent='That digit is already used by '+clash[0];return;}
+  try{
+    await set(ref(db,'config/adminPin'),n);
+    adminPin=n;
+    document.getElementById('newAdminPin').value='';
+    document.getElementById('adminPinDisplay').textContent=n;
+    msg.style.color='#3B6D11';msg.textContent='✓ Admin PIN updated to '+n;
+    setTimeout(()=>msg.textContent='',3000);
+  }catch(e){msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;}
+};
+
+window.togglePinFolder=function(){
+  const folder=document.getElementById('pinFolder');
+  const btn=document.getElementById('pinFolderBtn');
+  const open=folder.style.display==='none';
+  folder.style.display=open?'block':'none';
+  btn.textContent=open?'&#128193; Hide':'&#128193; Show';
+};
+
+window.changeManagerPin=async function(){
+  const cur=document.getElementById('curPin').value.trim();
+  const n=document.getElementById('newPin').value.trim();
+  const c=document.getElementById('confirmPin').value.trim();
+  const msg=document.getElementById('pinChangeMsg');
+  msg.style.color='#888';
+  msg.textContent='Checking…';
+  // Fetch current PIN fresh from Firebase to avoid stale value
+  try{
+    const snap=await get(ref(db,'config/pin'));
+    const currentPin=snap.exists()?snap.val():'1234';
+    if(cur!==currentPin){msg.style.color='#A32D2D';msg.textContent='Current PIN is incorrect (got: '+cur.length+' digits)';return;}
+    if(!n||n.length<4){msg.style.color='#A32D2D';msg.textContent='New PIN must be exactly 4 digits';return;}
+    if(n!==c){msg.style.color='#A32D2D';msg.textContent='New PINs do not match';return;}
+    await set(ref(db,'config/pin'),n);
+    managerPin=n;
+    mgrPin=n;
+    document.getElementById('curPin').value='';
+    document.getElementById('newPin').value='';
+    document.getElementById('confirmPin').value='';
+    msg.style.color='#3B6D11';
+    msg.textContent='✓ Manager PIN updated successfully';
+    setTimeout(()=>msg.textContent='',3000);
+  }catch(e){msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;}
+};
+
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user)return;
+  onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
+    b.textContent=snap.val()?'Live':'Offline';
+    b.className='conn '+(snap.val()?'online':'offline');
+    document.getElementById('loadingScreen').classList.add('hide');
+  });
+  onValue(ref(db,'workers'),snap=>{
+    const w=snap.val()||{};
+    const inCount=Object.values(w).filter(x=>x.status==='in').length;
+    document.getElementById('statIn').textContent=inCount;
+    document.getElementById('statOff').textContent=WORKERS.length-inCount;
+  });
+  onValue(ref(db,'config/pin'),snap=>{
+    if(snap.exists()){managerPin=snap.val();mgrPin=snap.val();}
+  });
+  onValue(ref(db,'config/adminPin'),snap=>{
+    if(snap.exists()){adminPin=snap.val();const d=document.getElementById('adminPinDisplay');if(d)d.textContent=snap.val();}
+  });
+  onValue(ref(db,'config/staffPins'),snap=>{
+    if(snap.exists()) staffPins={...staffPins,...snap.val()};
+    renderStaffPins();
+  });
+  onValue(ref(db,'stock/items'),snap=>{
+    const items=Object.values(snap.val()||{});
+    document.getElementById('statLow').textContent=items.filter(i=>i.minQty>0&&i.qty>0&&i.qty<=i.minQty).length;
+    document.getElementById('statEmpty').textContent=items.filter(i=>i.qty<=0).length;
+  });
+});
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
+</script>
+</body>
+</html>
