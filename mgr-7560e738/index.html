@@ -27,7 +27,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .module-card.clock{border-left:4px solid #185FA5}
 .module-card.stock{border-left:4px solid #8B1A8B}
 .module-card.worker-view{border-left:4px solid #3B6D11}
-.module-card.jobs{border-left:4px solid #1a6641}
 .mod-icon{font-size:28px;margin-bottom:10px;display:block}
 .mod-title{font-size:15px;font-weight:600;margin-bottom:3px}
 .mod-desc{font-size:12px;color:#888;line-height:1.5}
@@ -35,7 +34,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .mod-badge.blue{background:#E6F1FB;color:#185FA5}
 .mod-badge.purple{background:#F3E6F3;color:#8B1A8B}
 .mod-badge.green{background:#EAF3DE;color:#3B6D11}
-.mod-badge.jobs{background:#EAF3DE;color:#1a6641}
 .scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:1.5rem}
 .scard{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:0.85rem;text-align:center}
 .sc-val{font-size:22px;font-weight:700;color:#1a1a1a}
@@ -101,38 +99,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="scard"><div class="sc-val" id="statOff">—</div><div class="sc-label">Off shift</div></div>
     <div class="scard"><div class="sc-val amber" id="statLow">—</div><div class="sc-label">Low stock</div></div>
     <div class="scard"><div class="sc-val red" id="statEmpty">—</div><div class="sc-label">Empty stock</div></div>
-  </div>
-
-  <div class="section-title">Job Register</div>
-  <div class="module-grid">
-    <a href="jobs-manager.html" class="module-card jobs">
-      <span class="mod-icon">&#128188;</span>
-      <span class="mod-badge jobs">Manager</span>
-      <div class="mod-title">Job Register</div>
-      <div class="mod-desc">View all jobs, track invoices, record customer payments</div>
-    </a>
-    <a href="https://aarkoh.github.io/Raycontrol/jobs.html" class="module-card worker-view">
-      <span class="mod-icon">&#128196;</span>
-      <span class="mod-badge green">Staff</span>
-      <div class="mod-title">Jobs (Staff View)</div>
-      <div class="mod-desc">View staff job register page</div>
-    </a>
-  </div>
-
-  <div class="section-title">Vendor Invoices</div>
-  <div class="module-grid">
-    <a href="vendor-invoices-manager.html" class="module-card jobs">
-      <span class="mod-icon">&#128467;</span>
-      <span class="mod-badge jobs">Manager</span>
-      <div class="mod-title">Vendor Invoices</div>
-      <div class="mod-desc">View all vendor invoices, mark paid/unpaid, delete entries</div>
-    </a>
-    <a href="https://aarkoh.github.io/Raycontrol/vendor-invoices.html" class="module-card worker-view">
-      <span class="mod-icon">&#128196;</span>
-      <span class="mod-badge green">Staff</span>
-      <div class="mod-title">Vendor Invoices (Staff)</div>
-      <div class="mod-desc">View staff vendor invoice entry page</div>
-    </a>
   </div>
 
   <div class="section-title">Timesheet</div>
@@ -203,7 +169,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div style="display:flex;gap:8px;align-items:flex-end;margin-top:0.75rem;flex-wrap:wrap">
         <div>
           <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">New admin PIN (1 digit)</div>
-          <input type="text" id="newAdminPin" maxlength="1" inputmode="numeric" placeholder="0-9"
+          <input type="text" id="newAdminPin" maxlength="4" inputmode="numeric" placeholder="0000-9999"
             style="width:70px;padding:8px;border:1px solid #ddd;border-radius:6px;font-size:20px;font-weight:700;text-align:center;font-family:inherit;background:#f9f9f7">
         </div>
         <button class="btn-save" onclick="changeAdminPin()">Update admin PIN</button>
@@ -212,7 +178,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="section-box">
       <h2>&#128100; Staff login codes</h2>
-      <p>Each staff member uses their 1-digit code to log in to Clock and Stocktaking. Codes must be unique (0–9).</p>
+      <p>Each staff member uses their 4-digit code to log in to Clock and Stocktaking. Codes must be unique.</p>
       <div class="pin-grid" id="staffPinGrid"></div>
       <button class="btn-save" onclick="saveStaffPins()" style="margin-top:0.75rem">Save staff codes</button>
       <div id="pinSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
@@ -261,13 +227,13 @@ function liveClock(){const n=new Date();document.getElementById('liveClock').tex
 liveClock();setInterval(liveClock,1000);
 
 const WORKERS_ALL=['HS','TM','RG','MU','AY','IL','SA','AN'];
-let staffPins={HS:'1',TM:'2',RG:'3',MU:'4',AY:'5',IL:'6',SA:'7',AN:'8'};
+let staffPins={HS:'1111',TM:'2222',RG:'3333',MU:'4444',AY:'5555',IL:'6666',SA:'7777',AN:'8888'};
 
 function renderStaffPins(){
   document.getElementById('staffPinGrid').innerHTML=WORKERS_ALL.map(w=>`
     <div class="pin-card">
       <div class="pin-card-label">${w}</div>
-      <input type="text" id="sp_${w}" value="${staffPins[w]||''}" maxlength="1" inputmode="numeric" placeholder="0-9">
+      <input type="text" id="sp_${w}" value="${staffPins[w]||''}" maxlength="4" inputmode="numeric" placeholder="0000">
     </div>`).join('');
 }
 
