@@ -82,7 +82,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="stat-card"><div class="stat-val amber" id="statLow">—</div><div class="stat-label">Low stock alerts</div></div>
     <div class="stat-card"><div class="stat-val" id="statItems">—</div><div class="stat-label">Stock items</div></div>
   </div>
-  <div class="section-title">Timesheet</div>
+  <div class="section-title">Timesheet &amp; Stocktaking</div>
   <div class="module-grid">
     <a href="clock.html" class="module-card worker">
       <span class="mod-icon">&#9200;</span>
@@ -90,9 +90,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mod-title">Clock In / Out</div>
       <div class="mod-desc">Clock in and out with GPS location and job number</div>
     </a>
-  </div>
-  <div class="section-title">Stocktaking</div>
-  <div class="module-grid">
     <a href="stocktaking.html" class="module-card stock">
       <span class="mod-icon">&#128230;</span>
       <span class="mod-badge worker">Staff</span>
@@ -100,13 +97,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mod-desc">Record stock movements and check current quantities</div>
     </a>
   </div>
-  <div class="section-title">Jobs</div>
+  <div class="section-title">Jobs &amp; Invoices</div>
   <div class="module-grid">
     <a href="jobs.html" class="module-card" style="border-left:4px solid #1a1a1a">
-      <span class="mod-icon">💼</span>
+      <span class="mod-icon">&#128188;</span>
       <span class="mod-badge worker">Staff</span>
       <div class="mod-title">Job Register</div>
       <div class="mod-desc">Create and track jobs, manage status pipeline and documents</div>
+    </a>
+    <a href="vendor-invoices.html" class="module-card" style="border-left:4px solid #854F0B">
+      <span class="mod-icon">&#128467;</span>
+      <span class="mod-badge worker">Staff</span>
+      <div class="mod-title">Vendor Invoices</div>
+      <div class="mod-desc">Log and track vendor invoices linked to jobs</div>
     </a>
   </div>
   <div class="section-title">Customers &amp; Vendors</div>
@@ -254,5 +257,30 @@ onAuthStateChanged(auth,async user=>{
 });
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
+
+<script>
+// Escape closes any open modal; Enter triggers primary action
+(function(){
+  var MODAL_SELS = '.mbg.show, .cipl-modal-bg.show';
+  document.addEventListener('keydown', function(e){
+    var openModal = document.querySelector(MODAL_SELS);
+    if(!openModal) return;
+    if(e.key === 'Escape'){
+      e.preventDefault();
+      var cancel = openModal.querySelector('.mfoot button:first-child');
+      if(cancel) cancel.click();
+      else openModal.classList.remove('show');
+      return;
+    }
+    if(e.key === 'Enter'){
+      if(document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+      e.preventDefault();
+      var primary = openModal.querySelector('.mfoot button:last-child');
+      if(primary) primary.click();
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
