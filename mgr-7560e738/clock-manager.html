@@ -994,6 +994,13 @@ function editLogJobSearch(q){
 function closeEditLog(){
   document.getElementById('editLogModal').style.display = 'none';
 }
+// Escape key closes the edit modal
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    var m = document.getElementById('editLogModal');
+    if(m && m.style.display !== 'none') { e.preventDefault(); closeEditLog(); }
+  }
+});
 async function saveEditLog(){
   var id = document.getElementById('editLogId').value;
   var dateVal = document.getElementById('editLogDate').value;
@@ -1025,8 +1032,8 @@ async function saveEditLog(){
     var update2 = window._clockUpdate;
     if(!db||!ref2||!update2){toast('Still loading, please try again');return;}
     await update2(ref2(db,'log/'+id), upd);
+    document.getElementById('editLogModal').style.display = 'none'; // force close
     toast('Entry updated ✓');
-    closeEditLog();
     await fetchLog();
   }catch(err){toast('Error: '+err.message);}
 }
