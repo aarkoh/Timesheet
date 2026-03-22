@@ -247,11 +247,27 @@ onAuthStateChanged(auth,async user=>{
   onValue(ref(db,'config/workers'),snap=>{
     if(snap.exists()&&Array.isArray(snap.val())&&snap.val().length>0) window.WORKERS_LIST=snap.val();
   });
-  // One-time fetch for immediate use on load
+  // One-time migration: only push default PINs if Firebase still has old single-digit PINs or nothing
   try{
-    // Always push the 4-digit PINs to Firebase to overwrite old single-digit ones
-    await set(ref(db,'config/staffPins'),window.staffPins);
-    await set(ref(db,'config/adminPin'),window.adminPin);
+    const existingPins=await get(ref(db,'config/staffPins'));
+    const existingAdmin=await get(ref(db,'config/adminPin'));
+    // Only migrate if no PINs exist OR all existing PINs are single-digit (old format)
+    const pins=existingPins.exists()?existingPins.val():{};
+    const allSingleDigit=Object.values(pins).length>0&&Object.values(pins).every(p=>String(p).length===1);
+    const noPins=!existingPins.exists()||Object.keys(pins).length===0;
+    if(noPins||allSingleDigit){
+      await set(ref(db,'config/staffPins'),window.staffPins);
+    }
+    // Only overwrite admin PIN if it's single-digit or missing
+    const adminVal=existingAdmin.exists()?String(existingAdmin.val()):'';
+    if(!adminVal||adminVal.length===1){
+      await set(ref(db,'config/adminPin'),window.adminPin);
+    }
+    // Always read back the current values from Firebase (don't override)
+    const latestPins=await get(ref(db,'config/staffPins'));
+    if(latestPins.exists()) window.staffPins={...window.staffPins,...latestPins.val()};
+    const latestAdmin=await get(ref(db,'config/adminPin'));
+    if(latestAdmin.exists()) window.adminPin=latestAdmin.val();
   }catch(e){}
   try{const ws=await get(ref(db,'config/workers'));if(ws.exists()&&Array.isArray(ws.val())) window.WORKERS_LIST=ws.val();}catch(e){}
 });
