@@ -34,6 +34,7 @@ button:hover{background:#f0f0ee}
 .jcard.sq{border-left-color:#854F0B}.jcard.scp{border-left-color:#185FA5}
 .jcard.svp{border-left-color:#8B1A8B}.jcard.sdw{border-left-color:#0E7490}.jcard.si{border-left-color:#A32D2D}
 .jcard.ss{border-left-color:#1a6641}.jcard.sc{border-left-color:#aaa}
+.jcard.archived{opacity:0.55;filter:grayscale(0.4)}
 .badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
 .bq{background:#FAEEDA;color:#854F0B}.bcp{background:#E6F1FB;color:#185FA5}
 .bvp{background:#F3E6F3;color:#8B1A8B}.bdw{background:#CFFAFE;color:#0E7490}.bi{background:#FCEBEB;color:#A32D2D}
@@ -136,6 +137,7 @@ button:hover{background:#f0f0ee}
       <div class="chip" onclick="setFilter('invoice',this)">Invoice</div>
       <div class="chip" onclick="setFilter('soa',this)">SOA</div>
       <div class="chip" onclick="setFilter('closed',this)">Closed</div>
+      <div class="chip" onclick="setFilter('_archived',this)" style="border-color:#aaa;color:#aaa">&#128447; Archived</div>
     </div>
     <div class="jlist" id="jobList"></div>
   </div>
@@ -336,6 +338,9 @@ function renderList(){
   var q=sQ.toLowerCase();
   var list=Object.entries(jobs).filter(function(e){
     var j=e[1];
+    var isArchived=!!j.archived;
+    if(sFilter==="_archived")return isArchived;
+    if(isArchived)return false; // hide archived from all other views
     if(sFilter!=="all"&&j.status!==sFilter)return false;
     if(q&&![j.ref,j.customerName,j.vessel,j.equip,j.memo].filter(Boolean).some(function(x){return x.toLowerCase().includes(q);}))return false;
     return true;
@@ -419,6 +424,10 @@ window.openDetail=function(id){
       +'<div style="font-size:22px;font-weight:700;flex:1">'+(j.ref||"&mdash;")+"</div>"
       +'<button data-jid="'+id+'" onclick="window.editBtn(this)" class="bb bsm">Edit</button>'
       +'<button data-jid="'+id+'" onclick="window.delBtn(this)" class="bd bsm">Delete</button>'
+      +(j.archived
+        ?'<button data-jid="'+id+'" onclick="window.unarchiveJob(this.dataset.jid)" class="bsm" style="border-color:#185FA5;color:#185FA5">&#9654; Restore</button>'
+        :'<button data-jid="'+id+'" onclick="window.archiveJob(this.dataset.jid)" class="bsm" style="border-color:#aaa;color:#888">&#128447; Archive</button>'
+      )
     +"</div>"
     +'<div class="pw"><div class="pipe">'+pipe+"</div></div>"
     +'<div class="sbox"><h3>Job Details</h3>'
@@ -545,6 +554,25 @@ window.setStatus=async function(id,s){
     toast("Status → "+SL[s]);
     openDetail(id);
   }catch(e){toast("Error: "+e.message);}
+};
+window.archiveJob=async function(id){
+  if(!confirm('Archive this job? It will be hidden from main view but can be restored anytime.'))return;
+  try{
+    await update(ref(db,'jobs/'+id),{archived:true,updatedAt:new Date().toISOString()});
+    jobs[id]=Object.assign({},jobs[id],{archived:true});
+    exposeGlobals();
+    toast('Job archived');
+    backToList();
+  }catch(e){toast('Error: '+e.message);}
+};
+window.unarchiveJob=async function(id){
+  try{
+    await update(ref(db,'jobs/'+id),{archived:false,updatedAt:new Date().toISOString()});
+    jobs[id]=Object.assign({},jobs[id],{archived:false});
+    exposeGlobals();
+    toast('Job restored to live ✓');
+    backToList();
+  }catch(e){toast('Error: '+e.message);}
 };
 window.deleteJob=async function(id){
   if(!confirm("Delete this job?"))return;
