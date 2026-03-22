@@ -282,28 +282,12 @@ const _mgrAuth=(function(){var t=localStorage.getItem('rc_manager');return t&&(D
 let unlocked=_mgrAuth?{clock:true,manager:true,summary:true,log:true}:{};
 let workers={}, log=[], pin='1234';
 
-// OT/OVS rates — stored in Firebase config/rates so they sync across devices
+// OT rates persisted in localStorage
 let otRates={}, ovsRates={};
-// Migrate any existing localStorage rates to Firebase on first load
-let _migratedRates=false;
-function _migrateLocalRates(){
-  if(_migratedRates) return;
-  try{
-    const oldOT=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');
-    const oldOVS=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');
-    const hasOT=Object.keys(oldOT).length>0;
-    const hasOVS=Object.keys(oldOVS).length>0;
-    if(hasOT||hasOVS){
-      set(ref(db,'config/rates'),{ot:oldOT,ovs:oldOVS}).then(function(){
-        localStorage.removeItem('wt_ot_rates');
-        localStorage.removeItem('wt_ovs_rates');
-      });
-    }
-  }catch(e){}
-  _migratedRates=true;
-}
-function saveOTRates(){set(ref(db,'config/rates/ot'),otRates).catch(function(e){console.error('saveOTRates',e);});}
-function saveOVSRates(){set(ref(db,'config/rates/ovs'),ovsRates).catch(function(e){console.error('saveOVSRates',e);});}
+try{otRates=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');}catch(e){otRates={};}
+try{ovsRates=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');}catch(e){ovsRates={};}
+function saveOTRates(){try{localStorage.setItem('wt_ot_rates',JSON.stringify(otRates));}catch(e){}}
+function saveOVSRates(){try{localStorage.setItem('wt_ovs_rates',JSON.stringify(ovsRates));}catch(e){}}
 window.setOTRate=function(w,val){otRates[w]=parseFloat(val)||0;saveOTRates();renderSummary();};
 window.setOVSRate=function(w,val){ovsRates[w]=parseFloat(val)||0;saveOVSRates();renderSummary();};
 
@@ -686,7 +670,7 @@ function renderLog(){
     // Local time display: use saved localTime or convert UTC to worker's tz
     const displayTime = e.localTime || fmtInTZ(e.time, e.tz||'Asia/Singapore', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
     const shortTime = e.localTime ? e.localTime.split(',')[1]?.trim().slice(0,5) : fmtInTZ(e.time, e.tz||'Asia/Singapore');
-    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?`<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">${e.job}${e.vessel?' · '+e.vessel:''}</span>`:''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><span class="lts">${shortTime}</span></div>`;
+    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}${e.edited?'<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">Edited</span>':''}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?`<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">${e.job}${e.vessel?' · '+e.vessel:''}</span>`:''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="lts">${shortTime}</span><button onclick="openEditLog('${e.id}')" style="font-size:10px;padding:2px 8px;border:1px solid #185FA5;color:#185FA5;background:#E6F1FB;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">&#9998; Edit</button></div></div>`;
   }).join('');
 }
 
@@ -862,6 +846,10 @@ signInAnonymously(auth).catch(e=>{
 
 onAuthStateChanged(auth,async user=>{
   if(!user)return;
+  // Expose Firebase to plain scripts
+  window._clockDb=db;
+  window._clockRef=ref;
+  window._clockUpdate=update;
 
   onValue(ref(db,'.info/connected'),snap=>{
     const online=snap.val(),b=document.getElementById('connBadge');
@@ -875,17 +863,6 @@ onAuthStateChanged(auth,async user=>{
   if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
-  onValue(ref(db,'config/rates'),snap=>{
-    if(snap.exists()){
-      const r=snap.val();
-      otRates=r.ot||{};
-      ovsRates=r.ovs||{};
-    } else {
-      // No Firebase rates yet — migrate from localStorage if available
-      _migrateLocalRates();
-    }
-    renderSummary();
-  });
 
   onValue(ref(db,'workers'),snap=>{
     workers=snap.val()||{};
@@ -908,5 +885,99 @@ onAuthStateChanged(auth,async user=>{
 
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10000);
 </script>
+
+<!-- Edit Log Entry Modal -->
+<div id="editLogModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:1rem;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:440px;border:1px solid #e0ddd6;margin:auto">
+    <h2 style="font-size:16px;font-weight:600;margin-bottom:1rem">&#9998; Edit Clock Entry</h2>
+    <input type="hidden" id="editLogId">
+    <div style="background:#FAEEDA;border:1px solid #E8C87A;border-radius:8px;padding:8px 12px;font-size:12px;color:#854F0B;margin-bottom:1rem">
+      &#9888; Changing clock times directly affects OT and hours calculations. Use only to correct erroneous entries.
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Worker</label>
+      <input type="text" id="editLogWorker" readonly style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f5f5f3;color:#888">
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Type</label>
+      <input type="text" id="editLogType" readonly style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f5f5f3;color:#888">
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Date</label>
+      <input type="date" id="editLogDate" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+    </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Time (24hr, Singapore time)</label>
+      <input type="time" id="editLogTime" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Reason for edit</label>
+      <input type="text" id="editLogReason" placeholder="e.g. Wrong clock-out location" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:1rem;border-top:1px solid #e0ddd6">
+      <button onclick="closeEditLog()" style="font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer">Cancel</button>
+      <button onclick="saveEditLog()" style="font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #185FA5;background:#185FA5;color:#fff;font-weight:600;cursor:pointer">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openEditLog(id){
+  var e = log.find(function(x){return x.id===id;});
+  if(!e){toast('Entry not found');return;}
+  // Convert UTC time to SGT for display
+  var d = new Date(e.time);
+  var sgt = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Singapore'}));
+  var yyyy = sgt.getFullYear();
+  var mm = String(sgt.getMonth()+1).padStart(2,'0');
+  var dd = String(sgt.getDate()).padStart(2,'0');
+  var hh = String(sgt.getHours()).padStart(2,'0');
+  var mi = String(sgt.getMinutes()).padStart(2,'0');
+  document.getElementById('editLogId').value = id;
+  document.getElementById('editLogWorker').value = e.worker;
+  document.getElementById('editLogType').value = e.type === 'in' ? 'Clock In' : 'Clock Out';
+  document.getElementById('editLogDate').value = yyyy+'-'+mm+'-'+dd;
+  document.getElementById('editLogTime').value = hh+':'+mi;
+  document.getElementById('editLogReason').value = '';
+  document.getElementById('editLogModal').style.display = 'flex';
+}
+function closeEditLog(){
+  document.getElementById('editLogModal').style.display = 'none';
+}
+async function saveEditLog(){
+  var id = document.getElementById('editLogId').value;
+  var dateVal = document.getElementById('editLogDate').value;
+  var timeVal = document.getElementById('editLogTime').value;
+  var reason = document.getElementById('editLogReason').value.trim();
+  if(!dateVal||!timeVal){toast('Enter date and time');return;}
+  // Convert SGT input back to UTC ISO string
+  var sgtStr = dateVal+'T'+timeVal+':00+08:00';
+  var utcTime = new Date(sgtStr).toISOString();
+  // Build updated localTime display string
+  var d = new Date(sgtStr);
+  var localTime = d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'})
+    +', '+timeVal+':00';
+  // Find the entry for context
+  var e = log.find(function(x){return x.id===id;});
+  var upd = {
+    time: utcTime,
+    localTime: localTime,
+    edited: true,
+    editedAt: new Date().toISOString(),
+    editReason: reason||'Manual correction by manager'
+  };
+  try{
+    var db = window._clockDb;
+    var ref2 = window._clockRef;
+    var update2 = window._clockUpdate;
+    if(!db||!ref2||!update2){toast('Still loading, please try again');return;}
+    await update2(ref2(db,'log/'+id), upd);
+    toast('Entry updated ✓');
+    closeEditLog();
+    await fetchLog();
+  }catch(err){toast('Error: '+err.message);}
+}
+</script>
+
 </body>
 </html>
