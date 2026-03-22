@@ -313,12 +313,12 @@ window.render=function(){
     const rcvd=parseFloat(j.paymentReceived)||0;
     const bal=t.total-rcvd;
     const jst=j.status||'quote';
+    const invoiced=['invoice','soa','closed'].includes(jst);
     // For invoiced jobs, show invoice date not job creation date
     const displayDate=invoiced?(j.invoiceDate||j.updatedAt||j.date||j.createdAt):(j.date||j.createdAt);
     const a=ageD(displayDate);
     const aStr=a===0?'Today':a===1?'Yesterday':a+' d ago';
     const aC=a>30&&jst!=='closed'?' ov':'';
-    const invoiced=['invoice','soa','closed'].includes(jst);
     /* Received */
     let rcvdCell='<span class="pn">—</span>';
     if(invoiced){
