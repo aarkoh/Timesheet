@@ -870,6 +870,10 @@ onAuthStateChanged(auth,async user=>{
   if(!pinSnap.exists())await set(ref(db,'config/pin'),'1234');
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
+  // Load jobs for job number autocomplete in edit modal
+  onValue(ref(db,'jobs'),snap=>{
+    window._mgr_jobs=snap.val()||{};
+  });
   // Load OT/OVS rates from Firebase (syncs across all devices)
   onValue(ref(db,'config/rates'),snap=>{
     if(snap.exists()){
