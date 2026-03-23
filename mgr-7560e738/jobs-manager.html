@@ -461,6 +461,13 @@ function buildDetail(id){
         +'<div class="ir"><span class="il">Vessel</span><span class="iv">'+(j.vessel||'—')+'</span></div>'
         +(j.port?'<div class="ir"><span class="il">Port</span><span class="iv">'+j.port+'</span></div>':'')
         +'<div class="ir"><span class="il">Engineer</span><span class="iv">'+(j.engineer||'—')+'</span></div>'
+      +((j.vendorNames||[]).length
+        ?(j.vendorNames||[]).map(function(v,i){
+            var ref=(j.vendorRefs||[])[i];
+            return '<div class="ir"><span class="il">Vendor</span><span class="iv">'+v+(ref?' <span style="color:#888;font-size:11px">· Ref: '+ref+'</span>':'')+'</span></div>';
+          }).join('')
+        :'<div class="ir"><span class="il">Vendor</span><span class="iv">&mdash;</span></div>'
+      )
       +'</div>'
     +'</div>'
 
