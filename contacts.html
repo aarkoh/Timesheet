@@ -561,6 +561,12 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),50
 // ── Contact Persons ───────────────────────────────────────────
 let personRowCount=0;
 
+window.clearPersonRows=function(){
+  document.getElementById('personList').innerHTML='';
+  const labels=document.getElementById('personLabels');
+  if(labels) labels.remove();
+};
+
 window.addPersonRow=function(name='',role='',phone='',email=''){
   personRowCount++;
   const id=personRowCount;
