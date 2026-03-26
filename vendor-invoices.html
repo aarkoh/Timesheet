@@ -56,6 +56,16 @@ button:hover{background:#f0f0ee}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
 @media(max-width:500px){.fr2,.fr3{grid-template-columns:1fr}}
+.vi-lit{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:2px}
+.vi-lit th{font-size:11px;color:#888;padding:4px 6px;border-bottom:1px solid #e0ddd6;text-align:left;font-weight:600}
+.vi-lit th.r{text-align:right}
+.vi-lit td{padding:3px 4px;vertical-align:middle}
+.vi-lit input{padding:5px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit;background:#f9f9f7;width:100%}
+.vi-lit input:focus{outline:none;border-color:#185FA5;background:#fff}
+.vi-li-amt{text-align:right;color:#555;white-space:nowrap;font-size:12px;padding:3px 6px}
+.vi-total-row{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:6px;font-size:13px;font-weight:600;color:#1a1a1a}
+.li-items-preview{margin-top:5px;border-top:1px solid #f0ede6;padding-top:5px}
+.li-item-row{display:flex;justify-content:space-between;font-size:11px;color:#666;padding:1px 0}
 </style>
 </head>
 <body>
@@ -102,20 +112,35 @@ button:hover{background:#f0f0ee}
       </div>
     </div>
     <div class="fi"><label>Vessel</label><input type="text" id="f_vessel" placeholder="Auto-filled from job ref" readonly style="background:#f0f0ee;color:#666"></div>
-    <div class="fr2">
-      <div class="fi"><label>Currency</label>
-        <select id="f_cur">
-          <option value="SGD">SGD</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="JPY">JPY</option>
-          <option value="CNY">CNY</option>
-          <option value="GBP">GBP</option>
-        </select>
-      </div>
-      <div class="fi"><label>Amount *</label><input type="number" id="f_amt" min="0" step="0.01" placeholder="0.00"></div>
+    <div class="fi" style="max-width:140px"><label>Currency</label>
+      <select id="f_cur" onchange="viUpdateTotal()">
+        <option value="SGD">SGD</option>
+        <option value="USD">USD</option>
+        <option value="EUR">EUR</option>
+        <option value="JPY">JPY</option>
+        <option value="CNY">CNY</option>
+        <option value="GBP">GBP</option>
+      </select>
     </div>
-    <div class="fi"><label>Description / Notes</label><textarea id="f_desc" rows="2" placeholder="e.g. Parts for steering gear repair"></textarea></div>
+    <div class="fi">
+      <label>Line Items *</label>
+      <div style="overflow-x:auto">
+        <table class="vi-lit">
+          <thead><tr>
+            <th>Description</th>
+            <th class="r" style="width:52px">Qty</th>
+            <th style="width:46px">Unit</th>
+            <th class="r" style="width:82px">Unit Price</th>
+            <th class="r" style="width:74px">Amount</th>
+            <th style="width:24px"></th>
+          </tr></thead>
+          <tbody id="vi_li_body"></tbody>
+        </table>
+      </div>
+      <button type="button" onclick="viAddLI()" style="font-size:11px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-top:4px;padding:5px">+ Add line</button>
+      <div class="vi-total-row">Total: <span id="vi_total" style="color:#185FA5">—</span></div>
+    </div>
+    <div class="fi"><label>Notes (optional)</label><textarea id="f_desc" rows="2" placeholder="e.g. Parts for steering gear repair"></textarea></div>
     <div class="mfoot">
       <button onclick="closeAdd()">Cancel</button>
       <button class="bp" onclick="saveInv()">Save</button>
@@ -161,7 +186,8 @@ window.renderList=function(){
   const list=Object.entries(vis).filter(([id,v])=>{
     if(filt==='paid'&&v.status!=='paid') return false;
     if(filt==='unpaid'&&v.status==='paid') return false;
-    if(q&&![v.vendorName,v.invNo,v.jobRef,v.desc].filter(Boolean).some(x=>x.toLowerCase().includes(q))) return false;
+    const searchText=[v.vendorName,v.invNo,v.jobRef,v.desc,...(v.lineItems||[]).map(l=>l.desc)].filter(Boolean).join(' ');
+    if(q&&!searchText.toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b)=>(b[1].createdAt||'').localeCompare(a[1].createdAt||''));
 
@@ -169,23 +195,28 @@ window.renderList=function(){
   if(!list.length){el.innerHTML='<div class="empty">No vendor invoices found.</div>';return;}
   el.innerHTML=list.map(([id,v])=>{
     const paid=v.status==='paid';
-    return '<div class="vi-card'+(paid?' paid':'')+'">'
-      +'<div class="vi-top">'
-        +'<div class="vi-main">'
-          +'<div class="vi-ref">'+v.invNo+'</div>'
-          +'<div class="vi-sub">'+v.vendorName+(v.jobRef?' &nbsp;·&nbsp; Job: '+v.jobRef:'')+(v.vessel?' &nbsp;·&nbsp; '+v.vessel:'')+'</div>'
-          +'<div class="vi-meta">'
-            +'<span>'+fmtD(v.invDate)+'</span>'
-            +(v.desc?'<span>'+v.desc+'</span>':'')
-            +'<span>By: '+(v.createdBy||'—')+'</span>'
-          +'</div>'
-        +'</div>'
-        +'<div class="vi-right">'
-          +'<div class="vi-amt">'+(v.currency||'SGD')+' '+fmt(v.amount)+'</div>'
-          +'<div style="margin-top:4px"><span class="badge '+(paid?'b-paid':'b-unpaid')+'">'+(paid?'Paid':'Unpaid')+'</span></div>'
-        +'</div>'
-      +'</div>'
-    +'</div>';
+    const cur=v.currency||'SGD';
+    const lis=v.lineItems||[];
+    const liPreview=lis.length
+      ?'<div class="li-items-preview">'+lis.map(li=>{
+          const amt=(parseFloat(li.qty)||1)*(parseFloat(li.unitPrice)||0);
+          return '<div class="li-item-row"><span>'+li.desc+(li.qty&&li.qty!=1?' <span style="color:#bbb">×'+li.qty+'</span>':'')+'</span><span style="white-space:nowrap;margin-left:8px">'+cur+' '+fmt(amt)+'</span></div>';
+        }).join('')+'</div>'
+      :(v.desc?'<div style="font-size:12px;color:#888;margin-top:4px">'+v.desc+'</div>':'');
+    return '<div class="vi-card'+(paid?' paid':'')+'">'+
+      '<div class="vi-top">'+
+        '<div class="vi-main">'+
+          '<div class="vi-ref">'+v.invNo+'</div>'+
+          '<div class="vi-sub">'+v.vendorName+(v.jobRef?' &nbsp;·&nbsp; Job: '+v.jobRef:'')+(v.vessel?' &nbsp;·&nbsp; '+v.vessel:'')+'</div>'+
+          '<div class="vi-meta"><span>'+fmtD(v.invDate)+'</span>'+(lis.length?'<span>'+lis.length+' item'+(lis.length>1?'s':'')+'</span>':'')+'<span>By: '+(v.createdBy||'—')+'</span></div>'+
+          liPreview+
+        '</div>'+
+        '<div class="vi-right">'+
+          '<div class="vi-amt">'+cur+' '+fmt(v.amount)+'</div>'+
+          '<div style="margin-top:4px"><span class="badge '+(paid?'b-paid':'b-unpaid')+'">'+(paid?'Paid':'Unpaid')+'</span></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
   }).join('');
 };
 
@@ -198,10 +229,10 @@ window.openAdd=function(){
   document.getElementById('f_jobref').value='';
   document.getElementById('f_vessel').value='';
   document.getElementById('f_cur').value='SGD';
-  document.getElementById('f_amt').value='';
   document.getElementById('f_desc').value='';
+  viClearLIs(); viAddLI();
   document.getElementById('addModal').classList.add('show');
-  setTimeout(()=>document.getElementById('f_vendor').focus(),100);
+  setTimeout(()=>document.getElementById('f_vendor_inp').focus(),100);
 };
 
 window.viVendorSearch=function(){
@@ -261,15 +292,64 @@ window.viJobSearch=function(){
 
 window.closeAdd=function(){document.getElementById('addModal').classList.remove('show');};
 
+// ── Line item helpers ─────────────────────────────────────────
+var viLICount=0;
+window.viClearLIs=function(){document.getElementById('vi_li_body').innerHTML='';viLICount=0;document.getElementById('vi_total').textContent='—';};
+window.viAddLI=function(desc,qty,unit,price){
+  desc=desc||'';qty=qty||'';unit=unit||'LOT';price=price||'';
+  viLICount++;var n=viLICount;
+  var tr=document.createElement('tr');tr.id='vi_li_'+n;
+  tr.innerHTML='<td style="min-width:140px"><input type="text" id="vi_ld_'+n+'" value="'+desc+'" placeholder="e.g. Steering gear parts"></td>'
+    +'<td><input type="number" id="vi_lq_'+n+'" value="'+qty+'" placeholder="1" min="0" step="0.01" data-n="'+n+'" oninput="viCalcLI(this.dataset.n)" style="width:50px;text-align:right"></td>'
+    +'<td><input type="text" id="vi_lu_'+n+'" value="'+unit+'" style="width:42px"></td>'
+    +'<td><input type="number" id="vi_lp_'+n+'" value="'+price+'" placeholder="0.00" min="0" step="0.01" data-n="'+n+'" oninput="viCalcLI(this.dataset.n)" style="width:78px;text-align:right"></td>'
+    +'<td class="vi-li-amt" id="vi_la_'+n+'">—</td>'
+    +'<td><button type="button" data-n="'+n+'" onclick="viRemoveLI(this.dataset.n)" style="font-size:11px;padding:2px 5px;border-color:#ddd;color:#aaa;background:none;border-radius:4px">✕</button></td>';
+  document.getElementById('vi_li_body').appendChild(tr);
+  if(qty&&price)setTimeout(function(){viCalcLI(n);},10);
+  if(!desc)setTimeout(function(){var d=document.getElementById('vi_ld_'+n);if(d)d.focus();},50);
+};
+window.viCalcLI=function(n){
+  var q=parseFloat((document.getElementById('vi_lq_'+n)||{}).value)||0;
+  var p=parseFloat((document.getElementById('vi_lp_'+n)||{}).value)||0;
+  var el=document.getElementById('vi_la_'+n);
+  if(el)el.textContent=(q*p).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  viUpdateTotal();
+};
+window.viRemoveLI=function(n){var tr=document.getElementById('vi_li_'+n);if(tr)tr.remove();viUpdateTotal();};
+window.viComputeTotal=function(){
+  return Array.from(document.querySelectorAll('#vi_li_body tr')).reduce(function(s,tr){
+    var n=tr.id.replace('vi_li_','');
+    return s+(parseFloat((document.getElementById('vi_lq_'+n)||{}).value)||0)*(parseFloat((document.getElementById('vi_lp_'+n)||{}).value)||0);
+  },0);
+};
+window.viUpdateTotal=function(){
+  var cur=document.getElementById('f_cur').value||'SGD';
+  var total=viComputeTotal();
+  var el=document.getElementById('vi_total');
+  if(el)el.textContent=cur+' '+total.toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+};
+window.viGetLIs=function(){
+  return Array.from(document.querySelectorAll('#vi_li_body tr')).map(function(tr){
+    var n=tr.id.replace('vi_li_','');
+    return{desc:(document.getElementById('vi_ld_'+n)||{value:''}).value.trim(),
+      qty:(document.getElementById('vi_lq_'+n)||{value:'1'}).value||'1',
+      unit:(document.getElementById('vi_lu_'+n)||{value:'LOT'}).value||'LOT',
+      unitPrice:(document.getElementById('vi_lp_'+n)||{value:''}).value};
+  }).filter(function(i){return i.desc;});
+};
+
 window.saveInv=async function(){
   const vendor=document.getElementById('f_vendor_inp').value.trim();
   const invno=document.getElementById('f_invno').value.trim();
   const date=document.getElementById('f_date').value;
-  const amt=parseFloat(document.getElementById('f_amt').value);
   if(!vendor){toast('Enter vendor name');return;}
   if(!invno){toast('Enter invoice number');return;}
   if(!date){toast('Select invoice date');return;}
-  if(isNaN(amt)||amt<=0){toast('Enter a valid amount');return;}
+  const lis=viGetLIs();
+  if(!lis.length){toast('Add at least one line item');return;}
+  const amt=viComputeTotal();
+  if(amt<=0){toast('Enter valid unit prices for line items');return;}
   // Duplicate check: same invoice number from same vendor
   var duplicate=Object.values(vis).find(function(v){
     return v.invNo.trim().toLowerCase()===invno.toLowerCase()&&
@@ -284,6 +364,7 @@ window.saveInv=async function(){
     vessel:document.getElementById('f_vessel').value.trim(),
     currency:document.getElementById('f_cur').value,
     amount:amt,
+    lineItems:lis,
     desc:document.getElementById('f_desc').value.trim(),
     status:'unpaid',
     createdBy:rcStaff||'Manager',
