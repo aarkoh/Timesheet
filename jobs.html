@@ -216,6 +216,7 @@ button:hover{background:#f0f0ee}
         <th style="width:72px;text-align:right;color:#854F0B" title="Internal cost price - not printed">Cost *</th>
         <th style="width:52px;color:#854F0B" title="Cost currency">Cur *</th>
         <th style="width:96px">Vendor</th>
+        <th style="width:28px" title="Add sub-item"></th>
         <th style="width:28px"></th>
       </tr></thead>
       <tbody id="liBody"></tbody>
@@ -281,7 +282,7 @@ const SL={quote:"Quote",customer_po:"Customer PO",vendor_po:"Vendor PO",do_wcc:"
 const SO=["quote","customer_po","vendor_po","do_wcc","invoice","soa","closed"];
 const SC={quote:"sq",customer_po:"scp",vendor_po:"svp",do_wcc:"sdw",invoice:"si",soa:"ss",closed:"sc"};
 const BC={quote:"bq",customer_po:"bcp",vendor_po:"bvp",do_wcc:"bdw",invoice:"bi",soa:"bs",closed:"bc"};
-let jobs={},contacts={},currentJobId=null,editJobId=null,sFilter="all",sQ="",selVendors=[],liCount=0;
+let jobs={},contacts={},currentJobId=null,editJobId=null,sFilter="all",sQ="",selVendors=[],liCount=0,subCounts={};
 
 const rcStaff=sessionStorage.getItem("rc_staff");
 // rc_manager uses localStorage with 8hr expiry
@@ -298,7 +299,11 @@ function ageD(d){if(!d)return 0;return Math.floor((Date.now()-new Date(d.length=
 function gv(id){var el=document.getElementById(id);return el?el.value.trim():"";}
 function totals(j){
   var its=j.lineItems||[];
-  var iSub=its.reduce(function(s,i){return s+(parseFloat(i.qty)||0)*(parseFloat(i.unitPrice)||0);},0);
+  var iSub=its.reduce(function(s,it){
+    var ch=it.children||[];
+    if(ch.length){return s+ch.reduce(function(cs,c){return cs+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0);}
+    return s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+  },0);
   var ca=j.courier==="amt"?parseFloat(j.courierAmt)||0:0;
   var pa=j.packing==="amt"?parseFloat(j.packingAmt)||0:0;
   var fa=j.freight==="amt"?parseFloat(j.freightAmt)||0:0;
@@ -397,21 +402,47 @@ window.openDetail=function(id){
     return '<button class="pb '+cls+'" data-jid="'+id+'" data-st="'+s+'" onclick="window.setPipeBtn(this)">'+SL[s]+"</button>"+arr;
   }).join("");
 
-  var iRows=items.length?items.map(function(it,i){
-    return "<tr>"
-      +'<td style="text-align:center;color:#888;font-size:12px">'+(i+1)+"</td>"
-      +"<td>"+(it.desc||"&mdash;")+"</td>"
-      +'<td class="nr">'+(it.qty||"")+"</td>"
-      +"<td>"+(it.unit||"")+"</td>"
-      +'<td class="nr">'+fmt(it.unitPrice)+"</td>"
-      +'<td class="nr" style="font-weight:500">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0))+"</td>"
-    +'<td class="nr" style="font-size:11px;color:#854F0B">'+(it.costPrice?(it.costCur||"SGD")+" "+fmt(it.costPrice):"")+"</td>"
-    +'<td style="font-size:11px;color:#888">'+(it.vendorName||"")+"</td>"
-    +"</tr>";
-  }).join(''):'<tr><td colspan="6" style="text-align:center;color:#aaa;padding:1rem;font-size:12px">No line items</td></tr>';
+  var iRows=(function(){
+    if(!items.length)return '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:1rem;font-size:12px">No line items</td></tr>';
+    var rows=[];
+    items.forEach(function(it,i){
+      var ch=it.children||[];
+      // Compute parent amount: sum of children if any, else own qty*price
+      var parentAmt=ch.length
+        ?ch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0)
+        :(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+      rows.push("<tr>"
+        +'<td style="text-align:center;color:#888;font-size:12px">'+(i+1)+"</td>"
+        +"<td style='"+(ch.length?"font-weight:600;":"")+"'>"+( it.desc||"&mdash;")+"</td>"
+        +(ch.length
+          ?'<td class="nr" style="color:#aaa;font-size:11px">'+(it.qty||"")+"</td>"
+          :'<td class="nr">'+(it.qty||"")+"</td>")
+        +"<td>"+(it.unit||"")+"</td>"
+        +(ch.length
+          ?'<td class="nr" style="color:#aaa;font-size:11px">'+fmt(it.unitPrice)+"</td>"
+          :'<td class="nr">'+fmt(it.unitPrice)+"</td>")
+        +'<td class="nr" style="font-weight:500">'+fmt(parentAmt)+"</td>"
+        +'<td class="nr" style="font-size:11px;color:#854F0B">'+(it.costPrice?(it.costCur||"SGD")+" "+fmt(it.costPrice):"")+"</td>"
+        +'<td style="font-size:11px;color:#888">'+(it.vendorName||"")+"</td>"
+        +"</tr>");
+      ch.forEach(function(c,ci){
+        rows.push("<tr style='background:#f4f8fe'>"
+          +'<td style="text-align:center;color:#185FA5;font-size:11px;padding-left:6px">'+(i+1)+'.'+(ci+1)+"</td>"
+          +'<td style="padding-left:20px;font-size:12px;color:#444">'+(c.desc||"&mdash;")+"</td>"
+          +'<td class="nr">'+(c.qty||"")+"</td>"
+          +"<td>"+(c.unit||"")+"</td>"
+          +'<td class="nr">'+fmt(c.unitPrice)+"</td>"
+          +'<td class="nr" style="font-weight:500">'+fmt((parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0))+"</td>"
+          +'<td class="nr" style="font-size:11px;color:#854F0B">'+(c.costPrice?(c.costCur||"SGD")+" "+fmt(c.costPrice):"")+"</td>"
+          +'<td style="font-size:11px;color:#888">'+(c.vendorName||"")+"</td>"
+          +"</tr>");
+      });
+    });
+    return rows.join('');
+  })();
 
   var chgL=function(v,a){return v==="TBA"?"TBA":v==="nil"?"Nil":fmt(a);};
-  var hasVendorItems=items.some(function(it){return it.vendorId;});
+  var hasVendorItems=items.some(function(it){return it.vendorId||(it.children||[]).some(function(c){return c.vendorId;});});
   window._currentJobId=id;
 
   var vlist=(j.vendorNames||[]).length
@@ -598,23 +629,97 @@ window.addLI=function(desc,qty,unit,price,vendor,cost,costCur){
     +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+n+'" style="width:68px;text-align:right;padding:5px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
     +'<td><select id="lcc_'+n+'" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
     +'<td><select id="lv_'+n+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f9f9f7"><option value="">—</option>'+vopts+'</select></td>'
+    +'<td style="text-align:center"><button data-n="'+n+'" onclick="window.addSubLI(this.dataset.n)" title="Add sub-item" style="font-size:11px;padding:2px 5px;border-color:#B5D4F4;color:#185FA5;background:#E6F1FB">&#8627;</button></td>'
     +'<td style="text-align:center"><button data-n="'+n+'" onclick="window.removeLI(this.dataset.n)" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>';
   document.getElementById("liBody").appendChild(tr);
   if(qty||price)setTimeout(function(){window.calcLI(n);},50);
-  // Auto-focus the description input of the new row (only if no desc pre-filled)
   if(!desc){setTimeout(function(){var d=document.getElementById('ld_'+n);if(d)d.focus();},60);}
+};
+window.addSubLI=function(parentN,desc,qty,unit,price,vendor,cost,costCur){
+  parentN=String(parentN);
+  if(!subCounts[parentN])subCounts[parentN]=0;
+  subCounts[parentN]++;
+  var s=subCounts[parentN];
+  var id=parentN+'_'+s;
+  desc=desc||"";qty=qty||"";unit=unit||"PC";price=price||"";vendor=vendor||"";cost=cost||"";costCur=costCur||"SGD";
+  var tr=document.createElement("tr");tr.id="li_"+id;
+  tr.style.background="#f4f8fe";
+  var vopts=selVendors.map(function(v){return '<option value="'+v.id+'"'+(vendor===v.id?' selected':'')+'>'+v.name+'</option>';}).join('');
+  tr.innerHTML='<td style="text-align:center;color:#185FA5;font-size:11px;padding-left:6px">'+parentN+'.'+s+"</td>"
+    +'<td style="padding-left:18px"><textarea id="ld_'+id+'" placeholder="Sub-item description" rows="1" style="min-width:160px;width:100%;padding:4px 6px;border:1px solid #B5D4F4;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical;background:#f4f8fe">'+desc+'</textarea></td>'
+    +'<td><input type="number" value="'+qty+'" placeholder="1" min="0" step="0.01" id="lq_'+id+'" data-n="'+id+'" oninput="window.calcLI(this.dataset.n)" style="width:48px;text-align:right"></td>'
+    +'<td><input type="text" value="'+unit+'" id="lu_'+id+'" style="width:52px"></td>'
+    +'<td><input type="number" value="'+price+'" placeholder="0.00" min="0" step="0.01" id="lp_'+id+'" data-n="'+id+'" oninput="window.calcLI(this.dataset.n)" style="width:82px;text-align:right"></td>'
+    +'<td><span class="lamt" id="la_'+id+'">0.00</span></td>'
+    +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+id+'" style="width:68px;text-align:right;padding:4px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
+    +'<td><select id="lcc_'+id+'" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
+    +'<td><select id="lv_'+id+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f4f8fe"><option value="">—</option>'+vopts+'</select></td>'
+    +'<td></td>'
+    +'<td style="text-align:center"><button data-n="'+id+'" onclick="window.removeSubLI(this.dataset.n)" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>';
+  // Insert after the last existing sub-row of this parent, or after the parent row itself
+  var lastSibId='li_'+parentN+'_'+(s-1);
+  var lastSib=s>1?document.getElementById(lastSibId):document.getElementById('li_'+parentN);
+  if(lastSib&&lastSib.parentNode){lastSib.parentNode.insertBefore(tr,lastSib.nextSibling);}
+  else{document.getElementById("liBody").appendChild(tr);}
+  if(qty||price)setTimeout(function(){window.calcLI(id);},50);
+  if(!desc){setTimeout(function(){var d=document.getElementById('ld_'+id);if(d)d.focus();},60);}
 };
 window.calcLI=function(n){
   var q=parseFloat((document.getElementById("lq_"+n)||{}).value)||0;
   var p=parseFloat((document.getElementById("lp_"+n)||{}).value)||0;
   var el=document.getElementById("la_"+n);if(el)el.textContent=fmt(q*p);
 };
-window.removeLI=function(n){var tr=document.getElementById("li_"+n);if(tr)tr.remove();};
+window.removeLI=function(n){
+  // Remove sub-items first
+  var s=subCounts[n]||0;
+  for(var i=1;i<=s;i++){var sub=document.getElementById('li_'+n+'_'+i);if(sub)sub.remove();}
+  delete subCounts[n];
+  var tr=document.getElementById("li_"+n);if(tr)tr.remove();
+};
+window.removeSubLI=function(id){var tr=document.getElementById('li_'+id);if(tr)tr.remove();};
 function getLIs(){
-  return Array.from(document.querySelectorAll("#liBody tr")).map(function(tr){
-    var n=tr.id.replace("li_","");
-    var vsel=document.getElementById("lv_"+n);var ccsel=document.getElementById("lcc_"+n);return{desc:(document.getElementById("ld_"+n)||{value:""}).value.trim(),qty:(document.getElementById("lq_"+n)||{value:""}).value,unit:(document.getElementById("lu_"+n)||{value:""}).value,unitPrice:(document.getElementById("lp_"+n)||{value:""}).value,costPrice:(document.getElementById("lc_"+n)||{value:""}).value,costCur:ccsel?ccsel.value:"SGD",vendorId:vsel?vsel.value:"",vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||""): ""};
-  }).filter(function(i){return i.desc;});
+  // Collect only top-level rows (no underscore after the number), then gather their sub-rows
+  var result=[];
+  Array.from(document.querySelectorAll('#liBody tr')).forEach(function(tr){
+    var raw=tr.id.replace('li_','');
+    // Skip sub-item rows (contain underscore)
+    if(raw.indexOf('_')!==-1)return;
+    var n=raw;
+    var vsel=document.getElementById('lv_'+n);var ccsel=document.getElementById('lcc_'+n);
+    var parent={
+      desc:(document.getElementById('ld_'+n)||{value:''}).value.trim(),
+      qty:(document.getElementById('lq_'+n)||{value:''}).value,
+      unit:(document.getElementById('lu_'+n)||{value:''}).value,
+      unitPrice:(document.getElementById('lp_'+n)||{value:''}).value,
+      costPrice:(document.getElementById('lc_'+n)||{value:''}).value,
+      costCur:ccsel?ccsel.value:'SGD',
+      vendorId:vsel?vsel.value:'',
+      vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||''):''
+    };
+    // Collect sub-items
+    var children=[];
+    var sc=subCounts[n]||0;
+    for(var i=1;i<=sc;i++){
+      var sid=n+'_'+i;
+      var str=document.getElementById('li_'+sid);
+      if(!str)continue;
+      var svsel=document.getElementById('lv_'+sid);var sccsel=document.getElementById('lcc_'+sid);
+      var sub={
+        desc:(document.getElementById('ld_'+sid)||{value:''}).value.trim(),
+        qty:(document.getElementById('lq_'+sid)||{value:''}).value,
+        unit:(document.getElementById('lu_'+sid)||{value:''}).value,
+        unitPrice:(document.getElementById('lp_'+sid)||{value:''}).value,
+        costPrice:(document.getElementById('lc_'+sid)||{value:''}).value,
+        costCur:sccsel?sccsel.value:'SGD',
+        vendorId:svsel?svsel.value:'',
+        vendorName:svsel&&svsel.value?((selVendors.find(function(v){return v.id===svsel.value;})||{}).name||''):''
+      };
+      if(sub.desc)children.push(sub);
+    }
+    if(children.length)parent.children=children;
+    if(parent.desc||children.length)result.push(parent);
+  });
+  return result;
 }
 
 window.togCharge=function(f){document.getElementById("j_"+f+"_w").style.display=document.getElementById("j_"+f).value==="amt"?"block":"none";};
@@ -669,7 +774,7 @@ function refreshLIVendors(){
 window.clrCust=function(){document.getElementById("j_cs_id").value="";document.getElementById("j_cs_sel").style.display="none";document.getElementById("j_cs").style.display="";document.getElementById("j_cs").value="";};
 
 function resetModal(){
-  selVendors=[];liCount=0;
+  selVendors=[];liCount=0;subCounts={};
   document.getElementById("liBody").innerHTML="";
   ["j_ref","j_date","j_eta","j_validity","j_attn","j_yref","j_cpo","j_cpoprice","j_vessel","j_port","j_hull","j_yard","j_equip","j_make","j_model","j_task","j_memo","j_eng","j_dtime","j_dterms","j_courier_a","j_packing_a","j_freight_a"].forEach(function(id){var el=document.getElementById(id);if(el)el.value="";});
   document.getElementById("j_type").value="supply";
@@ -722,7 +827,13 @@ window.openEditJob=function(id){
   document.getElementById("j_pay").value=j.payTerms||"30 Days Nett";
   ["courier","packing","freight"].forEach(function(f){document.getElementById("j_"+f+"_w").style.display=j[f]==="amt"?"block":"none";});
   if(j.customerId&&j.customerName){document.getElementById("j_cs_id").value=j.customerId;document.getElementById("j_cs_nm").textContent=j.customerName;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";}
-  (j.lineItems||[]).forEach(function(it){window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"",it.costCur||"SGD");});
+  (j.lineItems||[]).forEach(function(it){
+    window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"",it.costCur||"SGD");
+    var pN=liCount;
+    (it.children||[]).forEach(function(c){
+      window.addSubLI(pN,c.desc,c.qty,c.unit,c.unitPrice,c.vendorId||c.vendor||"",c.costPrice||"",c.costCur||"SGD");
+    });
+  });
   if(!(j.lineItems||[]).length)window.addLI();
   renderVTags();
   document.getElementById("jobModal").classList.add("show");
@@ -818,15 +929,29 @@ window.openPrintQuo=function(id){
   var items=j.lineItems||[];
   if(!items.length){window.printQuo(id);return;}
   var fmt=window._fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
-  var rows=items.map(function(it,i){
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0ede6">'
-      +'<input type="checkbox" id="pqc_'+i+'" checked style="width:16px;height:16px;cursor:pointer">'
-      +'<label for="pqc_'+i+'" style="flex:1;font-size:13px;cursor:pointer">'+(it.desc||'(no description)')
-        +(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')
+  var rows=[];
+  items.forEach(function(it,i){
+    var ch=it.children||[];
+    // Compute parent display amount
+    var parentAmt=ch.length?ch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0):(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+    rows.push('<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0ede6">'
+      +'<input type="checkbox" id="pqc_'+i+'" checked data-parent-idx="'+i+'" onchange="window.pqToggleParent(this.dataset.parentIdx,this.checked)" style="width:16px;height:16px;cursor:pointer">'
+      +'<label for="pqc_'+i+'" style="flex:1;font-size:13px;font-weight:'+(ch.length?'600':'400')+';cursor:pointer">'+(it.desc||'(no description)')
+        +(it.qty&&it.unit&&!ch.length?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')
       +'</label>'
-      +'<span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(it.unitPrice)+'</span>'
-    +'</div>';
-  }).join('');
+      +'<span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(parentAmt)+'</span>'
+    +'</div>');
+    ch.forEach(function(c,ci){
+      rows.push('<div style="display:flex;align-items:center;gap:10px;padding:5px 0 5px 24px;border-bottom:1px solid #f5f5f3;background:#f4f8fe">'
+        +'<input type="checkbox" id="pqc_'+i+'_'+ci+'" checked data-parent="'+i+'" style="width:14px;height:14px;cursor:pointer">'
+        +'<label for="pqc_'+i+'_'+ci+'" style="flex:1;font-size:12px;color:#444;cursor:pointer">'+(c.desc||'(no description)')
+          +(c.qty&&c.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+c.qty+' '+c.unit+'</span>':'')
+        +'</label>'
+        +'<span style="font-size:11px;color:#185FA5;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(c.unitPrice)+'</span>'
+      +'</div>');
+    });
+  });
+  var rows=rows.join('');
   var modal=document.createElement('div');
   modal.id='pqModal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem';
@@ -857,22 +982,38 @@ window.openPrintQuo=function(id){
 window.openVPOSelect=function(id){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
-  var items=(j.lineItems||[]).filter(function(it){return it.vendorId;});
+  // Flatten top-level and children into a single vendor-assignable list
+  var flatItems=[];
+  (j.lineItems||[]).forEach(function(it,pi){
+    var ch=it.children||[];
+    if(ch.length){
+      // Parent has children — only children carry vendor assignments
+      ch.forEach(function(c,ci){
+        if(c.vendorId)flatItems.push({it:c,label:(pi+1)+'.'+(ci+1),key:pi+'_'+ci});
+      });
+    } else if(it.vendorId){
+      flatItems.push({it:it,label:String(pi+1),key:String(pi)});
+    }
+  });
+  var items=flatItems;
   if(!items.length){alert("No line items assigned to vendors.");return;}
   // Group by vendor
   var groups={};
-  items.forEach(function(it,idx){
+  items.forEach(function(entry,idx){
+    var it=entry.it;
     if(!groups[it.vendorId])groups[it.vendorId]={name:it.vendorName,items:[]};
-    groups[it.vendorId].items.push({it:it,origIdx:idx});
+    groups[it.vendorId].items.push({it:it,label:entry.label,key:entry.key,origIdx:idx});
   });
   var fmt=window._fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
   var rows=Object.entries(groups).map(function(e){
     var vid=e[0],grp=e[1];
     var itemRows=grp.items.map(function(entry){
-      var it=entry.it,i=entry.origIdx;
+      var it=entry.it,lbl=entry.label,key=entry.key;
       return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0 6px 20px;border-bottom:1px solid #f5f5f3">'
-        +'<input type="checkbox" id="vpoc_'+i+'" checked style="width:14px;height:14px;cursor:pointer">'
-        +'<label for="vpoc_'+i+'" style="flex:1;font-size:12px;cursor:pointer">'+(it.desc||'(no description)')
+        +'<input type="checkbox" id="vpoc_'+key+'" checked data-key="'+key+'" style="width:14px;height:14px;cursor:pointer">'
+        +'<label for="vpoc_'+key+'" style="flex:1;font-size:12px;cursor:pointer">'
+          +'<span style="color:#185FA5;font-size:11px;margin-right:6px">'+lbl+'</span>'
+          +(it.desc||'(no description)')
           +(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')
         +'</label>'
         +'<span style="font-size:11px;color:#854F0B;min-width:90px;text-align:right">'+(it.costCur||'SGD')+' '+fmt(it.costPrice||0)+'</span>'
@@ -913,13 +1054,23 @@ window.vpoToggleVendor=function(vid){
   var vcheck=document.getElementById('vpov_'+vid);
   if(!vcheck)return;
   document.querySelectorAll('[id^="vpoc_"]').forEach(function(cb){
-    // only toggle items belonging to this vendor
-    var idx=parseInt(cb.id.replace('vpoc_',''));
+    if(cb.dataset.key===undefined)return; // skip vendor-level checkboxes
+    // Find if this item belongs to this vendor by checking the group it's in
+    var parentVCheck=cb.closest('[id^="vpog_"]');
+    // Simpler: check if the vendorId of the item matches
     var jobs=window._jobs||{};
     var currentJobId=window._currentJobId;
     if(!currentJobId)return;
     var j=jobs[currentJobId]||{};
-    var it=(j.lineItems||[])[idx];
+    var key=cb.dataset.key;
+    var it=null;
+    if(key&&key.indexOf('_')!==-1){
+      var parts=key.split('_');
+      var parent=(j.lineItems||[])[parseInt(parts[0])];
+      it=parent&&parent.children?parent.children[parseInt(parts[1])]:null;
+    } else {
+      it=(j.lineItems||[])[parseInt(key)];
+    }
     if(it&&it.vendorId===vid)cb.checked=vcheck.checked;
   });
 };
@@ -928,9 +1079,18 @@ window.doPrintVPO=function(id){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var selected=[];
-  (j.lineItems||[]).forEach(function(it,i){
-    var cb=document.getElementById('vpoc_'+i);
-    if(cb&&cb.checked)selected.push(it);
+  document.querySelectorAll('[id^="vpoc_"]').forEach(function(cb){
+    if(!cb.checked||cb.dataset.key===undefined)return;
+    var key=cb.dataset.key;
+    var it=null;
+    if(key.indexOf('_')!==-1){
+      var parts=key.split('_');
+      var parent=(j.lineItems||[])[parseInt(parts[0])];
+      it=parent&&parent.children?parent.children[parseInt(parts[1])]:null;
+    } else {
+      it=(j.lineItems||[])[parseInt(key)];
+    }
+    if(it)selected.push(it);
   });
   var modal=document.getElementById('vpoModal');
   if(modal)modal.remove();
@@ -941,13 +1101,26 @@ window.doPrintVPO=function(id){
 window.pqSelectAll=function(v){
   document.querySelectorAll('[id^="pqc_"]').forEach(function(cb){cb.checked=v;});
 };
+window.pqToggleParent=function(i,v){
+  // When a parent is toggled, toggle its sub-items
+  document.querySelectorAll('[data-parent="'+i+'"]').forEach(function(cb){cb.checked=v;});
+};
 window.doPrintQuo=function(id){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var selected=[];
   (j.lineItems||[]).forEach(function(it,i){
     var cb=document.getElementById('pqc_'+i);
-    if(cb&&cb.checked)selected.push(it);
+    if(!cb||!cb.checked)return;
+    // Collect only checked children
+    var ch=it.children||[];
+    var selChildren=ch.filter(function(c,ci){
+      var scb=document.getElementById('pqc_'+i+'_'+ci);
+      return !scb||scb.checked; // default checked if checkbox not found
+    });
+    var entry=Object.assign({},it);
+    if(ch.length)entry.children=selChildren;
+    selected.push(entry);
   });
   var revNum=document.getElementById('pqRevNum');
   var rev=parseInt((revNum&&revNum.value)||0)||0;
@@ -1768,9 +1941,22 @@ window.openPrintInv=function(id){
   document.querySelectorAll('.inv-pct').forEach(function(b){b.classList.remove('on');});
   var half=document.querySelector('.inv-pct:nth-child(2)');if(half)half.classList.add('on');
   var list=document.getElementById('inv_item_list');
-  list.innerHTML=(j.lineItems||[]).map(function(it,i){
-    return'<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;'+(i>0?'border-top:1px solid #f0ede6':'')+'"><input type="checkbox" id="inv_ic_'+i+'" data-jid="'+id+'" checked style="width:16px;height:16px;cursor:pointer;flex-shrink:0"><label for="inv_ic_'+i+'" style="flex:1;font-size:13px;cursor:pointer">'+(it.desc||'(no description)')+(it.qty&&it.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')+'</label><span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(it.unitPrice)+'</span></div>';
-  }).join('');
+  var invRows=[];
+  (j.lineItems||[]).forEach(function(it,i){
+    var ch=it.children||[];
+    var parentAmt=ch.length?ch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0):(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+    invRows.push('<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;'+(i>0?'border-top:1px solid #f0ede6':'')+'">'
+      +'<input type="checkbox" id="inv_ic_'+i+'" data-jid="'+id+'" checked style="width:16px;height:16px;cursor:pointer;flex-shrink:0">'
+      +'<label for="inv_ic_'+i+'" style="flex:1;font-size:13px;font-weight:'+(ch.length?'600':'400')+';cursor:pointer">'+(it.desc||'(no description)')+(it.qty&&it.unit&&!ch.length?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+it.qty+' '+it.unit+'</span>':'')+'</label>'
+      +'<span style="font-size:12px;color:#555;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(parentAmt)+'</span></div>');
+    ch.forEach(function(c,ci){
+      invRows.push('<div style="display:flex;align-items:center;gap:10px;padding:5px 12px 5px 32px;border-top:1px solid #f5f5f3;background:#f4f8fe">'
+        +'<input type="checkbox" id="inv_ic_'+i+'_'+ci+'" data-parent="'+i+'" checked style="width:14px;height:14px;cursor:pointer;flex-shrink:0">'
+        +'<label for="inv_ic_'+i+'_'+ci+'" style="flex:1;font-size:12px;color:#444;cursor:pointer">'+(c.desc||'(no description)')+(c.qty&&c.unit?'<span style="color:#aaa;font-size:11px;margin-left:8px">'+c.qty+' '+c.unit+'</span>':'')+'</label>'
+        +'<span style="font-size:11px;color:#185FA5;min-width:80px;text-align:right">'+(j.currency||'SGD')+' '+fmt(c.unitPrice)+'</span></div>');
+    });
+  });
+  list.innerHTML=invRows.join('');
   document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
   document.getElementById('invModal').classList.add('show');
 };
@@ -1780,7 +1966,19 @@ window.doPrintInv=function(){
   var id=btn.dataset.jid;
   var j=(window._jobs||{})[id]||{};
   var isPro=document.getElementById('inv_type_pro').checked;
-  var selected=(j.lineItems||[]).filter(function(it,i){var cb=document.getElementById('inv_ic_'+i);return cb&&cb.checked;});
+  var selected=[];
+  (j.lineItems||[]).forEach(function(it,i){
+    var cb=document.getElementById('inv_ic_'+i);
+    if(!cb||!cb.checked)return;
+    var ch=it.children||[];
+    var selChildren=ch.filter(function(c,ci){
+      var scb=document.getElementById('inv_ic_'+i+'_'+ci);
+      return !scb||scb.checked;
+    });
+    var entry=Object.assign({},it);
+    if(ch.length)entry.children=selChildren;
+    selected.push(entry);
+  });
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
   window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct);
@@ -1794,7 +1992,10 @@ window.printInvData=function(id,selectedItems,invType,invPct){
   invPct=invPct||1;
   var isPro=(invType||'').includes('PROFORMA');
   var pctLabel=isPro&&invPct<1?'('+Math.round(invPct*100)+'% advance)':'';
-  var scaledItems=selectedItems.map(function(it){return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct});});
+  var scaledItems=selectedItems.map(function(it){
+    var ch=(it.children||[]).map(function(c){return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});});
+    return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct,children:ch.length?ch:undefined});
+  });
   var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
   var t=totals(jForTotals);
   var tOrig=invPct<1?totals(Object.assign({},j,{lineItems:selectedItems})):null;
@@ -1804,7 +2005,38 @@ window.printInvData=function(id,selectedItems,invType,invPct){
   var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
   function chg(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':a>0?fmt(a):'0.00';}
-  var iRows=scaledItems.map(function(it,i){return'<tr><td style="text-align:center;padding:5px 6px">'+(i+1)+'</td><td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td><td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td><td style="padding:5px 6px">'+(it.unit||'')+'</td><td style="text-align:right;padding:5px 6px">'+fmt(it.unitPrice)+'</td><td style="text-align:right;padding:5px 6px;font-weight:500">'+fmt((parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0))+'</td></tr>';}).join('');
+  var iRows=(function(){
+    var rows=[];
+    scaledItems.forEach(function(it,i){
+      var ch=it.children||[];
+      // Scale children unitPrice too
+      var sch=ch.map(function(c){return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});});
+      var parentAmt=sch.length?sch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0):(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+      rows.push('<tr'+(sch.length?' style="font-weight:600"':'')+'>'
+        +'<td style="text-align:center;padding:5px 6px">'+(i+1)+'</td>'
+        +'<td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td>'
+        +(sch.length
+          ?'<td style="text-align:right;padding:5px 6px;color:#999;font-size:9pt;font-weight:400">'+(it.qty||'')+'</td>'
+          :'<td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td>')
+        +'<td style="padding:5px 6px">'+(it.unit||'')+'</td>'
+        +(sch.length
+          ?'<td style="text-align:right;padding:5px 6px;color:#999;font-size:9pt;font-weight:400">'+fmt(it.unitPrice)+'</td>'
+          :'<td style="text-align:right;padding:5px 6px">'+fmt(it.unitPrice)+'</td>')
+        +'<td style="text-align:right;padding:5px 6px;font-weight:500">'+fmt(parentAmt)+'</td>'
+      +'</tr>');
+      sch.forEach(function(c,ci){
+        rows.push('<tr style="background:#f4f8fe">'
+          +'<td style="text-align:center;padding:4px 6px;color:#185FA5;font-size:9pt">'+(i+1)+'.'+(ci+1)+'</td>'
+          +'<td style="padding:4px 6px 4px 16px;font-size:9.5pt;color:#222;white-space:pre-wrap">'+(c.desc||'')+'</td>'
+          +'<td style="text-align:right;padding:4px 6px">'+(c.qty||'')+'</td>'
+          +'<td style="padding:4px 6px">'+(c.unit||'')+'</td>'
+          +'<td style="text-align:right;padding:4px 6px">'+fmt(c.unitPrice)+'</td>'
+          +'<td style="text-align:right;padding:4px 6px;font-weight:500">'+fmt((parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0))+'</td>'
+        +'</tr>');
+      });
+    });
+    return rows.join('');
+  })();
   var gstRow=t.gst>0?'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt"><span>GST (9%)</span><span>'+fmt(t.gst)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:8.5pt;color:#555;font-style:italic"><span>GST not included if applicable</span><span></span></div>';
   var bankDetails='<div style="border:1px solid #000;padding:6px 10px;font-size:8pt;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;line-height:1.8">'
     +'<div><strong>Bank Name:</strong> United Oversea Bank</div><div><strong>Branch Name:</strong> Bukit Timah</div>'
