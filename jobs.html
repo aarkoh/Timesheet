@@ -2120,13 +2120,11 @@ window.printInvData=function(id,selectedItems,invType,invPct){
         +'<td style="text-align:center;padding:5px 6px">'+(i+1)+'</td>'
         +'<td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td>'
         +(sch.length
-          ?'<td style="text-align:right;padding:5px 6px;color:#999;font-size:9pt;font-weight:400">'+(it.qty||'')+'</td>'
-          :'<td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td>')
-        +'<td style="padding:5px 6px">'+(it.unit||'')+'</td>'
-        +(sch.length
-          ?'<td style="text-align:right;padding:5px 6px;color:#999;font-size:9pt;font-weight:400">'+fmt(it.unitPrice)+'</td>'
-          :'<td style="text-align:right;padding:5px 6px">'+fmt(it.unitPrice)+'</td>')
-        +'<td style="text-align:right;padding:5px 6px;font-weight:500">'+fmt(parentAmt)+'</td>'
+          ?'<td style="text-align:right;padding:5px 6px"></td><td style="padding:5px 6px"></td><td style="text-align:right;padding:5px 6px"></td>'
+          :'<td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td>'
+           +'<td style="padding:5px 6px">'+(it.unit||'')+'</td>'
+           +'<td style="text-align:right;padding:5px 6px">'+fmt(it.unitPrice)+'</td>')
+        +'<td style="text-align:right;padding:5px 6px;font-weight:500">'+(sch.length?'':fmt(parentAmt))+'</td>'
       +'</tr>');
       sch.forEach(function(c,ci){
         rows.push('<tr style="background:#f4f8fe">'
