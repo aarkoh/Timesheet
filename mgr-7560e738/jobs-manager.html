@@ -416,13 +416,12 @@ function buildDetail(id){
         +'<td style="text-align:center;color:#888;font-size:12px">'+(i+1)+'</td>'
         +'<td style="'+(ch.length?'font-weight:600;':'')+'">'+(it.desc||'—')+'</td>'
         +(ch.length
-          ?'<td class="nr" style="color:#aaa;font-size:11px">'+(it.qty||'')+'</td>'
-          :'<td class="nr">'+(it.qty||'')+'</td>')
-        +'<td>'+(it.unit||'')+'</td>'
-        +(ch.length
-          ?'<td class="nr" style="color:#aaa;font-size:11px">'+fmt(it.unitPrice)+'</td>'
-          :'<td class="nr">'+fmt(it.unitPrice)+'</td>')
-        +'<td class="nr" style="font-weight:500">'+fmt(parentAmt)+'</td>'
+          ?'<td></td><td></td><td></td>'
+            +'<td class="nr" style="color:#aaa;font-size:11px;font-style:italic">see sub-items</td>'
+          :'<td class="nr">'+(it.qty||'')+'</td>'
+            +'<td>'+(it.unit||'')+'</td>'
+            +'<td class="nr">'+fmt(it.unitPrice)+'</td>'
+            +'<td class="nr" style="font-weight:500">'+fmt(parentAmt)+'</td>')
         +'</tr>');
       ch.forEach(function(c,ci){
         rows.push('<tr style="background:#f4f8fe">'
