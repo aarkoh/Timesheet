@@ -1162,7 +1162,7 @@ window.printVPO=function(id,selectedItems){
       var amt=(parseFloat(it.qty)||0)*(parseFloat(it.costPrice)||0);
       return "<tr>"
         +'<td style="text-align:center;padding:5px 6px">'+(i+1)+"</td>"
-        +'<td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||"")+"</td>"
+        +'<td style="padding:5px 6px;white-space:pre-wrap;font-weight:700">'+(it.desc||"")+"</td>"
         +'<td style="text-align:right;padding:5px 6px">'+(it.qty||"")+"</td>"
         +'<td style="padding:5px 6px">'+(it.unit||"")+"</td>"
         +'<td style="text-align:right;padding:5px 6px">'+cur+" "+fmt(it.costPrice||0)+"</td>"
@@ -1941,7 +1941,7 @@ window.printQuoData = function(id, selectedItems, revNum){
       var parentAmt=ch.length?ch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0):(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
       rows.push('<tr>'
         +'<td style="text-align:center;padding:5px 6px">'+(i+1)+'</td>'
-        +'<td style="padding:5px 6px;white-space:pre-wrap'+(ch.length?';font-weight:700':'')+'">'+(it.desc||'')+'</td>'
+        +'<td style="padding:5px 6px;white-space:pre-wrap;font-weight:700">'+(it.desc||'')+'</td>'
         +(ch.length?'<td style="text-align:right;padding:5px 6px"></td><td style="padding:5px 6px"></td><td style="text-align:right;padding:5px 6px"></td>'
           :'<td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td>'
           +'<td style="padding:5px 6px">'+(it.unit||'')+'</td>'
@@ -2116,9 +2116,9 @@ window.printInvData=function(id,selectedItems,invType,invPct){
       // Scale children unitPrice too
       var sch=ch.map(function(c){return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});});
       var parentAmt=sch.length?sch.reduce(function(s,c){return s+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0):(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
-      rows.push('<tr'+(sch.length?' style="font-weight:600"':'')+'>'
+      rows.push('<tr>'
         +'<td style="text-align:center;padding:5px 6px">'+(i+1)+'</td>'
-        +'<td style="padding:5px 6px;white-space:pre-wrap">'+(it.desc||'')+'</td>'
+        +'<td style="padding:5px 6px;white-space:pre-wrap;font-weight:700">'+(it.desc||'')+'</td>'
         +(sch.length
           ?'<td style="text-align:right;padding:5px 6px"></td><td style="padding:5px 6px"></td><td style="text-align:right;padding:5px 6px"></td>'
           :'<td style="text-align:right;padding:5px 6px">'+(it.qty||'')+'</td>'
