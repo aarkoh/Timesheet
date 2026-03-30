@@ -187,7 +187,8 @@ td.nr{text-align:right}
         </table>
       </div>
       <button type="button" onclick="viAddLI()" style="font-size:11px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-top:4px;padding:5px">+ Add line</button>
-      <div class="vi-total-row">Total: <span id="vi_total" style="color:#185FA5">—</span></div>
+      <div id="vi_gst_row" style="display:none;text-align:right;font-size:13px;color:#555;margin-top:4px;padding-top:4px;border-top:1px solid #f0ede6">Sub-total: <span id="vi_subtotal" style="font-weight:500">—</span>&nbsp;&nbsp;|&nbsp;&nbsp;GST 9%: <span id="vi_gst_amt" style="font-weight:500">—</span></div>
+      <div class="vi-total-row">Total (incl. GST): <span id="vi_total" style="color:#185FA5">—</span></div>
     </div>
     <div class="fi"><label>Notes (optional)</label><textarea id="f_desc" rows="2" placeholder="e.g. Parts for steering gear repair"></textarea></div>
     <div class="fi"><label>Payment Status</label>
@@ -353,6 +354,7 @@ window.openAdd=function(){
   document.getElementById('f_status').value='unpaid';
   document.getElementById('f_payref').value='';
   document.getElementById('payRefRow').style.display='none';
+  window._viVendorGST=false;
   viClearLIs(); viAddLI();
   document.getElementById('addModal').classList.add('show');
   setTimeout(()=>document.getElementById('f_vendor_inp').focus(),100);
@@ -373,6 +375,7 @@ window.openEdit=function(id){
   document.getElementById('f_status').value=v.status||'unpaid';
   document.getElementById('f_payref').value=v.paymentRef||'';
   document.getElementById('payRefRow').style.display=(v.status==='paid')?'block':'none';
+  window._viVendorGST=!!v.gst;
   viClearLIs();
   const lis=v.lineItems||[];
   if(lis.length){lis.forEach(li=>viAddLI(li.desc,li.qty,li.unit,li.unitPrice));}
@@ -464,6 +467,8 @@ window.viVendorSearch=function(){
     el.addEventListener('click',function(){
       var c=window._viVendorMatches[parseInt(this.getAttribute('data-i'))];
       document.getElementById('f_vendor_inp').value=c.company||c.name||'';
+      window._viVendorGST=!!c.gst;
+      viUpdateTotal();
       drop.style.display='none';
     });
   });
@@ -528,7 +533,10 @@ window.saveInv=async function(){
     jobRef:document.getElementById('f_jobref').value.trim(),
     vessel:document.getElementById('f_vessel').value.trim(),
     currency:document.getElementById('f_cur').value,
-    amount:amt,lineItems:lis,
+    gst:!!window._viVendorGST,
+    gstAmt:window._viVendorGST?Math.round(amt*0.09*100)/100:0,
+    amount:amt+(window._viVendorGST?Math.round(amt*0.09*100)/100:0),
+    lineItems:lis,
     desc:document.getElementById('f_desc').value.trim(),
     status:document.getElementById('f_status').value,
     paymentRef:document.getElementById('f_payref').value.trim(),
@@ -581,9 +589,19 @@ window.viComputeTotal=function(){
 };
 window.viUpdateTotal=function(){
   var cur=document.getElementById('f_cur').value||'SGD';
-  var total=viComputeTotal();
+  var sub=viComputeTotal();
+  var hasGST=!!window._viVendorGST;
+  var gstAmt=hasGST?Math.round(sub*0.09*100)/100:0;
+  var total=sub+gstAmt;
+  var fmtN=function(n){return n.toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  var gstRow=document.getElementById('vi_gst_row');
+  if(gstRow)gstRow.style.display=hasGST?'block':'none';
+  var subEl=document.getElementById('vi_subtotal');
+  if(subEl)subEl.textContent=cur+' '+fmtN(sub);
+  var gstEl=document.getElementById('vi_gst_amt');
+  if(gstEl)gstEl.textContent=cur+' '+fmtN(gstAmt);
   var el=document.getElementById('vi_total');
-  if(el)el.textContent=cur+' '+total.toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(el)el.textContent=cur+' '+fmtN(total);
 };
 window.viGetLIs=function(){
   return Array.from(document.querySelectorAll('#vi_li_body tr')).map(function(tr){
