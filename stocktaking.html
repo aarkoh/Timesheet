@@ -331,6 +331,7 @@ window.searchItems=function(){
   document.getElementById('newItemForm').style.display='none';
   document.getElementById('itemDropdown').style.display='none';
   const q=document.getElementById('itemSearch').value.trim();
+  if(!q){checkSubmit();return;}
   if(q.length>=2)showDropdown(q.toLowerCase());
   const banner=document.getElementById('newItemBanner');
   if(q.length>1){
@@ -437,13 +438,19 @@ document.addEventListener('click',e=>{
 
 // ── Submit ────────────────────────────────────────────────────
 window.checkSubmit=function checkSubmit(){
-  if(!selItem){const q=document.getElementById('itemSearch').value.trim().toLowerCase();const m=Object.entries(items).find(([,i])=>i.name.toLowerCase()===q||(i.sku||'').toLowerCase()===q);if(m)window.selectItem(m[0]);}
   const jobVal=document.getElementById('jobInput').value.trim();
   const ok=sel&&selItem&&parseFloat(document.getElementById('qtyInput').value)>0&&jobVal.length>0;
   document.getElementById('submitBtn').disabled=!ok;
 }
 document.getElementById('qtyInput').addEventListener('input',checkSubmit);
-document.getElementById('itemSearch').addEventListener('change',checkSubmit);
+document.getElementById('itemSearch').addEventListener('change',function(){
+  if(!this.value.trim()){selItem=null;document.getElementById('selectedItem').style.display='none';document.getElementById('itemDropdown').style.display='none';}
+  checkSubmit();
+});
+// Also handle keyup for mobile where oninput may not fire on delete
+document.getElementById('itemSearch').addEventListener('keyup',function(){
+  if(!this.value.trim()){selItem=null;document.getElementById('selectedItem').style.display='none';document.getElementById('itemDropdown').style.display='none';checkSubmit();}
+});
 
 window.submitMovement=async function(){
   if(!selItem){toast('Please select an item');return;}
