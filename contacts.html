@@ -175,6 +175,16 @@ button:active{transform:scale(0.97)}
         <label class="check-opt" id="opt-gst"><input type="checkbox" id="f_gst" onchange="this.closest('.check-opt').classList.toggle('checked',this.checked)"> GST 9% applies</label>
       </div>
     </div>
+    <div class="field">
+      <label>Currency</label>
+      <div class="check-group" id="currGroup">
+        <label class="check-opt checked" id="opt-sgd"><input type="radio" name="currency" value="SGD" onchange="updateCurrOpt(this)" checked> SGD</label>
+        <label class="check-opt" id="opt-usd"><input type="radio" name="currency" value="USD" onchange="updateCurrOpt(this)"> USD</label>
+        <label class="check-opt" id="opt-eur"><input type="radio" name="currency" value="EUR" onchange="updateCurrOpt(this)"> EUR</label>
+        <label class="check-opt" id="opt-jpy"><input type="radio" name="currency" value="JPY" onchange="updateCurrOpt(this)"> JPY</label>
+        <label class="check-opt" id="opt-sek"><input type="radio" name="currency" value="SEK" onchange="updateCurrOpt(this)"> SEK</label>
+      </div>
+    </div>
     <div class="field"><label>Notes</label><textarea id="f_notes" rows="2" placeholder="Any additional notes…"></textarea></div>
     <div class="field">
       <label>Contact persons</label>
@@ -277,6 +287,7 @@ window.renderList=function renderList(){
             <span class="cbadge ${badgeType}">${badgeLabel}</span>
             ${c.paymentTerms?`<span class="cbadge terms">${c.paymentTerms}</span>`:''}
             ${c.gst?'<span class="cbadge gst">GST 9%</span>':''}
+            ${c.currency&&c.currency!=='SGD'?`<span class="cbadge terms">${c.currency}</span>`:''}
             ${jobCount?`<span class="cbadge terms">📋 ${jobCount} job${jobCount>1?'s':''}</span>`:''}
           </div>
         </div>
@@ -331,6 +342,7 @@ window.openDetail=function(id){
       ${c.address?`<div class="detail-row"><span class="detail-label">Address</span><span class="detail-val">${c.address}</span></div>`:''}
       <div class="detail-row"><span class="detail-label">Payment terms</span><span class="detail-val">${c.paymentTerms||'—'}</span></div>
       <div class="detail-row"><span class="detail-label">GST 9%</span><span class="detail-val">${c.gst?'✓ Yes':'No'}</span></div>
+      <div class="detail-row"><span class="detail-label">Currency</span><span class="detail-val">${c.currency||'SGD'}</span></div>
       ${c.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span class="detail-val" style="max-width:60%;text-align:right">${c.notes}</span></div>`:''}
     </div>
 
@@ -395,14 +407,33 @@ window.openEditContact=function(id){
     inp.checked=checked;
     o.classList.toggle('checked',checked);
   });
+  // Currency
+  const savedCurr=(c.currency||'SGD');
+  document.querySelectorAll('#currGroup .check-opt').forEach(o=>{
+    const inp=o.querySelector('input');
+    const sel=inp.value===savedCurr;
+    inp.checked=sel;
+    o.classList.toggle('checked',sel);
+  });
   // Load existing persons
   clearPersonRows();
   (c.persons||[]).forEach(p=>addPersonRow(p.name||'',p.role||'',p.phone||'',p.email||''));
   document.getElementById('contactModal').classList.add('show');
 };
-window.closeContactModal=function(){document.getElementById('contactModal').classList.remove('show');editContactId=null;};
+window.closeContactModal=function(){
+  document.getElementById('contactModal').classList.remove('show');
+  editContactId=null;
+  // Reset currency to SGD default
+  document.querySelectorAll('#currGroup .check-opt').forEach(o=>{
+    const inp=o.querySelector('input');
+    const isSGD=inp.value==='SGD';
+    inp.checked=isSGD;
+    o.classList.toggle('checked',isSGD);
+  });
+};
 window.updateTypeOpt=function(inp){inp.closest('.check-opt').classList.toggle('checked',inp.checked);};
 window.updateTermsOpt=function(inp){document.querySelectorAll('#termsGroup .check-opt').forEach(o=>o.classList.remove('checked'));inp.closest('.check-opt').classList.add('checked');};
+window.updateCurrOpt=function(inp){document.querySelectorAll('#currGroup .check-opt').forEach(o=>o.classList.remove('checked'));inp.closest('.check-opt').classList.add('checked');};
 
 // ── Contact Persons ───────────────────────────────────────────
 window.saveContact=async function(){
@@ -419,6 +450,7 @@ window.saveContact=async function(){
     notes:document.getElementById('f_notes').value.trim(),
     types,paymentTerms:termsEl?termsEl.value:'',
     gst:document.getElementById('f_gst').checked,
+    currency:(document.querySelector('#currGroup input:checked')||{value:'SGD'}).value,
     persons:getPersonRows(),
     updatedAt:new Date().toISOString()
   };
