@@ -258,6 +258,7 @@ const db=getDatabase(fbApp);
 const auth=getAuth(fbApp);
 let WORKERS=['HS','TM','RG','MU','AY','IL','SA','AN'];
 let sel=null, moveType='in', items={}, movements=[], selItem=null, logFilter='all', ovFilter='all';
+let loggedInStaff=sessionStorage.getItem('rc_staff')||null;
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
@@ -305,11 +306,11 @@ window.setType=function(t){
   const input=document.getElementById('jobInput');
   document.getElementById('jobReqMsg').style.display='none';
   if(t==='in'){
-    label.innerHTML='Vendor invoice number <span style="color:#888;font-size:11px">(optional)</span>';
+    label.innerHTML='Vendor invoice number <span style="color:#A32D2D">*</span>';
     input.placeholder='e.g. INV-2026-001';
   } else {
-    label.innerHTML='Job number <span style="color:#888;font-size:11px">(optional)</span>';
-    input.placeholder='e.g. JOB-001';
+    label.innerHTML='Job number <span style="color:#A32D2D">*</span>';
+    input.placeholder='e.g. 2603001';
   }
   input.value='';
   checkSubmit();
@@ -385,7 +386,7 @@ window.saveNewItem=async function(){
 function checkSubmit(){
   if(!selItem){const q=document.getElementById('itemSearch').value.trim().toLowerCase();const m=Object.entries(items).find(([,i])=>i.name.toLowerCase()===q||(i.sku||'').toLowerCase()===q);if(m)window.selectItem(m[0]);}
   const jobVal=document.getElementById('jobInput').value.trim();
-  const ok=sel&&selItem&&parseFloat(document.getElementById('qtyInput').value)>0;
+  const ok=sel&&selItem&&parseFloat(document.getElementById('qtyInput').value)>0&&jobVal.length>0;
   document.getElementById('submitBtn').disabled=!ok;
 }
 document.getElementById('qtyInput').addEventListener('input',checkSubmit);
