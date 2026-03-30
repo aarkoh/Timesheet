@@ -169,7 +169,7 @@ const db=getDatabase(initializeApp({
 }));
 const auth=getAuth();
 
-let vis={}, filt='all';
+let vis={}, filt='all', editId=null;
 
 const fmt=n=>(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtD=d=>{if(!d)return'—';try{return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}};
@@ -215,6 +215,7 @@ window.renderList=function(){
         '<div class="vi-right">'+
           '<div class="vi-amt">'+cur+' '+fmt(v.amount)+'</div>'+
           '<div style="margin-top:4px"><span class="badge '+(paid?'b-paid':'b-unpaid')+'">'+(paid?'Paid':'Unpaid')+'</span></div>'+
+          '<button data-id="'+id+'" onclick="window.openEdit(this.dataset.id)" style="margin-top:8px;font-size:11px;padding:3px 10px;border:1px solid #185FA5;color:#185FA5;background:#E6F1FB;border-radius:6px;cursor:pointer;font-weight:600">Edit</button>'+
         '</div>'+
       '</div>'+
     '</div>';
@@ -294,7 +295,32 @@ window.viJobSearch=function(){
   setTimeout(function(){document.addEventListener('click',function h(ev){if(!drop.contains(ev.target)&&ev.target.id!=='f_jobref_inp'){drop.style.display='none';}document.removeEventListener('click',h);});},10);
 };
 
-window.closeAdd=function(){document.getElementById('addModal').classList.remove('show');};
+window.openEdit=function(id){
+  editId=id;
+  const v=vis[id]||{};
+  document.getElementById('modalTitle').textContent='Edit Vendor Invoice';
+  document.getElementById('f_vendor_inp').value=v.vendorName||'';
+  document.getElementById('f_invno').value=v.invNo||'';
+  document.getElementById('f_date').value=v.invDate||'';
+  document.getElementById('f_jobref_inp').value=v.jobRef||'';
+  document.getElementById('f_jobref').value=v.jobRef||'';
+  document.getElementById('f_vessel').value=v.vessel||'';
+  document.getElementById('f_cur').value=v.currency||'SGD';
+  document.getElementById('f_desc').value=v.desc||'';
+  window._viVendorGST=!!v.gst;
+  viClearLIs();
+  const lis=v.lineItems||[];
+  if(lis.length){lis.forEach(li=>viAddLI(li.desc,li.qty,li.unit,li.unitPrice));}
+  else if(v.amount>0){viAddLI(v.desc||'',1,'LOT',v.amount);}
+  else{viAddLI();}
+  viUpdateTotal();
+  document.getElementById('addModal').classList.add('show');
+  setTimeout(()=>document.getElementById('f_vendor_inp').focus(),100);
+};
+window.closeAdd=function(){
+  document.getElementById('addModal').classList.remove('show');
+  editId=null;
+};
 
 // ── Line item helpers ─────────────────────────────────────────
 var viLICount=0;
@@ -364,12 +390,14 @@ window.saveInv=async function(){
   if(!lis.length){toast('Add at least one line item');return;}
   const amt=viComputeTotal();
   if(amt<=0){toast('Enter valid unit prices for line items');return;}
-  // Duplicate check: same invoice number from same vendor
-  var duplicate=Object.values(vis).find(function(v){
-    return v.invNo.trim().toLowerCase()===invno.toLowerCase()&&
-      v.vendorName.trim().toLowerCase()===vendor.toLowerCase();
-  });
-  if(duplicate){toast('Duplicate: '+invno+' from '+vendor+' already exists');return;}
+  // Duplicate check: same invoice number from same vendor (skip when editing)
+  if(!editId){
+    var duplicate=Object.values(vis).find(function(v){
+      return v.invNo.trim().toLowerCase()===invno.toLowerCase()&&
+        v.vendorName.trim().toLowerCase()===vendor.toLowerCase();
+    });
+    if(duplicate){toast('Duplicate: '+invno+' from '+vendor+' already exists');return;}
+  }
   const data={
     vendorName:vendor,
     invNo:invno,
@@ -382,14 +410,17 @@ window.saveInv=async function(){
     amount:amt+(window._viVendorGST?Math.round(amt*0.09*100)/100:0),
     lineItems:lis,
     desc:document.getElementById('f_desc').value.trim(),
-    status:'unpaid',
-    createdBy:rcStaff||'Manager',
-    createdAt:new Date().toISOString()
+    ...(editId?{}:{status:'unpaid',createdBy:rcStaff||'Staff',createdAt:new Date().toISOString()})
   };
   try{
-    await push(ref(db,'vendorInvoices'),data);
+    if(editId){
+      await update(ref(db,'vendorInvoices/'+editId),Object.assign(data,{updatedAt:new Date().toISOString()}));
+      toast('Invoice updated ✓');
+    } else {
+      await push(ref(db,'vendorInvoices'),data);
+      toast('Vendor invoice saved ✓');
+    }
     closeAdd();
-    toast('Vendor invoice saved ✓');
   }catch(e){toast('Error: '+e.message);}
 };
 
