@@ -92,15 +92,6 @@ button:hover{background:#f0f0ee}
 <div class="mbg" id="addModal">
   <div class="modal">
     <h2 id="modalTitle">+ Add Vendor Invoice</h2>
-    <!-- Hidden file input for camera/photo -->
-    <input type="file" id="scanFileInput" accept="image/*,application/pdf" style="display:none" onchange="window.viHandleScan(this)">
-    <!-- Scan button -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:stretch">
-      <button type="button" onclick="window.viStartScan()" style="flex:1;padding:10px;font-size:13px;font-weight:600;border:2px dashed #185FA5;color:#185FA5;background:#E6F1FB;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">&#128247; Scan Invoice (photo or PDF)</button>
-      <button type="button" onclick="window.viSetApiKey()" title="Set Anthropic API key" style="padding:8px 12px;font-size:18px;border:1px solid #ddd;border-radius:10px;background:#f9f9f7;cursor:pointer;">&#128273;</button>
-    </div>
-    <!-- Scanning status overlay -->
-    <div id="scanStatus" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:#fff8e6;border:1px solid #f0c060;border-radius:8px;margin-bottom:12px;font-size:13px;color:#854F0B"><span style="display:inline-block;width:16px;height:16px;border:2px solid #f0c060;border-top-color:#854F0B;border-radius:50%;animation:spin .8s linear infinite"></span><span id="scanStatusTxt">Reading invoice…</span></div>
     <div class="fr2">
       <div class="fi"><label>Vendor Name *</label>
         <div style="position:relative">
@@ -346,101 +337,6 @@ window.viGetLIs=function(){
       unit:(document.getElementById('vi_lu_'+n)||{value:'LOT'}).value||'LOT',
       unitPrice:(document.getElementById('vi_lp_'+n)||{value:''}).value};
   }).filter(function(i){return i.desc;});
-};
-
-window.viSetApiKey=function(){
-  var cur=localStorage.getItem('rc_anthropic_key')||'';
-  var key=prompt('Enter your Anthropic API key (stored locally in this browser only):',cur);
-  if(key===null)return;
-  key=key.trim();
-  if(key){localStorage.setItem('rc_anthropic_key',key);toast('API key saved ✓');}
-  else{localStorage.removeItem('rc_anthropic_key');toast('API key cleared');}
-};
-window.viStartScan=function(){
-  var key=localStorage.getItem('rc_anthropic_key');
-  if(!key){
-    var entered=prompt('Enter your Anthropic API key to use invoice scanning (stored locally):','');
-    if(!entered||!entered.trim()){toast('API key required for scanning');return;}
-    localStorage.setItem('rc_anthropic_key',entered.trim());
-    toast('API key saved ✓');
-  }
-  document.getElementById('scanFileInput').click();
-};
-window.viHandleScan=async function(input){
-  var file=input.files&&input.files[0];
-  input.value='';
-  if(!file)return;
-  var apiKey=localStorage.getItem('rc_anthropic_key');
-  if(!apiKey){toast('No API key — tap 🔑 to set one');return;}
-  var status=document.getElementById('scanStatus');
-  var statusTxt=document.getElementById('scanStatusTxt');
-  status.style.display='flex';
-  statusTxt.textContent='Reading invoice…';
-  try{
-    var base64=await new Promise(function(resolve,reject){
-      var reader=new FileReader();
-      reader.onload=function(e){resolve(e.target.result.split(',')[1]);};
-      reader.onerror=reject;
-      reader.readAsDataURL(file);
-    });
-    var mediaType=file.type||'image/jpeg';
-    var isPDF=mediaType==='application/pdf';
-    statusTxt.textContent='Extracting invoice details…';
-    var contentBlock=isPDF
-      ?{type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}}
-      :{type:'image',source:{type:'base64',media_type:mediaType,data:base64}};
-    var resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key':apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:[
-            contentBlock,
-            {type:'text',text:'Extract the vendor invoice details from this '+(isPDF?'PDF':'image')+'. Return ONLY valid JSON with no markdown, no explanation. Use this exact structure:\n{"vendor":"company name","invNo":"invoice number","date":"YYYY-MM-DD","currency":"SGD or USD or EUR or JPY or CNY or GBP","lineItems":[{"desc":"description","qty":1,"unit":"LOT","unitPrice":0.00}],"notes":"any notes or payment terms"}'}
-          ]
-        }]
-      })
-    });
-    if(!resp.ok){
-      var errData=await resp.json().catch(function(){return {};});
-      var errMsg=(errData.error&&errData.error.message)||('HTTP '+resp.status);
-      if(resp.status===401){localStorage.removeItem('rc_anthropic_key');errMsg='Invalid API key — cleared. Tap 🔑 to re-enter.';}
-      throw new Error(errMsg);
-    }
-    var data=await resp.json();
-    var text=(data.content||[]).map(function(b){return b.type==='text'?b.text:'';}).join('');
-    text=text.replace(/```json|```/g,'').trim();
-    var inv=JSON.parse(text);
-    statusTxt.textContent='Filling in fields…';
-    if(inv.vendor)document.getElementById('f_vendor_inp').value=inv.vendor;
-    if(inv.invNo)document.getElementById('f_invno').value=inv.invNo;
-    if(inv.date)document.getElementById('f_date').value=inv.date;
-    if(inv.currency){
-      var curSel=document.getElementById('f_cur');
-      var opts=[...curSel.options].map(function(o){return o.value;});
-      if(opts.includes(inv.currency))curSel.value=inv.currency;
-    }
-    if(inv.notes)document.getElementById('f_desc').value=inv.notes;
-    if(inv.lineItems&&inv.lineItems.length){
-      viClearLIs();
-      inv.lineItems.forEach(function(li){viAddLI(li.desc||'',li.qty||'',li.unit||'LOT',li.unitPrice||'');});
-    }
-    viUpdateTotal();
-    status.style.display='none';
-    toast('Invoice scanned ✓ — please verify and save');
-  }catch(e){
-    status.style.display='none';
-    toast('Scan failed: '+(e.message||'unknown error'));
-    console.error(e);
-  }
 };
 
 window.saveInv=async function(){
