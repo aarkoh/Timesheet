@@ -307,8 +307,22 @@ window.renderTable=function(){
 let _payId=null;
 window.openMarkPaid=function(id){
   _payId=id;
+  var v=(window._vi_vis||{})[id]||{};
   document.getElementById('mp_ref').value='';
   document.getElementById('mp_date').value=new Date().toISOString().slice(0,10);
+  // SGD payment field — only show hint if invoice currency is not SGD
+  var cur=v.currency||'SGD';
+  var sgdRow=document.getElementById('mp_sgd_row');
+  var sgdHint=document.getElementById('mp_sgd_hint');
+  var sgdInp=document.getElementById('mp_sgd');
+  if(cur!=='SGD'){
+    sgdRow.style.display='block';
+    sgdHint.textContent='(invoice is '+cur+' '+((v.amount||0).toFixed?v.amount.toFixed(2):v.amount)+')';
+    sgdInp.value='';
+  } else {
+    sgdRow.style.display='none';
+    sgdInp.value='';
+  }
   document.getElementById('mpModal').classList.add('show');
   setTimeout(()=>document.getElementById('mp_ref').focus(),100);
 };
@@ -316,7 +330,9 @@ window.saveMarkPaid=async function(){
   if(!_payId)return;
   const pref=document.getElementById('mp_ref').value.trim();
   const pdate=document.getElementById('mp_date').value;
+  const sgdVal=parseFloat(document.getElementById('mp_sgd').value)||null;
   const upd={status:'paid',paymentRef:pref,paidAt:pdate||new Date().toISOString().slice(0,10),updatedAt:new Date().toISOString()};
+  if(sgdVal)upd.paidSGD=sgdVal;
   try{
     await update(ref(db,'vendorInvoices/'+_payId),upd);
     document.getElementById('mpModal').classList.remove('show');
@@ -649,6 +665,10 @@ setTimeout(()=>document.getElementById('ls').classList.add('hide'),5000);
       <label>Payment Date</label>
       <input type="date" id="mp_date">
     </div>
+    <div class="fi" id="mp_sgd_row">
+      <label>Amount Paid in SGD <span id="mp_sgd_hint" style="font-weight:400;color:#888;font-size:11px"></span></label>
+      <input type="number" id="mp_sgd" min="0" step="0.01" placeholder="0.00" style="text-align:right">
+    </div>
     <div class="mfoot">
       <button onclick="document.getElementById('mpModal').classList.remove('show')">Cancel</button>
       <button class="bg" onclick="saveMarkPaid()">&#10003; Confirm Paid</button>
@@ -754,7 +774,11 @@ window.printPayAdvice=function(id){
     +'<div class="ttl">PAYMENT ADVICE</div>'
     +'<div class="ig">'
       +'<div class="ib"><div class="lbl">Vendor</div><div class="val">'+(v.vendorName||'-')+'</div></div>'
-      +'<div class="ib"><div class="lbl">Payment Reference</div><div class="val">'+(v.paymentRef||'-')+'</div><div class="sub">Date: '+paidDateStr+'</div></div>'
+      +'<div class="ib"><div class="lbl">Payment Reference</div>'
+      +'<div class="val">'+(v.paymentRef||'-')+'</div>'
+      +'<div class="sub">Date: '+paidDateStr+'</div>'
+      +(v.paidSGD&&(v.currency||'SGD')!=='SGD'?'<div class="sub" style="color:#1a6641;font-weight:600">Paid SGD '+v.paidSGD.toFixed(2)+'</div>':'')
+    +'</div>'
     +'</div>'
     +'<table class="dt"><thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Job Ref</th><th>Vessel</th><th>Description</th><th class="r">Amount</th></tr></thead>'
     +'<tbody><tr>'
@@ -765,7 +789,13 @@ window.printPayAdvice=function(id){
       +'<td>'+(v.desc||'-')+'</td>'
       +'<td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td>'
     +'</tr></tbody>'
-    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr></tfoot></table>'
+    +(v.paidSGD&&(v.currency||'SGD')!=='SGD'
+      ?'<tfoot>'
+        +'<tr><td colspan="5" style="text-align:right">INVOICE AMOUNT</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr>'
+        +'<tr><td colspan="5" style="text-align:right;font-weight:700">AMOUNT PAID (SGD)</td><td style="text-align:right;font-weight:700">SGD '+v.paidSGD.toFixed(2)+'</td></tr>'
+      +'</tfoot>'
+      :'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr></tfoot>')
+    +'</table>'
     +'<div class="sr">'
       +'<div style="text-align:center;font-size:9pt"><img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>For Raycontrol Pte Ltd<br><div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div></div>'
       +'<div style="text-align:right;font-size:9pt;color:#555">'
