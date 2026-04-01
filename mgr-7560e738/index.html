@@ -217,6 +217,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="btn-save" onclick="saveStaffPins()" style="margin-top:0.75rem">Save staff codes</button>
       <div id="pinSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
     </div>
+    <div class="section-box">
+      <h2>&#128203; Worker Full Names</h2>
+      <p>Full names are printed on the Work Summary PDF. Leave blank to use initials.</p>
+      <div id="workerNamesGrid" style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;max-width:400px;margin-bottom:0.75rem"></div>
+      <button class="btn-save" onclick="saveWorkerNames()">Save full names</button>
+      <div id="namesSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
+    </div>
   </div>
 
   <!-- ── Workers Management ── -->
@@ -330,6 +337,33 @@ window.saveStaffPins=async function(){
 
 let managerPin='1234';
 let adminPin='9999';
+let workerNamesData={};
+
+function renderWorkerNamesGrid(){
+  const grid=document.getElementById('workerNamesGrid');
+  if(!grid)return;
+  grid.innerHTML=WORKERS_ALL.map(w=>`
+    <label style="font-size:13px;font-weight:600;color:#555">${w}</label>
+    <input type="text" id="wn_${w}" value="${workerNamesData[w]||''}" placeholder="Full name" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
+  `).join('');
+}
+
+window.saveWorkerNames=async function(){
+  const msg=document.getElementById('namesSaveMsg');
+  const newNames={};
+  WORKERS_ALL.forEach(w=>{
+    const v=(document.getElementById('wn_'+w)||{value:''}).value||'';
+    if(v.trim())newNames[w]=v.trim();
+  });
+  try{
+    await set(ref(db,'config/workerNames'),newNames);
+    workerNamesData=newNames;
+    msg.style.color='#3B6D11';msg.textContent='✓ Full names saved';
+    setTimeout(()=>msg.textContent='',3000);
+  }catch(e){
+    msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;
+  }
+};
 
 window.changeAdminPin=async function(){
   const n=document.getElementById('newAdminPin').value.trim();
@@ -488,6 +522,10 @@ onAuthStateChanged(auth,user=>{
     window._activeWorkers=workers;
     renderWorkerList(workers);
     renderStaffPins(); // refresh pin grid to include new workers
+  });
+  onValue(ref(db,'config/workerNames'),snap=>{
+    if(snap.exists())workerNamesData=snap.val()||{};
+    renderWorkerNamesGrid();
   });
   onValue(ref(db,'config/staffPins'),snap=>{
     if(snap.exists()) staffPins={...staffPins,...snap.val()};
