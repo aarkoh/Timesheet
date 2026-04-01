@@ -624,7 +624,7 @@ function renderSummary(){
     const locs=[...new Set([...log.filter(e=>e.worker===w&&e.loc).map(e=>e.loc),...(wd.loc?[wd.loc]:[])])];
     const otRate=otRates[w]||0,ovsRate=ovsRates[w]||0;
     const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1));
-    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn};
+    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn,shifts};
   });
   const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0).toFixed(1);
   const tnh=stats.reduce((a,s)=>a+parseFloat(s.normalHours),0).toFixed(1);
@@ -646,7 +646,7 @@ function renderSummary(){
     <div class="tbl-wrap"><table class="wtable">
       <thead><tr><th>Worker</th><th>Status</th><th>Total hrs</th><th>Normal hrs</th><th>OT hrs</th><th>OT Rate (S$/hr)</th><th>OT Cost</th><th>OVS days</th><th>OVS Rate (S$/day)</th><th>OVS Cost</th><th>Last location</th><th></th></tr></thead>
       <tbody>${stats.map(s=>`<tr>
-        <td style="font-weight:600">${s.w}</td>
+        <td style="font-weight:600;cursor:pointer;white-space:nowrap" onclick="window.toggleWorkerDetail('${s.w}')"><span style="color:#185FA5;text-decoration:underline">${s.w}</span>&nbsp;<span id="wdarr-${s.w}" style="font-size:10px;color:#aaa">&#9660;</span></td>
         <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn?'In':'Off'}</span></td>
         <td>${s.hours}h</td>
         <td>${s.normalHours}h</td>
@@ -658,12 +658,92 @@ function renderSummary(){
         <td style="font-weight:${s.ovsCost>0?'600':'400'};color:${s.ovsCost>0?'#185FA5':'#888'}">${s.ovsCost>0?'S$'+s.ovsCost.toFixed(2):'—'}</td>
         <td style="font-size:11px;color:#888">${s.locs.length?s.locs[0]:'—'}</td>
         <td><button onclick="window.printWorkerSummary('${s.w}')" style="font-size:11px;padding:3px 10px;border:1px solid #185FA5;color:#185FA5;background:#E6F1FB;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">&#128424; Print</button></td>
-      </tr>`).join('')}</tbody>
+      </tr><tr id="wdrow-${s.w}" style="display:none"><td colspan="12" style="padding:0 8px 8px 8px;background:#f9f9f7"><div id="wdinner-${s.w}"></div></td></tr>`).join('')}</tbody>
     </table></div>`;
   // store stats for export
   window._lastStats = stats;
+  const {start:_ps,end:_pe}=periodRange();
+  window._workerShifts={};
+  stats.forEach(function(s){
+    window._workerShifts[s.w]=s.shifts.filter(function(sh){
+      const inT=new Date(sh.in.time);
+      const outT=sh.out?new Date(sh.out.time):new Date();
+      return outT>=_ps&&inT<=_pe;
+    });
+  });
 }
 
+
+// ── Worker detail dropdown ────────────────────────────────────
+window.toggleWorkerDetail=function(w){
+  const row=document.getElementById('wdrow-'+w);
+  const inner=document.getElementById('wdinner-'+w);
+  const arr=document.getElementById('wdarr-'+w);
+  if(!row)return;
+  const open=row.style.display==='none';
+  row.style.display=open?'':'none';
+  if(arr)arr.innerHTML=open?'&#9650;':'&#9660;';
+  if(!open)return;
+  // Build detail table for this worker's shifts in the period
+  const shifts=(window._workerShifts||{})[w]||[];
+  if(!shifts.length){inner.innerHTML='<div style="padding:10px 4px;font-size:12px;color:#aaa">No shifts in this period.</div>';return;}
+  const wd=window._workerNames&&window._workerNames[w]?window._workerNames[w]:'';
+  const label=wd?w+' — '+wd:w;
+  const fmt=function(iso){
+    if(!iso)return'—';
+    try{
+      const d=new Date(iso);
+      return d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'})
+        +' '+d.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});
+    }catch(e){return iso;}
+  };
+  const fmtDate=function(iso){
+    if(!iso)return'—';
+    try{return new Date(iso).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});}
+    catch(e){return iso;}
+  };
+  const fmtTime=function(iso){
+    if(!iso)return'—';
+    try{return new Date(iso).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});}
+    catch(e){return iso;}
+  };
+  const durStr=function(inIso,outIso){
+    if(!outIso)return'<span style="color:#3B6D11;font-size:11px">Ongoing</span>';
+    const mins=Math.round((new Date(outIso)-new Date(inIso))/60000);
+    if(mins<0)return'—';
+    const h=Math.floor(mins/60),m=mins%60;
+    return h+'h'+(m?(' '+m+'m'):'');
+  };
+  const rows=shifts.map(function(sh,i){
+    const inEntry=sh.in,outEntry=sh.out;
+    const dateStr=fmtDate(inEntry.time);
+    const inTime=fmtTime(inEntry.time);
+    const outTime=outEntry?fmtTime(outEntry.time):'<span style="color:#3B6D11;font-weight:600">In</span>';
+    const dur=durStr(inEntry.time,outEntry?outEntry.time:null);
+    const job=(outEntry&&outEntry.job)||inEntry.job||'—';
+    const loc=inEntry.loc||'—';
+    const edited=(inEntry.edited||outEntry&&outEntry.edited)?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':'';
+    return '<tr style="background:'+(i%2===0?'#fff':'#f5f5f3')+'">'
+      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+dateStr+'</td>'
+      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+inTime+edited+'</td>'
+      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+outTime+'</td>'
+      +'<td style="padding:5px 8px;font-size:12px">'+dur+'</td>'
+      +'<td style="padding:5px 8px;font-size:12px;color:#888">'+job+'</td>'
+      +'<td style="padding:5px 8px;font-size:11px;color:#aaa;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+loc+'">'+loc+'</td>'
+      +'</tr>';
+  }).join('');
+  inner.innerHTML='<div style="padding:8px 4px 4px">'
+    +'<div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#444">'+label+' — '+shifts.length+' shift'+(shifts.length!==1?'s':'')+' in period</div>'
+    +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:#efefed">'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Date</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Clock In</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Clock Out</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Duration</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Job</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Location</th>'
+    +'</th></thead><tbody>'+rows+'</tbody></table></div></div>';
+};
 // ── Print Worker Summary ─────────────────────────────────────
 window.printWorkerSummary=function(workerName){
   // Image assets (same as jobs.html)
@@ -1001,7 +1081,7 @@ onAuthStateChanged(auth,async user=>{
 
   onValue(ref(db,'config/pin'),snap=>{if(snap.exists())pin=snap.val();});
   onValue(ref(db,'config/workerNames'),snap=>{
-    if(snap.exists())workerNames=snap.val()||{};
+    if(snap.exists()){workerNames=snap.val()||{};window._workerNames=workerNames;}
   });
   // Load jobs for job number autocomplete in edit modal
   onValue(ref(db,'jobs'),snap=>{
