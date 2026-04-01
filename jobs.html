@@ -839,13 +839,14 @@ function setupSearch(inpId,dropId,filterFn,onSel){
   document.addEventListener("click",function(e){if(!inp.contains(e.target)&&!drop.contains(e.target))drop.style.display="none";});
 }
 
+window.setVendorRef=function(i,val){if(selVendors[i])selVendors[i].ref=val;};
 function renderVTags(){
   var el=document.getElementById("j_vtags");if(!el)return;
   el.innerHTML=selVendors.map(function(v,i){
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap">'
       +'<div style="display:flex;align-items:center;gap:5px;background:#F3E6F3;border:1px solid #d4b8d4;border-radius:20px;padding:3px 10px;font-size:12px;color:#8B1A8B">'+v.name+'<span data-i="'+i+'" onclick="window.removeVendor(this.dataset.i)" style="cursor:pointer;font-weight:700">✕</span></div>'
       +'<input type="text" id="j_vref_'+i+'" value="'+( v.ref||'')+'" placeholder="Vendor ref / PO no" '
-      +'oninput="selVendors['+i+'].ref=this.value" '
+      +'oninput="window.setVendorRef('+i+',this.value)" '
       +'style="padding:3px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;width:160px;background:#fafaf8">'
     +'</div>';
   }).join("");
