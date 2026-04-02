@@ -1823,21 +1823,6 @@ window.printSOA = function() {
       &nbsp;/&nbsp;
       <a href="#" onclick="window.invSelectAll(false);return false" style="color:#185FA5">None</a>
     </div>
-    <div style="border:1px solid #e0ddd6;border-radius:8px;padding:10px 12px;margin-bottom:12px;background:#f9f9f7">
-      <div style="font-size:12px;font-weight:600;color:#444;margin-bottom:8px">&#128236; Invoice Address <span style="font-size:11px;font-weight:400;color:#888">— editable per invoice</span></div>
-      <div style="margin-bottom:7px">
-        <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:3px">Company / Messrs</label>
-        <input type="text" id="inv_bill_name" placeholder="Company name on invoice&hellip;" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
-      </div>
-      <div style="margin-bottom:7px">
-        <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:3px">Address</label>
-        <textarea id="inv_bill_addr" rows="3" placeholder="Full billing address&hellip;" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;background:#fff;resize:vertical"></textarea>
-      </div>
-      <div>
-        <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:3px">Attention</label>
-        <input type="text" id="inv_bill_attn" placeholder="Contact person (optional)&hellip;" style="width:100%;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;background:#fff">
-      </div>
-    </div>
     <div class="mfoot">
       <button onclick="document.getElementById('invModal').classList.remove('show')">Cancel</button>
       <button class="bp" style="background:#A32D2D;border-color:#A32D2D" onclick="window.doPrintInv()">&#128424; Print / PDF</button>
@@ -2126,13 +2111,18 @@ window.generateDOWCC = function() {
     });
     return rows.join('');
   })();
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+docTitle+' '+(j.ref||'')+'</title>'+rcBaseStyle()
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+docTitle+' '+(j.ref||'')+'</title>'
     +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
     +'html,body{height:100%}'
-    +'body{display:flex;flex-direction:column;min-height:297mm}'
+    +'body{font-family:Courier New,Courier,monospace;font-size:10pt;color:#000;background:#fff;'
+    +'padding:8mm 8mm 8mm 8mm;display:flex;flex-direction:column;min-height:277mm}'
+    +'@page{margin:8mm 8mm}'
+    +'@media print{body{padding:0}#pb{display:none}}'
+    +'.jbl{font-weight:700}'
     +'.doc-body{flex:1}'
     +'.doc-footer{margin-top:auto;padding-top:12px}'
-    +'@media print{html,body{height:100%;min-height:297mm}}'
+    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#854F0B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style>'
     +'</head><body>'
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
@@ -2484,13 +2474,6 @@ window.openPrintInv=function(id){
     });
   });
   list.innerHTML=invRows.join('');
-  // Pre-fill bill-to from customer + contact address
-  var _custId=j.customerId||'';
-  var _contacts=window._contacts||{};
-  var _custContact=_contacts[_custId]||{};
-  document.getElementById('inv_bill_name').value=j.customerName||'';
-  document.getElementById('inv_bill_addr').value=_custContact.address||'';
-  document.getElementById('inv_bill_attn').value=j.attn||'';
   document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
   document.getElementById('invModal').classList.add('show');
 };
@@ -2513,26 +2496,18 @@ window.doPrintInv=function(){
     if(ch.length)entry.children=selChildren;
     selected.push(entry);
   });
-  var billTo={
-    name:document.getElementById('inv_bill_name').value.trim(),
-    addr:document.getElementById('inv_bill_addr').value.trim(),
-    attn:document.getElementById('inv_bill_attn').value.trim()
-  };
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
-  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,billTo);
+  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct);
 };
 
-window.printInvData=function(id,selectedItems,invType,invPct,billTo){
+window.printInvData=function(id,selectedItems,invType,invPct){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt,fmtD=window._fmtD,totals=window._totals;
   if(!fmt){alert('Please wait for page to load.');return;}
   invPct=invPct||1;
   var isPro=(invType||'').includes('PROFORMA');
-  var billName=(billTo&&billTo.name)||j.customerName||'';
-  var billAddr=(billTo&&billTo.addr)||'';
-  var billAttn=(billTo&&billTo.attn)||j.attn||'';
   var pctLabel=isPro&&invPct<1?'('+Math.round(invPct*100)+'% advance)':'';
   var scaledItems=selectedItems.map(function(it){
     var ch=(it.children||[]).map(function(c){return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});});
@@ -2594,7 +2569,7 @@ window.printInvData=function(id,selectedItems,invType,invPct,billTo){
       +'<td class="c2"><div class="logrid"><img src="'+LHA+'" style="height:30px;max-width:90px;object-fit:contain"><img src="'+LKR+'" style="height:24px;max-width:85px;object-fit:contain"><img src="'+LYO+'" style="height:24px;max-width:90px;object-fit:contain"><img src="'+LMA+'" style="height:38px;max-width:60px;object-fit:contain"></div></td>'
       +'<td class="c3"><div style="font-size:16pt;font-weight:900;letter-spacing:1px;font-family:Arial,sans-serif">'+(invType||'INVOICE')+'</div>'+(pctLabel?'<div style="font-size:9pt">'+pctLabel+'</div>':'')+'<br>BizSAFE4<br>ISO 9001:2015<br>ACCREDITED</td>'
     +'</tr></table>'
-    +'<div class="tb"><div class="cb"><div style="font-weight:700">Messrs</div><div style="font-weight:700">'+billName+'</div>'+(billAddr?'<div style="font-size:9pt;margin-top:2px;line-height:1.5">'+billAddr.replace(/\n/g,'<br>')+'</div>':'')+(billAttn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+billAttn+'</div>':'')+'</div><div class="di"><table><tr><td>INV NO</td><td>'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td>CUST PO</td><td>'+j.custPO+'</td></tr>':'')+(j.yourRef?'<tr><td>YOUR REF</td><td>'+j.yourRef+'</td></tr>':'')+'<tr><td>DATE</td><td>'+todayFmt+'</td></tr><tr><td>PAGE</td><td>1 of 1</td></tr></table></div></div>'
+    +'<div class="tb"><div class="cb"><div style="font-weight:700">Messrs</div><div style="font-weight:700">'+(j.customerName||'')+'</div>'+(j.attn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+j.attn+'</div>':'')+'</div><div class="di"><table><tr><td>INV NO</td><td>'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td>CUST PO</td><td>'+j.custPO+'</td></tr>':'')+(j.yourRef?'<tr><td>YOUR REF</td><td>'+j.yourRef+'</td></tr>':'')+'<tr><td>DATE</td><td>'+todayFmt+'</td></tr><tr><td>PAGE</td><td>1 of 1</td></tr></table></div></div>'
     +'<div class="jb"><div class="jbc"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
     +'<div style="font-size:9.5pt;margin-bottom:4px">Being Invoice for the following :-</div>'
     +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
