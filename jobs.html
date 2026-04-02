@@ -1369,7 +1369,7 @@ window.printVPO=function(id,selectedItems){
     +"body{font-family:Courier New,Courier,monospace;font-size:10.5pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}"
     +"@page{size:A4;margin:0}"
     +"@media print{body{padding:10mm 14mm}#pb{display:none}}"
-    +"#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#8B1A8B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}"
+    +"table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#8B1A8B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}"
     +"</style></head><body>"
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +pages
@@ -1686,7 +1686,7 @@ window.printSOA = function() {
       +'</tr>';
   }).join('');
   var totalBal=totalInv-totalRcvd;
-  var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:10px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:45%}.c2{width:30%;text-align:center}.c3{width:25%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}.ttl{font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 8px}table.it{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:10px}table.it th{font-weight:700;padding:5px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}table.it th.r{text-align:right}table.it th.c{text-align:center}table.it td{padding:4px 6px;border-bottom:1px solid #eee}table.it tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:5px 6px}.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.abox{border:1px solid #000;padding:6px 8px;text-align:center}.abox .av{font-size:11pt;font-weight:700}.abox .al{font-size:7.5pt;margin-top:2px}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
+  var css='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:10px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:45%}.c2{width:30%;text-align:center}.c3{width:25%;text-align:right;font-size:8pt;font-weight:700;line-height:1.7;vertical-align:bottom!important}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5}.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}.ttl{font-size:16pt;font-weight:900;letter-spacing:1px;text-align:center;margin:10px 0 8px}table.it{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:10px}table.it th{font-weight:700;padding:5px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left;background:#f5f5f5}table.it th.r{text-align:right}table.it th.c{text-align:center}table.it td{padding:4px 6px;border-bottom:1px solid #eee}table.it tfoot td{font-weight:700;border-top:2px solid #000;border-bottom:none;padding:5px 6px}.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.abox{border:1px solid #000;padding:6px 8px;text-align:center}.abox .av{font-size:11pt;font-weight:700}.abox .al{font-size:7.5pt;margin-top:2px}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}';
   var bdy='<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +'<table class="hdr"><tr>'
       +'<td class="c1"><div style="display:flex;align-items:flex-end;gap:4px"><img src="'+LRC+'" style="height:50px;max-width:220px;object-fit:contain;object-position:left"><span style="font-size:9.5pt;font-weight:700;margin-bottom:3px">PTE LTD</span></div>'
@@ -1849,7 +1849,9 @@ function rcBaseStyle(pbColor) {
     +'tr{page-break-inside:avoid;page-break-after:auto}'
     +'thead{display:table-header-group}'
     +'.doc-footer{page-break-inside:avoid}'
-    +'@media print{.no-break{page-break-inside:avoid}}'
+    +'.fg{page-break-inside:avoid}'
+    +'.bb{page-break-inside:avoid}'
+    +'.sr{page-break-inside:avoid}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:'+(pbColor||'#1a1a1a')+';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style>';
 }
@@ -2010,7 +2012,7 @@ window.generateCIPL = function() {
   var vesselLine=[j.vessel&&('Vessel: <strong>'+j.vessel+'</strong>'),j.port&&('Port: <strong>'+j.port+'</strong>'),j.equip&&('Equip: <strong>'+j.equip+'</strong>')].filter(Boolean).join(' &nbsp;|&nbsp; ');
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>CIPL '+ciplNo+'</title>'
-    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:18mm 15mm}@page{size:A4;margin:18mm 15mm}@media print{body{padding:0}#pb{display:none}}th{background:#1a1a1a;color:#fff;font-size:10px;font-weight:600;padding:7px 8px;text-align:left}th.r{text-align:right}th.nc{text-align:center}.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:18mm 15mm}@page{size:A4;margin:18mm 15mm}@media print{body{padding:0}#pb{display:none}}th{background:#1a1a1a;color:#fff;font-size:10px;font-weight:600;padding:7px 8px;text-align:left}th.r{text-align:right}th.nc{text-align:center}.sr{display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid #000}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
     +'</head><body>'
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +rcHeader('COMMERCIAL INVOICE<br>&amp; PACKING LIST')
@@ -2119,17 +2121,16 @@ window.generateDOWCC = function() {
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+docTitle+' '+(j.ref||'')+'</title>'
     +'<style>'
     +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'html,body{height:100%}'
     +'body{font-family:Courier New,Courier,monospace;font-size:9.5pt;color:#000;background:#fff;'
-    +'padding:8mm 8mm 8mm 2mm;display:flex;flex-direction:column;min-height:277mm}'
-    +'@page{margin:8mm 8mm 8mm 2mm}'
+    +'padding:6mm 8mm 6mm 3mm}'
+    +'@page{size:9.5in 11in;margin:6mm 8mm 6mm 3mm}'
     +'@media print{body{padding:0}#pb{display:none}}'
     +'.jbl{font-weight:700}'
     +'table{page-break-inside:auto}'
     +'tr{page-break-inside:avoid;page-break-after:auto}'
     +'thead{display:table-header-group}'
-    +'.doc-body{flex:1}'
-    +'.doc-footer{page-break-inside:avoid;margin-top:auto;padding-top:12px}'
+    +'.doc-body{display:block}'
+    +'.doc-footer{page-break-inside:avoid;margin-top:16px;padding-top:12px}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#854F0B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style>'
     +'</head><body>'
@@ -2304,6 +2305,7 @@ window.printOCData=function(id,selectedItems){
     +'.fg{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}'
     +'.tt{font-weight:700;text-decoration:underline;margin-bottom:3px}'
     +'.bb{border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:4px;text-align:center}'
+    +'table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#1a6641;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style></head><body>'
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
@@ -2408,6 +2410,7 @@ window.printQuoData = function(id, selectedItems, revNum){
     +'.fg{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}'
     +'.tt{font-weight:700;text-decoration:underline;margin-bottom:3px}'
     +'.bb{border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:4px;text-align:center}'
+    +'table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style></head><body>'
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
@@ -2569,7 +2572,7 @@ window.printInvData=function(id,selectedItems,invType,invPct){
     +'<div><strong>SGD Acct No:</strong> 208-307-138-0</div><div><strong>USD Acct No:</strong> 208-900-381-6</div>'
     +'</div>';
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+(invType||'Invoice')+' '+(j.ref||'')+'</title>'
-    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Courier New,Courier,monospace;font-size:10.5pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:8px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:42%}.c2{width:36%;text-align:center;vertical-align:middle}.c3{width:22%;text-align:right;font-family:Arial,sans-serif;font-size:8pt;font-weight:700;line-height:1.6;vertical-align:bottom!important}.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5;font-family:Arial,sans-serif}.tb{display:flex;gap:0;margin-bottom:8px}.cb{flex:1;font-size:9.5pt;line-height:1.5}.di{min-width:220px;font-size:9.5pt}.di table{border-collapse:collapse;width:100%}.di td{padding:1px 6px;vertical-align:top}.di td:first-child{font-weight:700;white-space:nowrap}.di td:last-child{font-weight:900;font-size:11pt}.jb{border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px;font-size:9.5pt}.jbc{padding:4px 8px;border-right:1px solid #000}.jbc:last-child{border-right:none}.jbl{font-weight:700}table.it2{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:4px}table.it2 th{font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left}table.it2 th.r{text-align:right}table.it2 td{padding:3px 6px;border-bottom:1px solid #eee;vertical-align:top}.tr2{display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt}.tfin{font-weight:900;font-size:12pt;border-top:2px solid #000;padding:4px 6px;display:flex;justify-content:space-between}.aw{font-size:9.5pt;border:1px solid #000;padding:5px 10px;margin-bottom:8px;font-style:italic}.fg{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}.tt{font-weight:700;text-decoration:underline;margin-bottom:3px}.bb{border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:4px;text-align:center}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Courier New,Courier,monospace;font-size:10.5pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}@page{size:A4;margin:0}@media print{body{padding:10mm 14mm}#pb{display:none}}.hdr{width:100%;border-collapse:collapse;border-bottom:2px solid #000;margin-bottom:8px}.hdr td{vertical-align:middle;padding-bottom:8px}.c1{width:42%}.c2{width:36%;text-align:center;vertical-align:middle}.c3{width:22%;text-align:right;font-family:Arial,sans-serif;font-size:8pt;font-weight:700;line-height:1.6;vertical-align:bottom!important}.logrid{display:grid;grid-template-columns:95px 85px;gap:6px 8px;align-items:center;justify-items:center;margin:0 auto}.addr{font-size:7.5pt;margin-top:3px;line-height:1.5;font-family:Arial,sans-serif}.tb{display:flex;gap:0;margin-bottom:8px}.cb{flex:1;font-size:9.5pt;line-height:1.5}.di{min-width:220px;font-size:9.5pt}.di table{border-collapse:collapse;width:100%}.di td{padding:1px 6px;vertical-align:top}.di td:first-child{font-weight:700;white-space:nowrap}.di td:last-child{font-weight:900;font-size:11pt}.jb{border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px;font-size:9.5pt}.jbc{padding:4px 8px;border-right:1px solid #000}.jbc:last-child{border-right:none}.jbl{font-weight:700}table.it2{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:4px}table.it2 th{font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;text-align:left}table.it2 th.r{text-align:right}table.it2 td{padding:3px 6px;border-bottom:1px solid #eee;vertical-align:top}.tr2{display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt}.tfin{font-weight:900;font-size:12pt;border-top:2px solid #000;padding:4px 6px;display:flex;justify-content:space-between}.aw{font-size:9.5pt;border:1px solid #000;padding:5px 10px;margin-bottom:8px;font-style:italic}.fg{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:6px}.tt{font-weight:700;text-decoration:underline;margin-bottom:3px}.bb{border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:4px;text-align:center}table{page-break-inside:auto}tr{page-break-inside:avoid;page-break-after:auto}thead{display:table-header-group}.fg{page-break-inside:avoid}.bb{page-break-inside:avoid}.sr{page-break-inside:avoid}#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#A32D2D;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}</style>'
     +'</head><body>'
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +'<table class="hdr"><tr>'
