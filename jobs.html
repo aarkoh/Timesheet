@@ -1845,6 +1845,11 @@ function rcBaseStyle(pbColor) {
     +'@page{size:A4;margin:0}'
     +'@media print{body{padding:10mm 14mm}#pb{display:none}}'
     +'.jbl{font-weight:700}'
+    +'table{page-break-inside:auto}'
+    +'tr{page-break-inside:avoid;page-break-after:auto}'
+    +'thead{display:table-header-group}'
+    +'.doc-footer{page-break-inside:avoid}'
+    +'@media print{.no-break{page-break-inside:avoid}}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:'+(pbColor||'#1a1a1a')+';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style>';
 }
@@ -2093,19 +2098,19 @@ window.generateDOWCC = function() {
     selected.forEach(function(it,i){
       var ch=it.children||[];
       rows.push('<tr>'
-        +'<td style="text-align:center;padding:5px 6px;border-bottom:1px solid #eee">'+(i+1)+'</td>'
-        +'<td style="padding:5px 6px;border-bottom:1px solid #eee;white-space:pre-wrap;font-weight:'+(ch.length?'700':'400')+'">'+(it.desc||'')+'</td>'
+        +'<td style="text-align:center;padding:3px 5px;border-bottom:1px solid #eee">'+(i+1)+'</td>'
+        +'<td style="padding:3px 5px;border-bottom:1px solid #eee;white-space:pre-wrap;font-weight:'+(ch.length?'700':'400')+'">'+(it.desc||'')+'</td>'
         +(ch.length
           ?'<td style="border-bottom:1px solid #eee"></td><td style="border-bottom:1px solid #eee"></td>'
-          :'<td style="text-align:right;padding:5px 6px;border-bottom:1px solid #eee">'+(it.qty||'')+'</td>'
-           +'<td style="padding:5px 6px;border-bottom:1px solid #eee">'+(it.unit||'')+'</td>')
+          :'<td style="text-align:right;padding:3px 5px;border-bottom:1px solid #eee">'+(it.qty||'')+'</td>'
+           +'<td style="padding:3px 5px;border-bottom:1px solid #eee">'+(it.unit||'')+'</td>')
       +'</tr>');
       ch.forEach(function(c,ci){
         rows.push('<tr style="background:#f9f9f9">'
-          +'<td style="text-align:center;padding:4px 6px;border-bottom:1px solid #eee;font-size:9pt;color:#185FA5">'+(i+1)+'.'+(ci+1)+'</td>'
-          +'<td style="padding:4px 6px 4px 16px;border-bottom:1px solid #eee;font-size:9.5pt;white-space:pre-wrap">'+(c.desc||'')+'</td>'
-          +'<td style="text-align:right;padding:4px 6px;border-bottom:1px solid #eee">'+(c.qty||'')+'</td>'
-          +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+(c.unit||'')+'</td>'
+          +'<td style="text-align:center;padding:2px 5px;border-bottom:1px solid #eee;font-size:8.5pt;color:#185FA5">'+(i+1)+'.'+(ci+1)+'</td>'
+          +'<td style="padding:2px 5px 2px 14px;border-bottom:1px solid #eee;font-size:9pt;white-space:pre-wrap">'+(c.desc||'')+'</td>'
+          +'<td style="text-align:right;padding:2px 5px;border-bottom:1px solid #eee">'+(c.qty||'')+'</td>'
+          +'<td style="padding:2px 5px;border-bottom:1px solid #eee">'+(c.unit||'')+'</td>'
         +'</tr>');
       });
     });
@@ -2115,13 +2120,16 @@ window.generateDOWCC = function() {
     +'<style>'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +'html,body{height:100%}'
-    +'body{font-family:Courier New,Courier,monospace;font-size:10pt;color:#000;background:#fff;'
-    +'padding:8mm 8mm 8mm 8mm;display:flex;flex-direction:column;min-height:277mm}'
-    +'@page{margin:8mm 8mm}'
+    +'body{font-family:Courier New,Courier,monospace;font-size:9.5pt;color:#000;background:#fff;'
+    +'padding:8mm 8mm 8mm 2mm;display:flex;flex-direction:column;min-height:277mm}'
+    +'@page{margin:8mm 8mm 8mm 2mm}'
     +'@media print{body{padding:0}#pb{display:none}}'
     +'.jbl{font-weight:700}'
+    +'table{page-break-inside:auto}'
+    +'tr{page-break-inside:avoid;page-break-after:auto}'
+    +'thead{display:table-header-group}'
     +'.doc-body{flex:1}'
-    +'.doc-footer{margin-top:auto;padding-top:12px}'
+    +'.doc-footer{page-break-inside:avoid;margin-top:auto;padding-top:12px}'
     +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#854F0B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
     +'</style>'
     +'</head><body>'
@@ -2130,13 +2138,13 @@ window.generateDOWCC = function() {
     +rcHeader(docTitle)
     +'<div style="display:flex;gap:0;margin-bottom:8px"><div style="flex:1;font-size:9.5pt;line-height:1.7"><div class="jbl">MASTER AND OWNERS OF MV</div><div style="font-size:11pt;font-weight:700">'+(j.vessel||'').toUpperCase()+'</div>'+(j.attn?'<div style="margin-top:4px"><span class="jbl">ATTN : </span>'+j.attn+'</div>':'')+'</div>'
     +'<div style="min-width:220px;font-size:9.5pt"><table style="border-collapse:collapse;width:100%"><tr><td style="font-weight:700;padding:1px 6px;white-space:nowrap">'+docType+' NO</td><td style="font-weight:900;font-size:11pt;padding:1px 6px">'+docNo+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">JOB NO</td><td style="font-weight:900;font-size:11pt;padding:1px 6px">'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td style="font-weight:700;padding:1px 6px">CUST PO</td><td style="padding:1px 6px">'+j.custPO+'</td></tr>':'')+'<tr><td style="font-weight:700;padding:1px 6px">DATE</td><td style="padding:1px 6px">'+dateFmt+'</td></tr></table></div></div>'
-    +'<div style="border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:8px;font-size:9.5pt"><div style="padding:4px 8px;border-right:1px solid #000"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div style="padding:4px 8px"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div style="padding:4px 8px;border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
+    +'<div style="border:1px solid #000;display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:6px;font-size:9pt"><div style="padding:3px 6px;border-right:1px solid #000"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div style="padding:3px 6px"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div style="padding:4px 8px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div style="padding:3px 6px;border-right:1px solid #000;border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div style="padding:3px 6px;border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
     +'<div style="font-size:9.5pt;margin-bottom:4px">'+(docType==='DO'?'Received the following goods in good order and condition :-':'Work carried out as follows :-')+'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:12px"><thead><tr><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:32px">ITEM</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000">DESCRIPTION</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:52px;text-align:right">QTY</th><th style="font-weight:700;padding:4px 6px;border-top:1px solid #000;border-bottom:1px solid #000;width:52px">UNIT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:8px"><thead><tr><th style="font-weight:700;padding:3px 5px;border-top:1px solid #000;border-bottom:1px solid #000;width:30px">ITEM</th><th style="font-weight:700;padding:3px 5px;border-top:1px solid #000;border-bottom:1px solid #000">DESCRIPTION</th><th style="font-weight:700;padding:3px 5px;border-top:1px solid #000;border-bottom:1px solid #000;width:48px;text-align:right">QTY</th><th style="font-weight:700;padding:3px 5px;border-top:1px solid #000;border-bottom:1px solid #000;width:48px">UNIT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
     +(remarks?'<div style="font-size:9.5pt;margin-bottom:12px"><strong>Remarks:</strong> '+remarks+'</div>':'')
     +'</div>'  // close doc-body
     +'<div class="doc-footer">'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px"><div style="font-size:9.5pt"><div class="jbl">ATTENDED BY</div><div style="height:70px"></div><div>'+(engName||'_________________________')+'</div><div>SERVICE ENGINEER</div><div>For Raycontrol Pte Ltd</div></div><div style="font-size:9.5pt;text-align:right"><div class="jbl">ACCEPTANCE BY</div><div style="height:70px"></div><div>Name / Rank :</div><div style="margin-top:6px">Ship Stamp :</div></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div style="font-size:9pt"><div class="jbl">ATTENDED BY</div><div style="height:55px"></div><div>'+(engName||'_________________________')+'</div><div>SERVICE ENGINEER</div><div>For Raycontrol Pte Ltd</div></div><div style="font-size:9pt;text-align:right"><div class="jbl">ACCEPTANCE BY</div><div style="height:55px"></div><div>Name / Rank :</div><div style="margin-top:6px">Ship Stamp :</div></div></div>'
     +'<div style="border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:8px;text-align:center">E.&amp; O.E. &nbsp; <em>Thank you for your support</em></div>'
     +'</div>'  // close doc-footer
     +'</body></html>';
