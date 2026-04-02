@@ -565,7 +565,7 @@ window.openDetail=function(id){
       +rows
     +'</div>';
   })()
-++(function(){
++(function(){
   var sd=j.statusDates||{};
   // Collect all dated stages sorted by the date they were set
   var dated=SO.filter(function(st){return sd[st];}).map(function(st){
@@ -592,7 +592,7 @@ window.openDetail=function(id){
   }).join('');
   return '<div class="sbox"><h3>Progress</h3>'+rows+'</div>';
 })()
-'<div class="sbox"><h3>Documents</h3>'
++'<div class="sbox"><h3>Documents</h3>'
       +'<div class="ditem"><span>&#128196;</span><span style="font-weight:500;flex:1">Quotation '+(j.ref||"")+"</span>"
         +'<button data-jid="'+id+'" onclick="window.openPrintQuo(this.dataset.jid)" style="font-size:12px;padding:4px 12px;border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128424; Print / PDF</button>'
       +'</div>'
