@@ -604,7 +604,7 @@ function renderSummary(){
       const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
       // Use saved timezone from device (most accurate), fallback to location-derived tz
       const shiftTZ = s.in.tz || (overseas ? tzFromLoc(loc) : 'Asia/Singapore');
-      otMins+=calcOTMins(eIn,eOut,shiftTZ);
+      if(s.in.otOverride!=null&&s.in.otOverride>=0){otMins+=s.in.otOverride*60;}else{otMins+=calcOTMins(eIn,eOut,shiftTZ);}
       // OVS: count each calendar day within this shift if it's overseas
       if(overseas){
         // Walk each calendar day in this shift
@@ -626,7 +626,8 @@ function renderSummary(){
     const locs=[...new Set([...log.filter(e=>e.worker===w&&e.loc).map(e=>e.loc),...(wd.loc?[wd.loc]:[])])];
     const otRate=otRates[w]||0,ovsRate=ovsRates[w]||0;
     const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1));
-    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn,shifts};
+    const hasOTOverride=shifts.some(sh=>sh.in&&sh.in.otOverride!=null&&sh.in.otOverride>=0);
+    return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn,shifts,hasOTOverride};
   });
   const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0).toFixed(1);
   const tnh=stats.reduce((a,s)=>a+parseFloat(s.normalHours),0).toFixed(1);
@@ -652,7 +653,7 @@ function renderSummary(){
         <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn?'In':'Off'}</span></td>
         <td>${s.hours}h</td>
         <td>${s.normalHours}h</td>
-        <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h</td>
+        <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h${s.hasOTOverride?'<span title="OT override active" style="font-size:10px;color:#BA7517;margin-left:3px;vertical-align:super">✎</span>':''}</td>
         <td><input type="number" min="0" step="0.5" value="${s.otRate||''}" placeholder="0.00" onchange="setOTRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
         <td style="font-weight:${s.otCost>0?'600':'400'};color:${s.otCost>0?'#A32D2D':'#888'}">${s.otCost>0?'S$'+s.otCost.toFixed(2):'—'}</td>
         <td style="color:${s.ovsDays>0?'#185FA5':'#888'};font-weight:${s.ovsDays>0?'600':'400'}">${s.ovsDays}</td>
@@ -727,11 +728,26 @@ window.toggleWorkerDetail=function(w){
     const job=(outEntry&&outEntry.job)||inEntry.job||'—';
     const loc=inEntry.loc||'—';
     const edited=(inEntry.edited||outEntry&&outEntry.edited)?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':'';
+    // OT for this shift
+    const hasOverride=inEntry.otOverride!=null&&inEntry.otOverride>=0;
+    let shiftOTH='—';
+    if(hasOverride){
+      shiftOTH=`<span style="color:#BA7517;font-weight:600" title="Override: ${inEntry.otOverride}h">${parseFloat(inEntry.otOverride).toFixed(1)}h ✎</span>`;
+    }else if(outEntry){
+      const inT=new Date(inEntry.time),outT=new Date(outEntry.time);
+      const lat=inEntry.lat,lon=inEntry.lon,loc2=inEntry.loc||'';
+      const overseas2=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc2)===false);
+      const shiftTZ2=inEntry.tz||(overseas2?tzFromLoc(loc2):'Asia/Singapore');
+      const otM=calcOTMins(inT,outT,shiftTZ2);
+      shiftOTH='<span style="color:'+(otM>0?'#A32D2D':'#888')+'">'+parseFloat((otM/60).toFixed(1))+'h</span>';
+    }
+    const editBtn=`<button onclick="window.openOTOverride(this.dataset.id,this.dataset.w)" data-id="${inEntry.id}" data-w="${w}" style="font-size:10px;padding:2px 7px;border:1px solid #BA7517;color:#BA7517;background:#FAEEDA;border-radius:5px;cursor:pointer;margin-left:4px;font-family:inherit" title="Override OT hours for this shift">✎ Edit</button>`;
     return '<tr style="background:'+(i%2===0?'#fff':'#f5f5f3')+'">'
       +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+dateStr+'</td>'
       +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+inTime+edited+'</td>'
       +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+outTime+'</td>'
       +'<td style="padding:5px 8px;font-size:12px">'+dur+'</td>'
+      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+shiftOTH+editBtn+'</td>'
       +'<td style="padding:5px 8px;font-size:12px;color:#888">'+job+'</td>'
       +'<td style="padding:5px 8px;font-size:11px;color:#aaa;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+loc+'">'+loc+'</td>'
       +'</tr>';
@@ -744,6 +760,7 @@ window.toggleWorkerDetail=function(w){
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Clock In</th>'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Clock Out</th>'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Duration</th>'
+    +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">OT hrs</th>'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Job</th>'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Location</th>'
     +'</th></thead><tbody>'+rows+'</tbody></table></div></div>';
@@ -1122,6 +1139,7 @@ onAuthStateChanged(auth,async user=>{
     document.getElementById('loadingScreen').classList.add('hide');
   });
 
+  window._fetchLog=fetchLog;
   await fetchLog();
   setInterval(fetchLog,15000);
 
@@ -1300,6 +1318,121 @@ async function saveEditLog(){
     toast('Entry updated ✓');
     await fetchLog();
   }catch(err){toast('Error: '+err.message);}
+}
+</script>
+
+
+<!-- OT Override Modal -->
+<div id="otOverrideModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:1rem;overflow-y:auto">
+  <div style="background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;border:1px solid #e0ddd6;margin:auto">
+    <h2 style="font-size:16px;font-weight:600;margin-bottom:4px">&#9998; Edit OT Hours</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:1rem" id="otOverrideShiftLabel"></p>
+    <div style="background:#FAEEDA;border:1px solid #E8C87A;border-radius:8px;padding:8px 12px;font-size:12px;color:#854F0B;margin-bottom:1rem">
+      &#9888; Use this when a worker was onboard a vessel for multiple days but did not work 24 hours. Override sets the actual OT hours for this shift instead of auto-calculating from clock times.
+    </div>
+    <input type="hidden" id="otOverrideEntryId">
+    <div style="margin-bottom:1rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Auto-calculated OT</label>
+      <div id="otOverrideCalcDisplay" style="padding:8px 11px;border:1px solid #eee;border-radius:8px;font-size:13px;background:#f5f5f3;color:#888"></div>
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Override OT hours <span style="color:#aaa;font-weight:400">(actual hours worked)</span></label>
+      <input type="number" id="otOverrideHours" min="0" step="0.5" placeholder="e.g. 16" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-family:inherit;font-weight:600;background:#f9f9f7">
+    </div>
+    <div style="margin-bottom:1rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Reason <span style="color:#aaa;font-weight:400">(optional)</span></label>
+      <input type="text" id="otOverrideNote" placeholder="e.g. Vessel boarding — actual work 8h/day" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;padding-top:1rem;border-top:1px solid #e0ddd6;flex-wrap:wrap">
+      <button id="otOverrideClearBtn" onclick="clearOTOverride()" style="font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #A32D2D;color:#A32D2D;background:#fff;cursor:pointer">Clear Override</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeOTOverride()" style="font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #ccc;background:#fff;cursor:pointer">Cancel</button>
+        <button onclick="saveOTOverride()" style="font-family:inherit;font-size:13px;padding:8px 14px;border-radius:8px;border:1px solid #185FA5;background:#185FA5;color:#fff;font-weight:600;cursor:pointer">Save Override</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function closeOTOverride(){
+  document.getElementById('otOverrideModal').style.display='none';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    var m=document.getElementById('otOverrideModal');
+    if(m&&m.style.display!=='none'){e.preventDefault();closeOTOverride();}
+  }
+});
+
+window.openOTOverride=function(inEntryId, workerName){
+  var log2=window._clockLog||[];
+  var inEntry=log2.find(function(x){return x.id===inEntryId;});
+  if(!inEntry){alert('Shift entry not found. Try refreshing.');return;}
+  // Find matching clock-out
+  var sorted=log2.filter(function(x){return x.worker===inEntry.worker;}).sort(function(a,b){return new Date(a.time)-new Date(b.time);});
+  var outEntry=null;
+  for(var i=0;i<sorted.length;i++){
+    if(sorted[i].id===inEntryId&&i+1<sorted.length&&sorted[i+1].type==='out'){outEntry=sorted[i+1];break;}
+  }
+  // Compute auto OT
+  var autoOTStr='—';
+  if(outEntry){
+    var inT=new Date(inEntry.time),outT=new Date(outEntry.time);
+    var durH=Math.round((outT-inT)/3600000*10)/10;
+    var inD=inT.toLocaleDateString('en-SG',{day:'2-digit',month:'short',timeZone:'Asia/Singapore'});
+    var inTm=inT.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});
+    var outTm=outT.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});
+    document.getElementById('otOverrideShiftLabel').textContent=workerName+' — '+inD+' · '+inTm+' → '+outTm+' ('+durH+'h total)';
+    // estimate auto OT via chunking (rough, reuse same logic via exposed fn if available)
+    // just show total duration for context
+    autoOTStr='Auto-calculated from shift times';
+  } else {
+    document.getElementById('otOverrideShiftLabel').textContent=workerName+' — Shift from '+new Date(inEntry.time).toLocaleDateString('en-SG',{day:'2-digit',month:'short',timeZone:'Asia/Singapore'})+(inEntry.job?' · '+inEntry.job:'');
+    autoOTStr='Clock-out not yet recorded';
+  }
+  document.getElementById('otOverrideCalcDisplay').textContent=autoOTStr;
+  document.getElementById('otOverrideEntryId').value=inEntryId;
+  document.getElementById('otOverrideHours').value=inEntry.otOverride!=null?inEntry.otOverride:'';
+  document.getElementById('otOverrideNote').value=inEntry.otOverrideNote||'';
+  // Show/hide Clear button based on whether override exists
+  document.getElementById('otOverrideClearBtn').style.display=inEntry.otOverride!=null?'':'none';
+  document.getElementById('otOverrideModal').style.display='flex';
+  setTimeout(function(){document.getElementById('otOverrideHours').focus();},80);
+};
+
+async function saveOTOverride(){
+  var id=document.getElementById('otOverrideEntryId').value;
+  var hoursVal=document.getElementById('otOverrideHours').value.trim();
+  var note=document.getElementById('otOverrideNote').value.trim();
+  if(hoursVal===''||isNaN(parseFloat(hoursVal))||parseFloat(hoursVal)<0){
+    alert('Enter a valid number of OT hours (0 or more).');return;
+  }
+  var db2=window._clockDb,ref2=window._clockRef,update2=window._clockUpdate;
+  if(!db2||!ref2||!update2){alert('Still loading, please try again.');return;}
+  try{
+    await update2(ref2(db2,'log/'+id),{
+      otOverride:parseFloat(parseFloat(hoursVal).toFixed(2)),
+      otOverrideNote:note||'Manual OT override by manager',
+      otOverrideAt:new Date().toISOString()
+    });
+    document.getElementById('otOverrideModal').style.display='none';
+    if(window._fetchLog){await window._fetchLog();}
+    var t=document.getElementById('toast');t.textContent='OT override saved ✓';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);
+  }catch(err){alert('Error saving: '+err.message);}
+}
+
+async function clearOTOverride(){
+  var id=document.getElementById('otOverrideEntryId').value;
+  if(!confirm('Remove the OT override for this shift? The system will go back to auto-calculating OT from clock times.'))return;
+  var db2=window._clockDb,ref2=window._clockRef,update2=window._clockUpdate,remove2=window._clockRemove;
+  if(!db2||!ref2||!update2){alert('Still loading, please try again.');return;}
+  try{
+    // Set fields to null to remove them
+    await update2(ref2(db2,'log/'+id),{otOverride:null,otOverrideNote:null,otOverrideAt:null});
+    document.getElementById('otOverrideModal').style.display='none';
+    if(window._fetchLog){await window._fetchLog();}
+    var t=document.getElementById('toast');t.textContent='OT override cleared';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);
+  }catch(err){alert('Error clearing: '+err.message);}
 }
 </script>
 
