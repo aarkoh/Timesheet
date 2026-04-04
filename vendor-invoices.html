@@ -95,7 +95,7 @@ button:hover{background:#f0f0ee}
     <div class="fr2">
       <div class="fi"><label>Vendor Name *</label>
         <div style="position:relative">
-          <input type="text" id="f_vendor_inp" placeholder="Type vendor name…" autocomplete="off" oninput="viVendorSearch()" onfocus="viVendorSearch()">
+          <input type="text" id="f_vendor_inp" placeholder="Type vendor name…" autocomplete="off" oninput="viVendorSearch()" onfocus="viVendorSearch()" onblur="viVendorBlur()">
           <div id="f_vendor_drop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:300;max-height:160px;overflow-y:auto;margin-top:2px"></div>
         </div>
       </div>
@@ -248,19 +248,66 @@ window.viVendorSearch=function(){
   if(!matches.length){drop.style.display='none';return;}
   window._viVendorMatches=matches;
   drop.innerHTML=matches.map(function(c,i){
-    return '<div data-i="'+i+'" style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3">'+(c.company||c.name||'')+'</div>';
+    var gstBadge=c.gst?'<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:500">GST</span>':'';
+    var cur=(c.currency&&c.currency!=='SGD')?'<span style="font-size:10px;color:#888;margin-left:5px">'+c.currency+'</span>':'';
+    return '<div data-i="'+i+'" style="padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3;display:flex;align-items:center">'+(c.company||c.name||'')+gstBadge+cur+'</div>';
   }).join('');
+  // Use mousedown instead of click to fire before blur dismisses the dropdown
   drop.querySelectorAll('[data-i]').forEach(function(el){
+    el.addEventListener('mousedown',function(e){
+      e.preventDefault(); // prevent input blur
+      var c=window._viVendorMatches[parseInt(this.getAttribute('data-i'))];
+      document.getElementById('f_vendor_inp').value=c.company||c.name||'';
+      window._viVendorGST=!!c.gst;
+      // Also apply currency from contact
+      var curSel=document.getElementById('f_cur');
+      if(curSel&&c.currency){
+        var opt=curSel.querySelector('option[value="'+c.currency+'"]');
+        if(opt)curSel.value=c.currency;
+      }
+      viUpdateTotal();
+      drop.style.display='none';
+    });
+    // Also keep click for touch devices
     el.addEventListener('click',function(){
       var c=window._viVendorMatches[parseInt(this.getAttribute('data-i'))];
       document.getElementById('f_vendor_inp').value=c.company||c.name||'';
       window._viVendorGST=!!c.gst;
+      var curSel=document.getElementById('f_cur');
+      if(curSel&&c.currency){
+        var opt=curSel.querySelector('option[value="'+c.currency+'"]');
+        if(opt)curSel.value=c.currency;
+      }
       viUpdateTotal();
       drop.style.display='none';
     });
   });
   drop.style.display='block';
-  setTimeout(function(){document.addEventListener('click',function h(ev){if(!drop.contains(ev.target)&&ev.target.id!=='f_vendor_inp'){drop.style.display='none';}document.removeEventListener('click',h);});},10);
+  // Single dismiss handler, not inside setTimeout to avoid stacking
+  if(window._viDropDismiss){document.removeEventListener('click',window._viDropDismiss);}
+  window._viDropDismiss=function(ev){
+    if(!drop.contains(ev.target)&&ev.target.id!=='f_vendor_inp'){drop.style.display='none';}
+  };
+  setTimeout(function(){document.addEventListener('click',window._viDropDismiss);},10);
+};
+
+// Blur fallback: if user typed a name manually, try exact-match against contacts
+window.viVendorBlur=function(){
+  var val=document.getElementById('f_vendor_inp').value.trim().toLowerCase();
+  if(!val)return;
+  var contacts=window._vi_contacts||{};
+  var match=Object.values(contacts).find(function(c){
+    return (c.types||[]).includes('vendor')&&(c.company||c.name||'').toLowerCase()===val;
+  });
+  if(match){
+    window._viVendorGST=!!match.gst;
+    var curSel=document.getElementById('f_cur');
+    if(curSel&&match.currency){
+      var opt=curSel.querySelector('option[value="'+match.currency+'"]');
+      if(opt)curSel.value=match.currency;
+    }
+    viUpdateTotal();
+  }
 };
 
 window.viJobSearch=function(){
