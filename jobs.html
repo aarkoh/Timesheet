@@ -742,16 +742,18 @@ window.calcLI=function(n){
 };
 
 // FX rates cache: {USD:1.35, EUR:1.47, ...} (SGD per 1 foreign unit)
-var _fxCache={SGD:1};var _fxFetching=false;
+// Approximate fallback rates (SGD per 1 foreign unit) — updated by API on load
+var _fxCache={SGD:1,USD:1.34,EUR:1.46,JPY:0.0091,SEK:0.13};var _fxFetching=false;var _fxLoaded=false;
 // Load from localStorage on startup (may be stale but better than 1:1)
 (function(){
   try{
     var stored=JSON.parse(localStorage.getItem('rc_fx')||'{}');
-    if(stored.USD&&stored.EUR){Object.assign(_fxCache,stored);}
+    // Merge stored rates (override fallback defaults with last known good rates)
+    if(stored.USD||stored.JPY){Object.assign(_fxCache,stored);_fxLoaded=true;}
   }catch(e){}
 })();
 window.getFxRates=function(cb){
-  if(Object.keys(_fxCache).length>1){cb(_fxCache);return;}
+  if(_fxLoaded){cb(_fxCache);return;}
   if(_fxFetching){setTimeout(function(){window.getFxRates(cb);},300);return;}
   _fxFetching=true;
   // 30-day average from frankfurter.app: base SGD, get all currencies we need
@@ -786,12 +788,13 @@ window.getFxRates=function(cb){
       });
       _fxCache.SGD=1;
       // Persist to localStorage so next session has a starting point
-      if(valid){try{localStorage.setItem('rc_fx',JSON.stringify(_fxCache));}catch(e){}}
+      if(valid){_fxLoaded=true;try{localStorage.setItem('rc_fx',JSON.stringify(_fxCache));}catch(e){}}
       _fxFetching=false;
       cb(_fxCache);
     })
     .catch(function(){
       if(done)return;done=true;clearTimeout(timer);
+      _fxLoaded=true; // mark as loaded even on failure so we use fallback rates
       _fxFetching=false;
       // Use whatever we have (may be from localStorage) rather than bare {SGD:1}
       cb(_fxCache);
@@ -806,7 +809,15 @@ window.updateMarkup=function(n){
   if(!mkEl)return;
   if(!p||!c){mkEl.textContent='—';mkEl.style.color='#1a6641';return;}
   window.getFxRates(function(fx){
-    var fxRate=fx[cur]||1; // SGD per 1 unit of foreign cur
+    var fxRate=fx[cur];
+    // fxRate should never be missing since _fxCache is seeded with approximates
+    // but guard anyway — if still missing, show warning rather than 1:1
+    if(!fxRate){
+      mkEl.textContent='?FX';
+      mkEl.style.color='#854F0B';
+      mkEl.title='FX rate for '+cur+' unavailable';
+      return;
+    }
     var costSGD=c*fxRate;
     var markup=((p-costSGD)/costSGD)*100;
     mkEl.textContent=(markup>=0?'+':'')+markup.toFixed(1)+'%';
