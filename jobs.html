@@ -1012,7 +1012,7 @@ onAuthStateChanged(auth,function(user){
   onValue(ref(db,".info/connected"),function(snap){var b=document.getElementById("connBadge");b.textContent=snap.val()?"Live":"Offline";b.className="conn "+(snap.val()?"online":"offline");});
   onValue(ref(db,"contacts"),function(snap){
     contacts=snap.val()||{};
-    setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";});
+    setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";var ct=(contacts||{})[id];if(ct&&ct.paymentTerms){var pt=ct.paymentTerms;var payEl=document.getElementById("j_pay");var mapped=pt==="Advance"?"Advance":pt==="7 Days"?"7 Days Nett":pt==="30 Days"?"30 Days Nett":pt;if(payEl.querySelector('option[value="'+mapped+'"]'))payEl.value=mapped;}});
     setupSearch("j_vs","j_vs_d",function(c){return(c.types||[]).includes("vendor");},function(id,nm){if(!selVendors.find(function(v){return v.id===id;})){selVendors.push({id:id,name:nm});renderVTags();refreshLIVendors();}});
   });
   onValue(ref(db,'vendorInvoices'),function(snap){
@@ -1853,6 +1853,14 @@ window.printSOA = function() {
         <button class="inv-pct" onclick="window.setInvPct(1,this)">100%</button>
       </div>
     </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Payment Terms</div>
+      <select id="inv_pay_terms" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;width:100%">
+        <option value="Advance">Advance</option>
+        <option value="7 Days Nett">7 Days Nett</option>
+        <option value="30 Days Nett">30 Days Nett</option>
+      </select>
+    </div>
     <p style="font-size:12px;color:#888;margin-bottom:1rem">Select line items to include on the invoice.</p>
     <div id="inv_item_list" style="border:1px solid #e0ddd6;border-radius:8px;overflow:hidden;margin-bottom:6px"></div>
     <div style="font-size:11px;color:#888;margin-bottom:1rem">
@@ -2506,6 +2514,14 @@ window.openPrintInv=function(id){
     });
   });
   list.innerHTML=invRows.join('');
+  // Pre-populate payment terms from job (or default to 30 Days Nett)
+  var paySel=document.getElementById('inv_pay_terms');
+  var jobPay=j.payTerms||'30 Days Nett';
+  // Normalise contact-style values e.g. "30 Days" → "30 Days Nett"
+  if(jobPay==='30 Days')jobPay='30 Days Nett';
+  if(jobPay==='7 Days')jobPay='7 Days Nett';
+  if(paySel.querySelector('option[value="'+jobPay+'"]'))paySel.value=jobPay;
+  else paySel.value='30 Days Nett';
   document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
   document.getElementById('invModal').classList.add('show');
 };
@@ -2528,12 +2544,13 @@ window.doPrintInv=function(){
     if(ch.length)entry.children=selChildren;
     selected.push(entry);
   });
+  var invPayTerms=document.getElementById('inv_pay_terms').value||'';
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
-  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct);
+  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms);
 };
 
-window.printInvData=function(id,selectedItems,invType,invPct){
+window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt,fmtD=window._fmtD,totals=window._totals;
@@ -2608,7 +2625,7 @@ window.printInvData=function(id,selectedItems,invType,invPct){
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="min-width:260px"><div class="tr2"><span>Local Courier</span><span>'+chg(j.courier,t.ca)+'</span></div><div class="tr2"><span>Packing</span><span>'+chg(j.packing,t.pa)+'</span></div><div class="tr2"><span>Freight</span><span>'+chg(j.freight,t.fa)+'</span></div><div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'+gstRow+'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div><div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'+(tOrig?'<div class="tr2" style="font-size:9pt;color:#555"><span>Original Total '+cur+'</span><span>'+fmt(tOrig.total)+'</span></div>':'')+(isPro?'':rcvd>0&&bal>0.005?'<div class="tr2" style="color:#1a6641"><span>PAYMENT RECEIVED</span><span>'+cur+' '+fmt(rcvd)+'</span></div><div class="tr2" style="font-weight:700;font-size:11pt;border-top:1px solid #ccc;margin-top:2px"><span>BALANCE DUE</span><span>'+cur+' '+fmt(bal)+'</span></div>':'')+'</div></div>'
     +'<div class="aw">['+amtWords(t.total,cur)+']</div>'
     +bankDetails
-    +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+(j.payTerms||'').toUpperCase()+'</b></div></td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
+    +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+((payTermsOverride||j.payTerms||'')).toUpperCase()+'</b></div></td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
     +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your support</em></div>'
     +'</body></html>';
   rcOpenBlob(html);
