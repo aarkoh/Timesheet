@@ -743,6 +743,13 @@ window.calcLI=function(n){
 
 // FX rates cache: {USD:1.35, EUR:1.47, ...} (SGD per 1 foreign unit)
 var _fxCache={SGD:1};var _fxFetching=false;
+// Load from localStorage on startup (may be stale but better than 1:1)
+(function(){
+  try{
+    var stored=JSON.parse(localStorage.getItem('rc_fx')||'{}');
+    if(stored.USD&&stored.EUR){Object.assign(_fxCache,stored);}
+  }catch(e){}
+})();
 window.getFxRates=function(cb){
   if(Object.keys(_fxCache).length>1){cb(_fxCache);return;}
   if(_fxFetching){setTimeout(function(){window.getFxRates(cb);},300);return;}
@@ -750,9 +757,15 @@ window.getFxRates=function(cb){
   // 30-day average from frankfurter.app: base SGD, get all currencies we need
   var end=new Date(),start=new Date(end);start.setDate(start.getDate()-30);
   var fmt2=function(d){return d.toISOString().slice(0,10);};
+  // Timeout wrapper — if fetch hangs >10s, fall back to cache/defaults
+  var done=false;
+  var timer=setTimeout(function(){
+    if(!done){done=true;_fxFetching=false;cb(_fxCache);}
+  },10000);
   fetch('https://api.frankfurter.app/'+fmt2(start)+'..'+fmt2(end)+'?from=SGD&to=USD,EUR,JPY,SEK')
     .then(function(r){return r.json();})
     .then(function(data){
+      if(done)return;done=true;clearTimeout(timer);
       // data.rates = {date:{USD:x,...},...} — rates are 1 SGD → foreign
       // We want SGD per 1 foreign, so invert
       var totals={};var counts={};
@@ -763,15 +776,26 @@ window.getFxRates=function(cb){
           counts[cur]=(counts[cur]||0)+1;
         });
       });
+      var valid=false;
       Object.entries(totals).forEach(function(e){
-        // avg rate = 1 SGD → X foreign, invert to get SGD per 1 foreign
-        _fxCache[e[0]]=1/(e[1]/counts[e[0]]);
+        if(counts[e[0]]>0){
+          // avg rate = 1 SGD → X foreign, invert to get SGD per 1 foreign
+          _fxCache[e[0]]=1/(e[1]/counts[e[0]]);
+          valid=true;
+        }
       });
       _fxCache.SGD=1;
+      // Persist to localStorage so next session has a starting point
+      if(valid){try{localStorage.setItem('rc_fx',JSON.stringify(_fxCache));}catch(e){}}
       _fxFetching=false;
       cb(_fxCache);
     })
-    .catch(function(){_fxFetching=false;cb({SGD:1});});
+    .catch(function(){
+      if(done)return;done=true;clearTimeout(timer);
+      _fxFetching=false;
+      // Use whatever we have (may be from localStorage) rather than bare {SGD:1}
+      cb(_fxCache);
+    });
 };
 
 window.updateMarkup=function(n){
@@ -2657,7 +2681,7 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
       +'<td class="c2"><div class="logrid"><img src="'+LHA+'" style="height:18px;max-width:58px;object-fit:contain"><img src="'+LKR+'" style="height:15px;max-width:54px;object-fit:contain"><img src="'+LYO+'" style="height:15px;max-width:56px;object-fit:contain"><img src="'+LMA+'" style="height:20px;max-width:36px;object-fit:contain"></div></td>'
       +'<td class="c3"><div style="font-size:12pt;font-weight:900;letter-spacing:1px;font-family:Consolas,Courier New,monospace">'+(invType||'INVOICE')+'</div>'+(pctLabel?'<div style="font-size:7.5pt">'+pctLabel+'</div>':'')+'BizSAFE4<br>ISO 9001:2015 ACCREDITED</td>'
     +'</tr></table>'
-    +'<div class="tb"><div class="cb"><div style="font-weight:700">Messrs</div><div style="font-weight:700">'+(j.customerName||'')+'</div>'+(j.attn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+j.attn+'</div>':'')+'</div><div class="di"><table><tr><td>INV NO</td><td>'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td>CUST PO</td><td>'+j.custPO+'</td></tr>':'')+(j.yourRef?'<tr><td>YOUR REF</td><td>'+j.yourRef+'</td></tr>':'')+'<tr><td>DATE</td><td>'+todayFmt+'</td></tr><tr><td>PAGE</td><td>1 of 1</td></tr></table></div></div>'
+    +'<div class="tb"><div class="cb"><div style="font-weight:700">Messrs</div><div style="font-weight:700">'+(billTo&&billTo.name?billTo.name:(j.customerName||''))+'</div>'+(billTo&&billTo.addr?'<div style="font-size:9pt;margin-top:2px;line-height:1.4">'+billTo.addr.replace(/\n/g,'<br>')+'</div>':'')+(billTo&&billTo.attn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+billTo.attn+'</div>':(j.attn?'<div style="margin-top:4px"><span style="font-weight:700">ATTN : </span>'+j.attn+'</div>':''))+'</div><div class="di"><table><tr><td>INV NO</td><td>'+(j.ref||'')+'</td></tr>'+(j.custPO?'<tr><td>CUST PO</td><td>'+j.custPO+'</td></tr>':'')+(j.yourRef?'<tr><td>YOUR REF</td><td>'+j.yourRef+'</td></tr>':'')+'<tr><td>DATE</td><td>'+todayFmt+'</td></tr><tr><td>PAGE</td><td>1 of 1</td></tr></table></div></div>'
     +'<div class="jb"><div class="jbc"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
     +'<div style="font-size:9.5pt;margin-bottom:2px">Being Invoice for the following :-</div>'
     +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
