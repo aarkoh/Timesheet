@@ -2036,11 +2036,8 @@ window.generateCIPL = function() {
   }).join('');
 
   // Single combined packing row listing all item descriptions
-  var allDescs=ciItems.map(function(it,i){return (i+1)+'. '+(it.desc||'');}).join('<br>');
   var dims=(cl&&cw&&ch2)?cl+'×'+cw+'×'+ch2:'—';
   var plRow='<tr>'
-    +'<td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">1</td>'
-    +'<td style="padding:5px 8px;border-bottom:1px solid #eee;font-size:11px">'+allDescs+'</td>'
     +'<td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+pkgs+'</td>'
     +'<td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:center">'+dims+'</td>'
     +'<td style="padding:5px 6px;border-bottom:1px solid #eee;text-align:right">'+fmtN(cgw)+'</td>'
@@ -2067,7 +2064,7 @@ window.generateCIPL = function() {
     +'<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr><th style="width:28px;text-align:center">#</th><th>Description of Goods</th><th class="nc" style="width:52px">Qty</th><th class="nc" style="width:52px">Unit</th><th class="r" style="width:90px">Unit Price ('+cur+')</th><th class="r" style="width:90px">Amount ('+cur+')</th></tr></thead><tbody>'+ciRows+'</tbody><tfoot><tr><td colspan="5" style="text-align:right;padding:7px 8px;font-size:12px;font-weight:700;border-top:2px solid #1a1a1a">TOTAL '+cur+'</td><td style="text-align:right;padding:7px 8px;font-size:13px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(totalAmt)+'</td></tr></tfoot></table>'
     +'<div style="font-size:11px;font-weight:700;color:#1a1a1a;text-transform:uppercase;margin:16px 0 6px;padding-bottom:4px;border-bottom:2px solid #1a1a1a">Packing List</div>'
     +(marks?'<div style="border:1px solid #ddd;padding:8px 12px;font-size:11px;margin-bottom:8px"><strong>Marks &amp; Numbers:</strong> '+marks+'</div>':'')
-    +'<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr><th style="width:28px;text-align:center">#</th><th>Description</th><th class="nc" style="width:52px">Pkgs</th><th class="nc" style="width:110px">Dimensions<br>(L×W×H cm)</th><th class="r" style="width:80px">Gross Wt<br>(kg)</th><th class="r" style="width:80px">Net Wt<br>(kg)</th></tr></thead><tbody>'+plRow+'</tbody><tfoot><tr><td colspan="2" style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">TOTAL</td><td style="text-align:center;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+pkgs+'</td><td style="border-top:2px solid #1a1a1a"></td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(cgw)+'</td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(cnw)+'</td></tr></tfoot></table>'
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:12px"><thead><tr><th class="nc" style="width:80px">Pkgs</th><th class="nc" style="width:140px">Dimensions<br>(L×W×H cm)</th><th class="r" style="width:100px">Gross Wt<br>(kg)</th><th class="r" style="width:100px">Net Wt<br>(kg)</th></tr></thead><tbody>'+plRow+'</tbody><tfoot><tr><td style="text-align:center;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+pkgs+'</td><td style="border-top:2px solid #1a1a1a"></td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(cgw)+'</td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid #1a1a1a">'+fmtN(cnw)+'</td></tr></tfoot></table>'
     +(remarks?'<div style="margin-top:12px;font-size:11px;color:#444"><strong>Remarks:</strong> '+remarks+'</div>':'')
     +'<div style="margin-top:16px;border:1px solid #e0ddd6;padding:10px 14px;background:#fffdf5"><p style="font-size:11px;line-height:1.7;color:#444"><strong>1. Commercial Value of Items: NONE</strong><br>&nbsp;&nbsp;&nbsp;(Value stated above only for customs clearance purpose)</p><p style="font-size:11px;margin-top:4px;color:#444"><strong>2.</strong> Weight and Value estimated.</p></div>'
     +'<div class="sr"><div style="text-align:center;font-size:9pt"><div style="height:40px"></div><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Prepared by / Date: '+dateFmt+'</div></div><div style="text-align:center;font-size:9pt">For and on behalf of <strong>Raycontrol Pte. Ltd.</strong><br><br><br><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature / Company Stamp</div></div></div>'
@@ -2604,8 +2601,8 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride){
   var gstRow=t.gst>0?'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt"><span>GST (9%)</span><span>'+fmt(t.gst)+'</span></div>':'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:8.5pt;color:#555;font-style:italic"><span>GST not included if applicable</span><span></span></div>';
   var bankDetails='<div style="border:1px solid #000;padding:3px 8px;font-size:7.5pt;margin-bottom:4px;display:grid;grid-template-columns:1fr 1fr;gap:0 20px;line-height:1.4">'
     +'<div><strong>Bank Name:</strong> United Oversea Bank</div><div><strong>Branch Name:</strong> Bukit Timah</div>'
-    +'<div><strong>Bank Code:</strong> 7375</div><div><strong>Branch Code:</strong> 059</div>'
-    +'<div><strong>SWIFT Code:</strong> UOVBSGSG</div><div><strong>Bank Country:</strong> Singapore</div>'
+    +'<div colspan="2"><strong>Bank Address:</strong> 148 Upper Bukit Timah Road, Singapore 588178</div><div></div>'
+    +'<div><strong>Bank Code:</strong> 7375 &nbsp;|&nbsp; <strong>Branch Code:</strong> 059</div><div><strong>SWIFT Code:</strong> UOVBSGSG &nbsp;|&nbsp; <strong>Country:</strong> Singapore</div>'
     +'<div><strong>Account Holder:</strong> RAYCONTROL PTE LTD</div><div><strong>PayNow UEN:</strong> 198602637N</div>'
     +'<div><strong>SGD Acct No:</strong> 208-307-138-0</div><div><strong>USD Acct No:</strong> 208-900-381-6</div>'
     +'</div>';
