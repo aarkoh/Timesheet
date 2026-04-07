@@ -252,6 +252,8 @@ window.renderList=function renderList(){
     const initials=(c.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const cNameL=(c.company||c.name||'').toLowerCase().trim();
     const jobCount=Object.values(allJobs).filter(j=>!j.archived&&(j.customerName||'').toLowerCase().trim()===cNameL).length;
+    const isVendorContact=(c.types||[]).includes('vendor');
+    const vendorJobCount=isVendorContact?Object.values(allJobs).filter(j=>!j.archived&&(j.lineItems||[]).some(function(it){return it.vendorId===id||(it.children||[]).some(function(ch){return ch.vendorId===id;});})).length:0;
     return `<div class="ccard" onclick="openDetail('${id}')">
       <div class="ccard-top">
         <div class="${avatarCls}">${initials}</div>
@@ -283,7 +285,32 @@ window.openDetail=function(id){
   const matchedJobs=Object.entries(allJobs)
     .filter(([,j])=>!j.archived&&(j.customerName||'').toLowerCase().trim()===cName)
     .sort(([,a],[,b])=>(b.ref||'').localeCompare(a.ref||''));
+  // Vendor: match jobs where any line item has this contact's vendorId
+  const isVendor=(c.types||[]).includes('vendor');
+  const vendorJobs=isVendor?Object.entries(allJobs)
+    .filter(([,j])=>!j.archived&&(j.lineItems||[]).some(it=>it.vendorId===id||(it.children||[]).some(ch=>ch.vendorId===id)))
+    .sort(([,a],[,b])=>(b.ref||'').localeCompare(a.ref||'')):[];
   const fmt2=n=>(parseFloat(n)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});
+  // Build vendor purchases rows — show items this vendor supplied per job
+  const vendorJobRows=vendorJobs.map(([jid,j])=>{
+    // Collect all items (including children) assigned to this vendor
+    const vendorItems=[];
+    (j.lineItems||[]).forEach(it=>{
+      if(it.vendorId===id&&!it.children?.length)vendorItems.push(it);
+      (it.children||[]).forEach(ch=>{if(ch.vendorId===id)vendorItems.push(ch);});
+    });
+    const totalCost=vendorItems.reduce((s,it)=>s+(parseFloat(it.qty)||0)*(parseFloat(it.costPrice)||0),0);
+    const cur=vendorItems[0]?.costCur||'SGD';
+    const dateStr=j.date||j.createdAt||'';
+    const dateFmt=dateStr?new Date(dateStr+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'';
+    const itemList=vendorItems.map(it=>'<div style="font-size:11px;color:#888;margin-top:2px">'+(it.desc||'')+' <span style="color:#555">× '+(it.qty||1)+' '+(it.unit||'')+'</span> — <b>'+cur+' '+fmt2((parseFloat(it.qty)||0)*(parseFloat(it.costPrice)||0))+'</b></div>').join('');
+    return `<tr>
+      <td style="font-weight:600;vertical-align:top">${j.ref||'—'}</td>
+      <td style="vertical-align:top">${j.vessel?'<span style="font-size:11px;color:#888">'+j.vessel+'</span><br>':''}${itemList}</td>
+      <td style="vertical-align:top;white-space:nowrap">${cur} ${fmt2(totalCost)}</td>
+      <td style="vertical-align:top;font-size:11px;color:#888">${dateFmt}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:1rem">No purchases found in job register</td></tr>';
   const jobRows=matchedJobs.length
     ? matchedJobs.map(([jid,j])=>{
         const tot=j.lineItems
@@ -348,7 +375,19 @@ window.openDetail=function(id){
           <tbody>${jobRows}</tbody>
         </table>
       </div>
-    </div>`;
+    </div>
+    ${isVendor?`<div class="detail-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem">
+        <h3 style="margin:0">Purchases from this Vendor</h3>
+        <span style="font-size:11px;color:#aaa">${vendorJobs.length} job${vendorJobs.length!==1?'s':''}</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="jtable">
+          <thead><tr><th>Job Ref</th><th>Items Supplied</th><th>Cost</th><th>Date</th></tr></thead>
+          <tbody>${vendorJobRows}</tbody>
+        </table>
+      </div>
+    </div>`:''}`;
 
   document.getElementById('detailTab').style.display='';
   window.switchTab('detail', document.getElementById('detailTab'));
