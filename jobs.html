@@ -1020,6 +1020,7 @@ onAuthStateChanged(auth,function(user){
   onValue(ref(db,".info/connected"),function(snap){var b=document.getElementById("connBadge");b.textContent=snap.val()?"Live":"Offline";b.className="conn "+(snap.val()?"online":"offline");});
   onValue(ref(db,"contacts"),function(snap){
     contacts=snap.val()||{};
+    exposeGlobals(); // keep window._contacts in sync
     setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";var ct=(contacts||{})[id];if(ct&&ct.paymentTerms){var pt=ct.paymentTerms;var payEl=document.getElementById("j_pay");var mapped=pt==="Advance"?"Advance":pt==="7 Days"?"7 Days Nett":pt==="30 Days"?"30 Days Nett":pt;if(payEl.querySelector('option[value="'+mapped+'"]'))payEl.value=mapped;}});
     setupSearch("j_vs","j_vs_d",function(c){return(c.types||[]).includes("vendor");},function(id,nm){if(!selVendors.find(function(v){return v.id===id;})){selVendors.push({id:id,name:nm});renderVTags();refreshLIVendors();}});
   });
