@@ -1809,6 +1809,9 @@ window.printSOA = function() {
       <div class="cipl-fi"><label>CIPL / Invoice No.</label><input type="text" id="cipl_no"></div>
       <div class="cipl-fi"><label>Date</label><input type="date" id="cipl_date"></div>
     </div>
+    <div class="cipl-sec">Shipper</div>
+    <div class="cipl-fi"><label>Company Name</label><input type="text" id="cipl_ship_name" value="Raycontrol Pte. Ltd."></div>
+    <div class="cipl-fi"><label>Address</label><textarea id="cipl_ship_addr" rows="2" placeholder="Full shipper address&hellip;">7 Soon Lee Street, #05-31, Singapore 627608</textarea></div>
     <div class="cipl-sec">Consignee (Delivery To)</div>
     <div class="cipl-fi"><label>Company / Consignee Name</label><input type="text" id="cipl_consignee"></div>
     <div class="cipl-fi"><label>Delivery Address</label><textarea id="cipl_addr" rows="3" placeholder="Full delivery address&hellip;"></textarea></div>
@@ -1972,6 +1975,8 @@ window.openCIPL = function(id) {
   document.getElementById('cipl_ref_title').textContent=j.ref||'';
   document.getElementById('cipl_no').value=j.ref||'';
   document.getElementById('cipl_date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cipl_ship_name').value='Raycontrol Pte. Ltd.';
+  document.getElementById('cipl_ship_addr').value='7 Soon Lee Street, #05-31, Singapore 627608';
   document.getElementById('cipl_consignee').value=j.customerName||'';
   document.getElementById('cipl_addr').value='';
   document.getElementById('cipl_marks').value='RC/'+(j.ref||'');
@@ -2021,6 +2026,8 @@ window.generateCIPL = function() {
   var cur=j.currency||'SGD';
   var ciplNo=document.getElementById('cipl_no').value.trim()||j.ref||'';
   var ciplDate=document.getElementById('cipl_date').value;
+  var shipName=document.getElementById('cipl_ship_name').value.trim()||'Raycontrol Pte. Ltd.';
+  var shipAddr=document.getElementById('cipl_ship_addr').value.trim().replace(/\n/g,'<br>')||'7 Soon Lee Street, #05-31, Singapore 627608';
   var consignee=document.getElementById('cipl_consignee').value.trim();
   var addr=document.getElementById('cipl_addr').value.trim().replace(/\n/g,'<br>');
   var marks=document.getElementById('cipl_marks').value.trim();
@@ -2102,7 +2109,7 @@ window.generateCIPL = function() {
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +rcHeader('COMMERCIAL INVOICE<br>&amp; PACKING LIST')
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
-      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Shipper</div><div style="font-weight:600">Raycontrol Pte. Ltd.</div><div style="font-size:11px;color:#444">Singapore</div></div>'
+      +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Shipper</div><div style="font-weight:600">'+shipName+'</div><div style="font-size:11px;color:#444">'+shipAddr+'</div></div>'
       +'<div style="border:1px solid #ddd;padding:8px 12px"><div style="font-size:9px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:4px">Invoice Details</div><div style="font-size:11px"><strong>No.:</strong> '+ciplNo+'</div><div style="font-size:11px"><strong>Date:</strong> '+dateFmt+'</div>'+(j.yourRef?'<div style="font-size:11px"><strong>Your Ref:</strong> '+j.yourRef+'</div>':'')+'</div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">'
