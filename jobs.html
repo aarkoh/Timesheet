@@ -1302,7 +1302,8 @@ window.printVPO=function(id,selectedItems){
       var _vref=_vi>=0?(j.vendorRefs||[])[_vi]||'':'';
       var _vContact=_vContacts[it.vendorId]||{};
       var _vGST=!!_vContact.gst;
-      vendorMap[it.vendorId]={name:it.vendorName,ref:_vref,gst:_vGST,items:[]};
+      var _vPayTerms=_vContact.paymentTerms||j.payTerms||'';
+      vendorMap[it.vendorId]={name:it.vendorName,ref:_vref,gst:_vGST,payTerms:_vPayTerms,items:[]};
     }
     vendorMap[it.vendorId].items.push(it);
   });
@@ -1414,7 +1415,7 @@ window.printVPO=function(id,selectedItems){
           +'<div style="font-weight:700;text-decoration:underline;margin-bottom:3px">TERMS AND CONDITIONS</div>'
           +"<div>DELIVERY TIME : <b>"+(j.delTime||"TO BE ARRANGED AND AGREED").toUpperCase()+"</b></div>"
           +(j.delTerms?"<div>DELIVERY TERMS : <b>"+j.delTerms.toUpperCase()+"</b></div>":"")
-          +"<div>PAYMENT: <b>"+(j.payTerms||"").toUpperCase()+"</b></div>"
+          +"<div>PAYMENT: <b>"+(vnd.payTerms||"").toUpperCase()+"</b></div>"
           +(j.eta?"<div>ETA: <b>"+fd(j.eta).toUpperCase()+"</b></div>":"")
         +"</td>"
         +'<td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:200px">For Raycontrol Pte Ltd<br><br><br>'+(j.engineer||"")+"<br>"+(j.engineer?"SERVICE ENGINEER":"")+"</td>"
