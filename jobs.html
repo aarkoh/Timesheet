@@ -213,8 +213,8 @@ button:hover{background:#f0f0ee}
         <th style="width:48px">Unit</th>
         <th style="width:76px;text-align:right">Unit Price</th>
         <th style="width:76px;text-align:right">Amount</th>
+        <th style="width:54px;color:#185FA5" title="Customer discount % — internal only">Cust% *</th>
         <th style="width:72px;text-align:right;color:#854F0B" title="Internal cost price - not printed">Cost *</th>
-        <th style="width:54px;color:#854F0B" title="Item discount %">Disc% *</th>
         <th style="width:52px;color:#854F0B" title="Cost currency">Cur *</th>
         <th style="width:68px;text-align:right;color:#1a6641" title="Markup % (unit price vs cost in SGD) - not printed">Markup *</th>
         <th style="width:96px">Vendor</th>
@@ -678,8 +678,8 @@ window.addLI=function(desc,qty,unit,price,vendor,cost,costCur){
     +'<td><input type="text" value="'+unit+'" id="lu_'+n+'" style="width:52px"></td>'
     +'<td><input type="number" value="'+price+'" placeholder="0.00" min="0" step="0.01" id="lp_'+n+'" data-n="'+n+'" oninput="window.calcLI(this.dataset.n)" style="width:82px;text-align:right"></td>'
     +'<td><span class="lamt" id="la_'+n+'">0.00</span></td>'
+    +'<td title="Customer discount %"><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="lcd_'+n+'" data-n="'+n+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:5px 3px;border:1px solid #B5D4F4;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#E6F1FB"><span style="background:#E6F1FB;border:1px solid #B5D4F4;border-left:none;border-radius:0 6px 6px 0;padding:5px 3px;font-size:10px;color:#185FA5">%</span></div></td>'
     +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+n+'" data-n="'+n+'" oninput="window.updateMarkup(this.dataset.n)" style="width:68px;text-align:right;padding:5px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
-    +'<td><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="ldisc_'+n+'" data-n="'+n+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:5px 3px;border:1px solid #f0c08a;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#FAEEDA"><span style="background:#FAEEDA;border:1px solid #f0c08a;border-left:none;border-radius:0 6px 6px 0;padding:5px 3px;font-size:10px;color:#854F0B">%</span></div></td>'
     +'<td><select id="lcc_'+n+'" data-n="'+n+'" onchange="window.updateMarkup(this.dataset.n)" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
     +'<td><span id="lmk_'+n+'" style="display:block;padding:5px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span></td>'
     +'<td><select id="lv_'+n+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f9f9f7"><option value="">—</option>'+vopts+'</select></td>'
@@ -706,8 +706,8 @@ window.addSubLI=function(parentN,desc,qty,unit,price,vendor,cost,costCur){
     +'<td><input type="text" value="'+unit+'" id="lu_'+id+'" style="width:52px"></td>'
     +'<td><input type="number" value="'+price+'" placeholder="0.00" min="0" step="0.01" id="lp_'+id+'" data-n="'+id+'" oninput="window.calcLI(this.dataset.n)" style="width:82px;text-align:right"></td>'
     +'<td><span class="lamt" id="la_'+id+'">0.00</span></td>'
+    +'<td title="Customer discount %"><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="lcd_'+id+'" data-n="'+id+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:4px 3px;border:1px solid #B5D4F4;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#E6F1FB"><span style="background:#E6F1FB;border:1px solid #B5D4F4;border-left:none;border-radius:0 6px 6px 0;padding:4px 3px;font-size:10px;color:#185FA5">%</span></div></td>'
     +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+id+'" data-n="'+id+'" oninput="window.updateMarkup(this.dataset.n)" style="width:68px;text-align:right;padding:4px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
-    +'<td><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="ldisc_'+id+'" data-n="'+id+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:4px 3px;border:1px solid #f0c08a;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#FAEEDA"><span style="background:#FAEEDA;border:1px solid #f0c08a;border-left:none;border-radius:0 6px 6px 0;padding:4px 3px;font-size:10px;color:#854F0B">%</span></div></td>'
     +'<td><select id="lcc_'+id+'" data-n="'+id+'" onchange="window.updateMarkup(this.dataset.n)" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
     +'<td><span id="lmk_'+id+'" style="display:block;padding:4px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span></td>'
     +'<td><select id="lv_'+id+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f4f8fe"><option value="">—</option>'+vopts+'</select></td>'
@@ -792,12 +792,19 @@ window.getFxRates=function(cb){
 window.updateMarkup=function(n){
   var p=parseFloat((document.getElementById('lp_'+n)||{}).value)||0;
   var rawCost=parseFloat((document.getElementById('lc_'+n)||{}).value)||0;
-  var disc=parseFloat((document.getElementById('ldisc_'+n)||{}).value)||0;
-  var c=rawCost*(1-disc/100);
+  // Vendor order discount — read from selVendors via the item's vendor dropdown
+  var vSel=document.getElementById('lv_'+n);
+  var vid=vSel?vSel.value:'';
+  var vnd=vid?(selVendors.find(function(v){return v.id===vid;})||{}):{};
+  var vendorDisc=parseFloat(vnd.disc)||0;
+  var c=rawCost*(1-vendorDisc/100);
+  // Customer discount — reduces effective sell price for markup calc
+  var custDisc=parseFloat((document.getElementById('lcd_'+n)||{}).value)||0;
+  var effPrice=p*(1-custDisc/100);
   var cur=(document.getElementById('lcc_'+n)||{value:'SGD'}).value||'SGD';
   var mkEl=document.getElementById('lmk_'+n);
   if(!mkEl)return;
-  if(!p||!rawCost){mkEl.textContent='—';mkEl.style.color='#1a6641';return;}
+  if(!effPrice||!rawCost){mkEl.textContent='—';mkEl.style.color='#1a6641';return;}
   window.getFxRates(function(fx){
     var fxRate=fx[cur];
     // fxRate should never be missing since _fxCache is seeded with approximates
@@ -809,15 +816,23 @@ window.updateMarkup=function(n){
       return;
     }
     var costSGD=c*fxRate;
-    var markup=((p-costSGD)/costSGD)*100;
+    var markup=((effPrice-costSGD)/costSGD)*100;
     mkEl.textContent=(markup>=0?'+':'')+markup.toFixed(1)+'%';
     mkEl.style.color=markup>=0?'#1a6641':'#A32D2D';
     mkEl.style.borderColor=markup>=0?'#b8e4c5':'#f5b8b8';
     mkEl.style.background=markup>=0?'#f0faf2':'#fff0f0';
     if(cur!=='SGD'){
-      mkEl.title=(disc>0?'Cost '+cur+' '+rawCost.toFixed(2)+' − '+disc+'% = '+cur+' '+c.toFixed(2)+' ≈ ':'Cost '+cur+' '+c.toFixed(2)+' ≈ ')+'SGD '+costSGD.toFixed(2)+' (30d avg: 1 '+cur+' = SGD '+fxRate.toFixed(4)+')';
+      var fxTip='Cost: '+cur+' '+rawCost.toFixed(2);
+      if(vendorDisc>0)fxTip+=' −'+vendorDisc+'% = '+cur+' '+c.toFixed(2);
+      fxTip+=' ≈ SGD '+costSGD.toFixed(2)+' (30d avg: 1 '+cur+' = SGD '+fxRate.toFixed(4)+')';
+      if(custDisc>0)fxTip+=' | Sell: '+cur+' '+p.toFixed(2)+' −'+custDisc+'% = '+cur+' '+effPrice.toFixed(2);
+      mkEl.title=fxTip;
     } else {
-      mkEl.title='Unit price SGD '+p.toFixed(2)+' vs cost SGD '+c.toFixed(2);
+      var tipParts=['Sell: SGD '+p.toFixed(2)];
+      if(custDisc>0)tipParts.push('−'+custDisc+'% cust disc = SGD '+effPrice.toFixed(2));
+      if(vendorDisc>0)tipParts.push('Cost: SGD '+rawCost.toFixed(2)+' −'+vendorDisc+'% vendor = SGD '+c.toFixed(2));
+      else tipParts.push('Cost: SGD '+c.toFixed(2));
+      mkEl.title=tipParts.join(' | ');
     }
   });
 };
@@ -844,7 +859,7 @@ function getLIs(){
       unit:(document.getElementById('lu_'+n)||{value:''}).value,
       unitPrice:(document.getElementById('lp_'+n)||{value:''}).value,
       costPrice:(document.getElementById('lc_'+n)||{value:''}).value,
-      costDisc:parseFloat((document.getElementById('ldisc_'+n)||{value:''}).value)||0,
+      custDisc:parseFloat((document.getElementById('lcd_'+n)||{value:''}).value)||0,
       costCur:ccsel?ccsel.value:'SGD',
       vendorId:vsel?vsel.value:'',
       vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||''):''
@@ -863,7 +878,7 @@ function getLIs(){
         unit:(document.getElementById('lu_'+sid)||{value:''}).value,
         unitPrice:(document.getElementById('lp_'+sid)||{value:''}).value,
         costPrice:(document.getElementById('lc_'+sid)||{value:''}).value,
-        costDisc:parseFloat((document.getElementById('ldisc_'+sid)||{value:''}).value)||0,
+        custDisc:parseFloat((document.getElementById('lcd_'+sid)||{value:''}).value)||0,
         costCur:sccsel?sccsel.value:'SGD',
         vendorId:svsel?svsel.value:'',
         vendorName:svsel&&svsel.value?((selVendors.find(function(v){return v.id===svsel.value;})||{}).name||''):''
@@ -982,13 +997,13 @@ window.openEditJob=function(id){
   if(j.customerId&&j.customerName){document.getElementById("j_cs_id").value=j.customerId;document.getElementById("j_cs_nm").textContent=j.customerName;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";}
   (j.lineItems||[]).forEach(function(it){
     window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"",it.costCur||"SGD");
-  if(it.costDisc){(function(idx,d){setTimeout(function(){var el=document.getElementById("ldisc_"+idx);if(el){el.value=d;window.updateMarkup(idx);}},120);})(liCount,it.costDisc);}
+  if(it.custDisc){(function(idx,d){setTimeout(function(){var el=document.getElementById("lcd_"+idx);if(el){el.value=d;window.updateMarkup(idx);}},120);})(liCount,it.custDisc);}
     var pN=liCount;
     (it.children||[]).forEach(function(c){
       window.addSubLI(pN,c.desc,c.qty,c.unit,c.unitPrice,c.vendorId||c.vendor||"",c.costPrice||"",c.costCur||"SGD");
-      if(c.costDisc){(function(pid,sc,disc){
-        setTimeout(function(){var el=document.getElementById("ldisc_"+pid+"_"+sc);if(el){el.value=disc;window.updateMarkup(pid+"_"+sc);}},150);
-      })(pN,subCounts[String(pN)],c.costDisc);}
+      if(c.custDisc){(function(pid,sc,disc){
+        setTimeout(function(){var el=document.getElementById("lcd_"+pid+"_"+sc);if(el){el.value=disc;window.updateMarkup(pid+"_"+sc);}},150);
+      })(pN,subCounts[String(pN)],c.custDisc);}
     });
   });
   if(!(j.lineItems||[]).length)window.addLI();
