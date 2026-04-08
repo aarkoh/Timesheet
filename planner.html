@@ -7,62 +7,64 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
-.app{max-width:960px;margin:0 auto;padding:1.25rem 1rem}
+.app{max-width:720px;margin:0 auto;padding:1.25rem 1rem}
 .topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
 .topbar h1{font-size:20px;font-weight:600;flex:1}
 .back{font-size:12px;color:#185FA5;text-decoration:none;padding:5px 10px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
 .conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
 .conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+/* Controls */
 .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
-.controls input[type=text]{flex:1;min-width:160px;padding:7px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+.controls input[type=text]{flex:1;min-width:140px;padding:7px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
 select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer}
-button.view-btn{font-family:inherit;font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#555}
-button.view-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-/* Week strip */
+.add-btn{font-family:inherit;font-size:13px;padding:7px 14px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap}
+/* Week */
 .week-header{display:flex;align-items:center;gap:8px;margin:1.2rem 0 0.5rem}
 .week-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px}
 .week-line{flex:1;height:1px;background:#e0ddd6}
 .week-today{font-size:11px;background:#FAEEDA;color:#854F0B;border-radius:10px;padding:2px 8px;font-weight:600}
-/* Job cards */
-.job-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;transition:box-shadow .12s;cursor:default}
-.job-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07)}
-.job-card.past{opacity:.6}
-.job-date-col{text-align:center;min-width:50px}
-.job-day{font-size:22px;font-weight:700;line-height:1;color:#1a1a1a}
-.job-mon{font-size:11px;color:#888;text-transform:uppercase}
-.job-dow{font-size:10px;color:#aaa;margin-top:2px}
-.job-main{min-width:0}
-.job-ref{font-size:13px;font-weight:700;color:#185FA5;margin-bottom:2px}
-.job-customer{font-size:12px;color:#555;margin-bottom:4px}
-.job-vessel{font-size:13px;font-weight:600;margin-bottom:2px}
-.job-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;white-space:nowrap}
-.tag-task{background:#f4f8fe;color:#185FA5;border:1px solid #B5D4F4}
-.tag-port{background:#f5f5f3;color:#666;border:1px solid #e0ddd6}
-.tag-eng{background:#F3E6F3;color:#8B1A8B;border:1px solid #d4b8d4}
-.tag-equip{background:#f5f5f3;color:#444;border:1px solid #e0ddd6}
-.status-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;display:inline-block}
-.st-quote{background:#f5f5f3;color:#888;border:1px solid #ddd}
-.st-customer_po{background:#EAF3DE;color:#3B6D11;border:1px solid #b8e4c5}
-.st-vendor_po{background:#F3E6F3;color:#8B1A8B;border:1px solid #d4b8d4}
-.st-do_wcc{background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4}
-.st-invoice{background:#FAEEDA;color:#854F0B;border:1px solid #f0c08a}
-.st-soa{background:#FCEBEB;color:#A32D2D;border:1px solid #f5b8b8}
-.st-closed{background:#1a1a1a;color:#fff;border:1px solid #1a1a1a}
-.job-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:90px}
+/* Entry card */
+.entry-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.entry-header{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;padding:1rem}
+.entry-date-col{text-align:center}
+.entry-day{font-size:24px;font-weight:700;line-height:1;color:#1a1a1a}
+.entry-mon{font-size:11px;color:#888;text-transform:uppercase}
+.entry-dow{font-size:10px;color:#aaa;margin-top:2px}
+.entry-main{}
+.entry-ref{font-size:13px;font-weight:700;color:#185FA5}
+.entry-vessel{font-size:14px;font-weight:600;margin:1px 0}
+.entry-loc{font-size:12px;color:#888;display:flex;align-items:center;gap:4px;margin-top:2px}
+.entry-notes{font-size:12px;color:#666;margin-top:4px;font-style:italic}
+.entry-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.btn-attend{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid #3B6D11;color:#3B6D11;background:#EAF3DE;cursor:pointer;font-weight:600;white-space:nowrap}
+.btn-attend.attending{background:#3B6D11;color:#fff}
+.btn-attend.leave{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
+.btn-edit{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #ddd;color:#555;background:#fff;cursor:pointer}
+.btn-del{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #f5b8b8;color:#A32D2D;background:#FCEBEB;cursor:pointer}
 /* Workers */
-.workers-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.worker-chip{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;background:#EAF3DE;color:#3B6D11;border:1px solid #b8e4c5}
-.worker-chip.out{background:#FCEBEB;color:#A32D2D;border:1px solid #f5b8b8}
-.worker-chip.planned{background:#f5f5f3;color:#888;border:1px dashed #ccc}
-/* List view */
-.list-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e0ddd6;font-size:13px}
-.list-table th{font-size:11px;font-weight:600;color:#888;padding:10px 12px;border-bottom:1px solid #e0ddd6;text-align:left;background:#f9f9f7}
-.list-table td{padding:9px 12px;border-bottom:1px solid #f0ede6;vertical-align:top}
-.list-table tr:last-child td{border-bottom:none}
-.list-table tr:hover td{background:#f9f9f7}
+.entry-workers{border-top:1px solid #f0ede6;padding:8px 1rem;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:#f9f9f7}
+.worker-chip{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:#EAF3DE;color:#3B6D11;border:1px solid #b8e4c5}
+.worker-chip.me{background:#1a6641;color:#fff;border-color:#1a6641}
+.workers-label{font-size:11px;color:#aaa;font-weight:500}
+.no-workers{font-size:11px;color:#aaa;font-style:italic}
 /* Empty */
 .empty{font-size:13px;color:#aaa;text-align:center;padding:3rem;border:1px solid #e0ddd6;border-radius:12px;background:#fff}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;margin:auto;border:1px solid #e0ddd6}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.field{margin-bottom:0.85rem}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;color:#1a1a1a;background:#f9f9f7}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#185FA5;background:#fff}
+.worker-check-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.wcheck{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid #ddd;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;background:#fff;transition:all .12s}
+.wcheck.checked{background:#EAF3DE;border-color:#3B6D11;color:#3B6D11}
+.wcheck input{display:none}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+.btn-cancel{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
+.btn-save{font-family:inherit;font-size:13px;padding:8px 20px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600}
 /* Loading */
 .loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
 .loading-screen.hide{display:none}
@@ -71,8 +73,6 @@ button.view-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 .loading-screen p{font-size:13px;color:#888}
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
-.eta-soon{color:#854F0B;font-weight:600}
-.eta-overdue{color:#A32D2D;font-weight:600}
 </style>
 </head>
 <body>
@@ -84,270 +84,337 @@ button.view-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
     <span class="conn syncing" id="connBadge">Connecting…</span>
   </div>
   <div class="controls">
-    <input type="text" id="searchInp" placeholder="Search ref, vessel, customer…" oninput="render()">
-    <select id="statusFilter" onchange="render()">
-      <option value="">All active</option>
-      <option value="quote">Quote</option>
-      <option value="customer_po">Customer PO</option>
-      <option value="vendor_po">Vendor PO</option>
-      <option value="do_wcc">DO / WCC</option>
-      <option value="invoice">Invoice Sent</option>
-      <option value="all">All incl. closed</option>
-    </select>
-    <select id="workerFilter" onchange="render()">
-      <option value="">All workers</option>
-    </select>
+    <input type="text" id="searchInp" placeholder="Search ref, vessel, location…" oninput="render()">
     <select id="rangeFilter" onchange="render()">
-      <option value="upcoming">Upcoming (90 days)</option>
+      <option value="upcoming">Upcoming</option>
       <option value="week">This week</option>
       <option value="month">This month</option>
       <option value="all">All dates</option>
+      <option value="past">Past</option>
     </select>
-    <button class="view-btn active" id="btnCard" onclick="setView('card',this)">&#9646; Cards</button>
-    <button class="view-btn" id="btnList" onclick="setView('list',this)">&#9776; List</button>
+    <button class="add-btn" id="addBtn" style="display:none" onclick="openModal()">+ Schedule</button>
   </div>
   <div id="plannerContent"></div>
 </div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="schedModal">
+  <div class="modal">
+    <h2 id="modalTitle">Schedule a Job</h2>
+    <div class="field">
+      <label>Job Reference *</label>
+      <div style="position:relative">
+        <input type="text" id="sJobRef" placeholder="Type job ref or vessel…" autocomplete="off" oninput="filterJobSuggestions()">
+        <div id="jobSugDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;z-index:50;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+      </div>
+    </div>
+    <div class="field" id="jobInfoRow" style="display:none">
+      <div style="background:#f4f8fe;border:1px solid #B5D4F4;border-radius:8px;padding:8px 12px;font-size:13px">
+        <div id="jobInfoVessel" style="font-weight:600"></div>
+        <div id="jobInfoCustomer" style="color:#888;font-size:12px"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>Date *</label>
+        <input type="date" id="sDate">
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input type="text" id="sLoc" placeholder="e.g. Jurong Port">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes <span style="font-weight:400;color:#aaa">(optional)</span></label>
+      <textarea id="sNotes" rows="2" placeholder="Any additional details…" style="resize:vertical"></textarea>
+    </div>
+    <div class="field">
+      <label>Workers Attending</label>
+      <div class="worker-check-grid" id="workerCheckGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getDatabase,ref,onValue}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getDatabase,ref,onValue,push,update,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 const app=initializeApp({apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"});
 const db=getDatabase(app);
 const auth=getAuth(app);
 
-const SL={quote:'Quote',customer_po:'Customer PO',vendor_po:'Vendor PO',do_wcc:'DO / WCC',invoice:'Invoice Sent',soa:'SOA Sent',closed:'Closed'};
-let jobs={}, logByJob={}, workers=[], viewMode='card';
+let schedule={}, jobs={}, workers=[], me='', isAdmin=false, editId=null, selJobId=null;
 
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-function setView(v,el){
-  viewMode=v;
-  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  render();
-}
-window.setView=setView;
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+function getDay(d){return new Date(d+'T00:00:00').getDay();}
+function getMon(d){return MONTHS[new Date(d+'T00:00:00').getMonth()];}
+function getDayNum(d){return new Date(d+'T00:00:00').getDate();}
+function getDow(d){return DAYS[new Date(d+'T00:00:00').getDay()];}
+function getMonday(d){const dt=new Date(d+'T00:00:00');const day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt.toISOString().slice(0,10);}
 
-function fmtDate(d){
-  if(!d)return'';
-  const dt=new Date(d+'T00:00:00');
-  return dt.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
-}
-function getDateObj(d){return d?new Date(d+'T00:00:00'):null;}
-function daysDiff(d){
-  if(!d)return null;
-  const now=new Date();now.setHours(0,0,0,0);
-  return Math.round((getDateObj(d)-now)/(1000*60*60*24));
-}
-
-function etaLabel(eta){
-  if(!eta)return'';
-  const d=daysDiff(eta);
-  if(d===null)return'';
-  if(d<0)return`<span class="eta-overdue">${Math.abs(d)}d overdue</span>`;
-  if(d===0)return`<span class="eta-soon">Today</span>`;
-  if(d<=7)return`<span class="eta-soon">In ${d}d</span>`;
-  return`<span style="color:#888;font-size:11px">In ${d}d</span>`;
-}
-
-function getJobDate(j){return j.eta||j.date||'';}
-
-function getWorkers(jref){
-  // Workers who have logged against this job ref
-  return logByJob[jref]||{};
-}
-
-function workerChips(jref,engineerName){
-  const wmap=getWorkers(jref);
-  const chips=[];
-  // Engineer from job record
-  if(engineerName){
-    const eng=engineerName.split(',').map(s=>s.trim()).filter(Boolean);
-    eng.forEach(e=>{
-      if(!wmap[e])chips.push(`<span class="worker-chip planned" title="Assigned engineer">${e}</span>`);
-    });
-  }
-  // Clock-in workers
-  Object.entries(wmap).forEach(([w,status])=>{
-    const cls=status==='in'?'worker-chip':'worker-chip out';
-    const lbl=status==='in'?'Clocked in':'Clocked out';
-    chips.push(`<span class="${cls}" title="${lbl}">${w}</span>`);
-  });
-  return chips.length?`<div class="workers-row">${chips.join('')}</div>`:'';
-}
-
-function filterJobs(){
+// ── Render ──────────────────────────────────────────────────
+function filterEntries(){
   const q=(document.getElementById('searchInp').value||'').toLowerCase();
-  const sf=document.getElementById('statusFilter').value;
-  const wf=document.getElementById('workerFilter').value;
   const rf=document.getElementById('rangeFilter').value;
-  const now=new Date();now.setHours(0,0,0,0);
-  const today=now.toISOString().slice(0,10);
-
-  return Object.entries(jobs).filter(([id,j])=>{
-    if(j.archived)return false;
-    // Status filter
-    if(sf==='all'){}
-    else if(sf){if(j.status!==sf)return false;}
-    else{if(['closed','soa'].includes(j.status||''))return false;}
-    // Search
-    const jd=getJobDate(j);
-    if(q&&![j.ref,j.customerName,j.vessel,j.equip,j.task,j.port].filter(Boolean).some(x=>x.toLowerCase().includes(q)))return false;
-    // Worker filter
-    if(wf){
-      const wmap=getWorkers(j.ref||'');
-      const engMatch=(j.engineer||'').split(',').some(e=>e.trim()===wf);
-      if(!wmap[wf]&&!engMatch)return false;
-    }
-    // Date range
-    if(rf==='week'){
-      const end=new Date(now);end.setDate(end.getDate()+7);
-      const jdt=getDateObj(jd);
-      if(!jdt||jdt>end)return false;
-    } else if(rf==='month'){
-      const end=new Date(now);end.setDate(end.getDate()+30);
-      const jdt=getDateObj(jd);
-      if(!jdt||jdt>end)return false;
-    } else if(rf==='upcoming'){
-      const end=new Date(now);end.setDate(end.getDate()+90);
-      const jdt=getDateObj(jd);
-      if(!jdt||jdt>end)return false;
-    }
-    return true;
-  }).sort((a,b)=>{
-    const da=getJobDate(a[1])||'9999';
-    const db2=getJobDate(b[1])||'9999';
-    return da.localeCompare(db2);
-  });
-}
-
-function render(){
-  const list=filterJobs();
-  const cont=document.getElementById('plannerContent');
-  if(!list.length){cont.innerHTML='<div class="empty">No jobs match the current filters</div>';return;}
-
-  if(viewMode==='list'){
-    renderList(list,cont);
-  } else {
-    renderCards(list,cont);
-  }
-}
-window.render=render;
-
-function renderCards(list,cont){
   const today=new Date();today.setHours(0,0,0,0);
   const todayStr=today.toISOString().slice(0,10);
 
+  return Object.entries(schedule).filter(([id,e])=>{
+    if(q&&![e.jobRef,e.vessel,e.location,e.customer].filter(Boolean).some(x=>x.toLowerCase().includes(q)))return false;
+    const d=e.date||'';
+    if(rf==='upcoming')return d>=todayStr;
+    if(rf==='past')return d<todayStr;
+    if(rf==='week'){const end=new Date(today);end.setDate(today.getDate()+7);return d>=todayStr&&d<=end.toISOString().slice(0,10);}
+    if(rf==='month'){const end=new Date(today);end.setDate(today.getDate()+30);return d>=todayStr&&d<=end.toISOString().slice(0,10);}
+    return true;
+  }).sort((a,b)=>a[1].date.localeCompare(b[1].date));
+}
+
+window.render=function(){
+  const list=filterEntries();
+  const cont=document.getElementById('plannerContent');
+  if(!list.length){cont.innerHTML='<div class="empty">No scheduled jobs for this period</div>';return;}
+  const todayStr=new Date().toISOString().slice(0,10);
+
   // Group by week
   const weeks={};
-  list.forEach(([id,j])=>{
-    const jd=getJobDate(j)||'0000-00-00';
-    const dt=getDateObj(jd)||new Date(0);
-    // Week key = Monday of that week
-    const day=dt.getDay();
-    const mon=new Date(dt);
-    mon.setDate(dt.getDate()-(day===0?6:day-1));
-    const wk=mon.toISOString().slice(0,10);
+  list.forEach(([id,e])=>{
+    const wk=getMonday(e.date||todayStr);
     if(!weeks[wk])weeks[wk]=[];
-    weeks[wk].push([id,j]);
+    weeks[wk].push([id,e]);
   });
 
   let html='';
   Object.entries(weeks).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([wk,items])=>{
-    const wkDt=new Date(wk+'T00:00:00');
-    const wkEnd=new Date(wkDt);wkEnd.setDate(wkDt.getDate()+6);
-    const wkLabel=wkDt.toLocaleDateString('en-SG',{day:'2-digit',month:'short'})+' – '+wkEnd.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+    const wkEnd=new Date(wk+'T00:00:00');wkEnd.setDate(wkEnd.getDate()+6);
+    const wkLabel=fmtDate(wk).slice(0,6)+' – '+fmtDate(wkEnd.toISOString().slice(0,10));
     const isThisWeek=wk<=todayStr&&todayStr<=wkEnd.toISOString().slice(0,10);
     html+=`<div class="week-header"><span class="week-label">${wkLabel}</span>${isThisWeek?'<span class="week-today">This week</span>':''}<span class="week-line"></span></div>`;
-    items.forEach(([id,j])=>{
-      const jd=getJobDate(j);
-      const dt=jd?new Date(jd+'T00:00:00'):null;
-      const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const dayNum=dt?dt.getDate():'—';
-      const mon=dt?MONTHS[dt.getMonth()]:'';
-      const dow=dt?DAYS[dt.getDay()]:'';
-      const st=j.status||'quote';
-      const isPast=jd&&jd<todayStr;
-      const chips=workerChips(j.ref||'',j.engineer||'');
-      html+=`<div class="job-card${isPast?' past':''}">
-        <div class="job-date-col">
-          <div class="job-day">${dayNum}</div>
-          <div class="job-mon">${mon}</div>
-          <div class="job-dow">${dow}</div>
-        </div>
-        <div class="job-main">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px">
-            <span class="job-ref">${j.ref||'—'}</span>
-            <span class="status-badge st-${st}">${SL[st]||st}</span>
-            ${etaLabel(j.eta)}
+
+    items.forEach(([id,e])=>{
+      const ws=e.workers||[];
+      const iAttending=ws.includes(me);
+      const isPast=(e.date||'')<todayStr;
+
+      // Worker chips
+      const chipHtml=ws.length
+        ? ws.map(w=>`<span class="worker-chip${w===me?' me':''}">${w}</span>`).join('')
+        : `<span class="no-workers">No one signed up yet</span>`;
+
+      // Attend button — anyone can toggle themselves
+      let attendBtn='';
+      if(me&&!isPast){
+        if(iAttending){
+          attendBtn=`<button class="btn-attend leave" onclick="toggleAttend('${id}',false)">✓ Attending — Leave</button>`;
+        } else {
+          attendBtn=`<button class="btn-attend" onclick="toggleAttend('${id}',true)">+ I'm Attending</button>`;
+        }
+      }
+
+      // Edit/delete available to everyone
+      const adminBtns=!isPast
+        ? `<button class="btn-edit" onclick="openModal('${id}')">✎ Edit</button><button class="btn-del" onclick="deleteEntry('${id}')">Delete</button>`
+        : '';
+
+      html+=`<div class="entry-card">
+        <div class="entry-header">
+          <div class="entry-date-col">
+            <div class="entry-day">${getDayNum(e.date)}</div>
+            <div class="entry-mon">${getMon(e.date)}</div>
+            <div class="entry-dow">${getDow(e.date)}</div>
           </div>
-          <div class="job-customer">${j.customerName||''}</div>
-          <div class="job-vessel">${j.vessel?'⚓ '+j.vessel:''}</div>
-          <div class="job-tags">
-            ${j.task?`<span class="tag tag-task">${j.task}</span>`:''}
-            ${j.port?`<span class="tag tag-port">📍 ${j.port}</span>`:''}
-            ${j.equip?`<span class="tag tag-equip">${j.equip}${j.make?' · '+j.make:''}${j.model?' '+j.model:''}</span>`:''}
+          <div class="entry-main">
+            <div class="entry-ref">${e.jobRef||'—'}</div>
+            <div class="entry-vessel">${e.vessel||''}</div>
+            ${e.customer?`<div style="font-size:12px;color:#888">${e.customer}</div>`:''}
+            ${e.location?`<div class="entry-loc">📍 ${e.location}</div>`:''}
+            ${e.notes?`<div class="entry-notes">${e.notes}</div>`:''}
           </div>
-          ${chips}
+          <div class="entry-actions">
+            ${attendBtn}
+            ${adminBtns}
+          </div>
         </div>
-        <div class="job-right">
-          <div style="font-size:11px;color:#aaa;text-align:right">${jd?'ETA<br>'+fmtDate(jd):''}</div>
+        <div class="entry-workers">
+          <span class="workers-label" style="margin-right:4px">Attending:</span>
+          ${chipHtml}
         </div>
       </div>`;
     });
   });
   cont.innerHTML=html;
-}
+};
 
-function renderList(list,cont){
-  let rows=list.map(([id,j])=>{
-    const jd=getJobDate(j);
-    const st=j.status||'quote';
-    const wmap=getWorkers(j.ref||'');
-    const engList=(j.engineer||'').split(',').map(s=>s.trim()).filter(Boolean);
-    const allW=[...new Set([...engList,...Object.keys(wmap)])];
-    const chips=allW.map(w=>`<span class="worker-chip${wmap[w]==='out'?' out':!wmap[w]?' planned':''}">${w}</span>`).join('');
-    return`<tr>
-      <td style="font-weight:600;color:#185FA5;white-space:nowrap">${j.ref||'—'}</td>
-      <td>${j.customerName||''}</td>
-      <td>${j.vessel?'⚓ '+j.vessel:''}</td>
-      <td>${j.task||''}</td>
-      <td>${j.port||''}</td>
-      <td style="white-space:nowrap">${jd?fmtDate(jd):''}${etaLabel(j.eta)?'<br>'+etaLabel(j.eta):''}</td>
-      <td><span class="status-badge st-${st}">${SL[st]||st}</span></td>
-      <td><div class="workers-row">${chips}</div></td>
-    </tr>`;
+// ── Attend toggle ───────────────────────────────────────────
+window.toggleAttend=async function(id,join){
+  const e=schedule[id];if(!e)return;
+  const ws=[...(e.workers||[])];
+  if(join&&!ws.includes(me))ws.push(me);
+  if(!join)ws.splice(ws.indexOf(me),1);
+  try{
+    await update(ref(db,'schedule/'+id),{workers:ws});
+    toast(join?'You\'re attending ✓':'Removed from schedule');
+  }catch(err){toast('Error: '+err.message);}
+};
+
+// ── Delete ──────────────────────────────────────────────────
+window.deleteEntry=async function(id){
+  if(!confirm('Delete this schedule entry?'))return;
+  try{await remove(ref(db,'schedule/'+id));toast('Deleted');}
+  catch(err){toast('Error: '+err.message);}
+};
+
+// ── Modal ───────────────────────────────────────────────────
+window.openModal=function(id){
+  editId=id||null;
+  selJobId=null;
+  const e=id?schedule[id]:{};
+  document.getElementById('modalTitle').textContent=id?'Edit Schedule Entry':'Schedule a Job';
+  document.getElementById('sJobRef').value=e.jobRef||'';
+  document.getElementById('sDate').value=e.date||new Date().toISOString().slice(0,10);
+  document.getElementById('sLoc').value=e.location||'';
+  document.getElementById('sNotes').value=e.notes||'';
+
+  // Pre-fill job info if editing
+  if(id&&e.vessel){
+    document.getElementById('jobInfoVessel').textContent=e.vessel;
+    document.getElementById('jobInfoCustomer').textContent=e.customer||'';
+    document.getElementById('jobInfoRow').style.display='';
+    // Try to find the job key
+    const found=Object.entries(jobs).find(([,j])=>j.ref===e.jobRef);
+    if(found)selJobId=found[0];
+  } else {
+    document.getElementById('jobInfoRow').style.display='none';
+  }
+
+  // Worker checkboxes
+  const ws=e.workers||[];
+  const grid=document.getElementById('workerCheckGrid');
+  grid.innerHTML=workers.map(w=>{
+    const chk=ws.includes(w)?'checked':'';
+    return `<label class="wcheck${ws.includes(w)?' checked':''}" onclick="toggleWCheck(this)">
+      <input type="checkbox" value="${w}" ${chk}>${w}
+    </label>`;
   }).join('');
-  cont.innerHTML=`<table class="list-table">
-    <thead><tr><th>Ref</th><th>Customer</th><th>Vessel</th><th>Task</th><th>Port</th><th>ETA / Date</th><th>Status</th><th>Workers</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
-}
 
-function updateWorkerFilter(){
-  const sel=document.getElementById('workerFilter');
-  const cur=sel.value;
-  sel.innerHTML='<option value="">All workers</option>'+workers.map(w=>`<option value="${w}"${w===cur?' selected':''}>${w}</option>`).join('');
-}
+  document.getElementById('jobSugDrop').style.display='none';
+  document.getElementById('schedModal').classList.add('show');
+  setTimeout(()=>document.getElementById('sJobRef').focus(),80);
+};
 
+window.closeModal=function(){
+  document.getElementById('schedModal').classList.remove('show');
+  editId=null;selJobId=null;
+};
+
+window.toggleWCheck=function(lbl){
+  lbl.classList.toggle('checked');
+  lbl.querySelector('input').checked=lbl.classList.contains('checked');
+};
+
+// ── Job autocomplete ────────────────────────────────────────
+window.filterJobSuggestions=function(){
+  const q=(document.getElementById('sJobRef').value||'').toLowerCase();
+  const drop=document.getElementById('jobSugDrop');
+  document.getElementById('jobInfoRow').style.display='none';
+  selJobId=null;
+  if(!q||q.length<1){drop.style.display='none';return;}
+  const matches=Object.entries(jobs)
+    .filter(([,j])=>!j.archived&&(j.ref||'').toLowerCase().includes(q)||(j.vessel||'').toLowerCase().includes(q))
+    .slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML=matches.map(([jid,j])=>
+    `<div style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f0ede6;font-size:13px" 
+      onmousedown="selectJob('${jid}')" class="job-sug-item">
+      <div style="font-weight:600">${j.ref||'—'} <span style="font-weight:400;color:#888;font-size:11px">${j.vessel||''}</span></div>
+      <div style="font-size:11px;color:#888">${j.customerName||''}</div>
+    </div>`
+  ).join('');
+  drop.style.display='block';
+};
+
+window.selectJob=function(jid){
+  const j=jobs[jid];if(!j)return;
+  selJobId=jid;
+  document.getElementById('sJobRef').value=j.ref||'';
+  document.getElementById('jobInfoVessel').textContent=(j.vessel||'')+(j.equip?' · '+j.equip:'');
+  document.getElementById('jobInfoCustomer').textContent=j.customerName||'';
+  document.getElementById('jobInfoRow').style.display='';
+  if(!document.getElementById('sLoc').value&&j.port)
+    document.getElementById('sLoc').value=j.port;
+  document.getElementById('jobSugDrop').style.display='none';
+};
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#sJobRef')&&!e.target.closest('#jobSugDrop'))
+    document.getElementById('jobSugDrop').style.display='none';
+});
+
+// ── Save ────────────────────────────────────────────────────
+window.saveEntry=async function(){
+  const jobRef=document.getElementById('sJobRef').value.trim();
+  const date=document.getElementById('sDate').value;
+  if(!jobRef){toast('Job reference is required');return;}
+  if(!date){toast('Date is required');return;}
+
+  const j=selJobId?jobs[selJobId]:(Object.values(jobs).find(x=>x.ref===jobRef)||{});
+  const ws=[...document.querySelectorAll('#workerCheckGrid .wcheck.checked input')].map(i=>i.value);
+
+  const data={
+    jobRef,
+    date,
+    location:document.getElementById('sLoc').value.trim(),
+    notes:document.getElementById('sNotes').value.trim(),
+    workers:ws,
+    vessel:j.vessel||'',
+    customer:j.customerName||'',
+    updatedAt:new Date().toISOString()
+  };
+
+  try{
+    if(editId){
+      await update(ref(db,'schedule/'+editId),data);
+      toast('Entry updated ✓');
+    } else {
+      data.createdBy=me||'staff';
+      data.createdAt=new Date().toISOString();
+      await push(ref(db,'schedule'),data);
+      toast('Scheduled ✓');
+    }
+    closeModal();
+  }catch(err){toast('Error: '+err.message);}
+};
+
+// ── Init ────────────────────────────────────────────────────
 signInAnonymously(auth).catch(e=>console.error(e));
 onAuthStateChanged(auth,user=>{
   if(!user)return;
-  const b=document.getElementById('connBadge');
+
+  // Detect who's logged in
+  const staff=sessionStorage.getItem('rc_staff')||'';
+  me=staff&&staff!=='ADMIN'?staff:'';
+  isAdmin=staff==='ADMIN'||!staff; // ADMIN or manager hub (no staff session)
+  document.getElementById('addBtn').style.display=''; // everyone can schedule
 
   onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
     b.textContent=snap.val()?'Live':'Offline';
     b.className='conn '+(snap.val()?'online':'offline');
   });
 
   onValue(ref(db,'config/workers'),snap=>{
     if(snap.exists()&&Array.isArray(snap.val()))workers=snap.val();
-    updateWorkerFilter();
   });
 
   onValue(ref(db,'jobs'),snap=>{
@@ -356,35 +423,15 @@ onAuthStateChanged(auth,user=>{
     render();
   });
 
-  // Build logByJob: {jobRef: {workerName: 'in'|'out'}}
-  // Use REST fetch (more reliable for large log node)
-  async function fetchLog(){
-    try{
-      const token=user?await user.getIdToken():'';
-      const url='https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app/log.json'+(token?'?auth='+token:'');
-      const res=await fetch(url);
-      const data=await res.json();
-      if(!data)return;
-      // Reset
-      logByJob={};
-      // Process entries — for each worker+job, track latest status
-      const latest={}; // key: worker+job → {time, type}
-      Object.values(data).forEach(e=>{
-        if(!e.job||!e.worker)return;
-        const k=e.worker+'|'+e.job;
-        if(!latest[k]||e.time>latest[k].time){
-          latest[k]={time:e.time,type:e.type,worker:e.worker,job:e.job};
-        }
-      });
-      Object.values(latest).forEach(e=>{
-        if(!logByJob[e.job])logByJob[e.job]={};
-        logByJob[e.job][e.worker]=e.type; // 'in' or 'out'
-      });
-      render();
-    }catch(err){console.error('fetchLog:',err);}
-  }
-  fetchLog();
-  setInterval(fetchLog,30000);
+  onValue(ref(db,'schedule'),snap=>{
+    schedule=snap.val()||{};
+    render();
+  });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
 });
 
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),6000);
