@@ -2419,7 +2419,9 @@ window.printOCData=function(id,selectedItems){
   })();
 
   var jForTotalsDisc=Object.assign({},j,{lineItems:discItems});
-  var t=totals(jForTotalsDisc);
+  var tDisc=totals(jForTotalsDisc);
+  var discAmt=Math.max(0,t.sub-tDisc.sub);
+  var t=tDisc;
   var gstRow=t.gst>0
     ?'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:9.5pt"><span>GST (9%)</span><span>'+fmt(t.gst)+'</span></div>'
     :'<div style="display:flex;justify-content:space-between;padding:1px 6px;font-size:8.5pt;color:#555;font-style:italic"><span>GST not included if applicable</span><span></span></div>';
@@ -2463,7 +2465,8 @@ window.printOCData=function(id,selectedItems){
     +'<div style="font-size:9.5pt;margin-bottom:4px">We are pleased to confirm your order for the following :-</div>'
     +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:5px"><div style="min-width:260px">'
-      +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'
+      +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(discAmt>0.005?t.sub+discAmt:t.sub)+'</span></div>'
+      +(discAmt>0.005?'<div class="tr2" style="color:#3B6D11"><span>DISCOUNT</span><span>− '+fmt(discAmt)+'</span></div>':'')
       +gstRow
       +'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div>'
       +'<div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'
@@ -2502,7 +2505,9 @@ window.printQuoData = function(id, selectedItems, revNum){
     return scaled;
   });
   // Recalculate totals with discounted prices
-  var t=totals(Object.assign({},j,{lineItems:discItems}));
+  var tDisc=totals(Object.assign({},j,{lineItems:discItems}));
+  var discAmt=Math.max(0,t.sub-tDisc.sub);
+  var t=tDisc;
 
   // Build line item rows
   var iRows=(function(){
@@ -2571,7 +2576,8 @@ window.printQuoData = function(id, selectedItems, revNum){
     +'<div style="font-size:9.5pt;margin-bottom:4px">Being our Quotation for the following :-</div>'
     +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="min-width:260px">'
-      +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'
+      +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(discAmt>0.005?t.sub+discAmt:t.sub)+'</span></div>'
+      +(discAmt>0.005?'<div class="tr2" style="color:#3B6D11"><span>DISCOUNT</span><span>− '+fmt(discAmt)+'</span></div>':'')
       +gstRow
       +'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div>'
       +'<div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'
@@ -2693,8 +2699,17 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
     });
     return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct*(1-d/100),children:ch.length?ch:undefined});
   });
+  // scaledFull: invPct only, no custDisc — used to compute discount amount
+  var scaledFull=selectedItems.map(function(it){
+    var ch=(it.children||[]).map(function(c){
+      return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});
+    });
+    return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct,children:ch.length?ch:undefined});
+  });
   var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
   var t=totals(jForTotals);
+  var tFull=totals(Object.assign({},j,{lineItems:scaledFull,bankFee:(parseFloat(j.bankFee)||0)*invPct}));
+  var discAmt=Math.max(0,tFull.sub-t.sub);
   var tOrig=invPct<1?totals(Object.assign({},j,{lineItems:selectedItems})):null;
   var cur=j.currency||'SGD';
   var rcvd=parseFloat(j.paymentReceived)||0;
@@ -2768,7 +2783,15 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
     +'<div class="jb"><div class="jbc"><span class="jbl">VESSEL: </span>'+(j.vessel||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">PORT: </span>'+(j.port||'').toUpperCase()+'</div><div class="jbc"><span class="jbl">TASK: </span>'+(j.task||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">EQUIP: </span>'+(j.equip||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MAKE: </span>'+(j.make||'').toUpperCase()+'</div><div class="jbc" style="border-top:1px solid #000"><span class="jbl">MODEL: </span>'+(j.model||'').toUpperCase()+'</div></div>'
     +'<div style="font-size:9.5pt;margin-bottom:2px">Being Invoice for the following :-</div>'
     +'<table class="it2"><thead><tr><th style="width:32px">ITEM</th><th>DESCRIPTION</th><th class="r" style="width:52px">QTY</th><th style="width:52px">UNIT</th><th class="r" style="width:90px">UNIT PRICE</th><th class="r" style="width:90px">AMOUNT</th></tr></thead><tbody>'+iRows+'</tbody></table>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="min-width:260px"><div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'+gstRow+'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div><div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'+(tOrig?'<div class="tr2" style="font-size:9pt;color:#555"><span>Original Total '+cur+'</span><span>'+fmt(tOrig.total)+'</span></div>':'')+(isPro?'':rcvd>0&&bal>0.005?'<div class="tr2" style="color:#1a6641"><span>PAYMENT RECEIVED</span><span>'+cur+' '+fmt(rcvd)+'</span></div><div class="tr2" style="font-weight:700;font-size:11pt;border-top:1px solid #ccc;margin-top:2px"><span>BALANCE DUE</span><span>'+cur+' '+fmt(bal)+'</span></div>':'')+'</div></div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:8px"><div style="min-width:260px">'
+      +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(discAmt>0.005?t.sub+discAmt:t.sub)+'</span></div>'
+      +(discAmt>0.005?'<div class="tr2" style="color:#3B6D11"><span>DISCOUNT</span><span>− '+fmt(discAmt)+'</span></div>':'')
+      +gstRow
+      +'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div>'
+      +'<div class="tfin"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'
+      +(tOrig?'<div class="tr2" style="font-size:9pt;color:#555"><span>Original Total '+cur+'</span><span>'+fmt(tOrig.total)+'</span></div>':'')
+      +(isPro?'':rcvd>0&&bal>0.005?'<div class="tr2" style="color:#1a6641"><span>PAYMENT RECEIVED</span><span>'+cur+' '+fmt(rcvd)+'</span></div><div class="tr2" style="font-weight:700;font-size:11pt;border-top:1px solid #ccc;margin-top:2px"><span>BALANCE DUE</span><span>'+cur+' '+fmt(bal)+'</span></div>':'')
+    +'</div></div>'
     +'<div class="aw">['+amtWords(t.total,cur)+']</div>'
     +bankDetails
     +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+((payTermsOverride||j.payTerms||'')).toUpperCase()+'</b></div></td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
