@@ -167,7 +167,7 @@ var LMA="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
 function amtWords(amount,cur){
   var ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
   var tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
-  function tw(n){if(n===0)return"";if(n<20)return ones[n]+" ";if(n<100)return tens[Math.floor(n/10)]+" "+(n%10?ones[n%10]+" ":"");if(n<1000)return ones[Math.floor(n/100)]+"Hundred "+(n%100?tw(n%100):"");if(n<1000000)return tw(Math.floor(n/1000))+"Thousand "+(n%1000?tw(n%1000):"");return tw(Math.floor(n/1000000))+"Million "+(n%1000000?tw(n%1000000):"");}
+  function tw(n){if(n===0)return"";if(n<20)return ones[n]+" ";if(n<100)return tens[Math.floor(n/10)]+" "+(n%10?ones[n%10]+" ":"");if(n<1000)return ones[Math.floor(n/100)]+" Hundred "+(n%100?tw(n%100):"");if(n<1000000)return tw(Math.floor(n/1000)).trim()+" Thousand "+(n%1000?tw(n%1000):"");return tw(Math.floor(n/1000000)).trim()+" Million "+(n%1000000?tw(n%1000000):"");}
   var d=Math.floor(amount),c=Math.round((amount-d)*100);
   var w=(tw(d).trim()||"Zero").toUpperCase();
   return cur+" "+w+" DOLLAR"+(d!==1?"S":"")+(c>0?" AND "+tw(c).trim().toUpperCase()+" CENT"+(c!==1?"S":""):" AND NO CENTS")+" ONLY";
