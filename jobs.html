@@ -2904,6 +2904,7 @@ window.printFeedback=function(id){
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button id="gcTypeFGDS" onclick="window.gcSetType('FGDS')" style="flex:1;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">FGDS<br><span style="font-size:10px;font-weight:400">Fixed Gas Detection System</span></button>
         <button id="gcTypeVECS" onclick="window.gcSetType('VECS')" style="flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">VECS<br><span style="font-size:10px;font-weight:400">Vapour Emission Control System</span></button>
+        <button id="gcTypeMSC"  onclick="window.gcSetType('MSC')"  style="flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">MSC<br><span style="font-size:10px;font-weight:400">MSC Vessel Gas Detection</span></button>
       </div>
       <!-- Header fields -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
@@ -2949,7 +2950,7 @@ var GC_TYPE = 'FGDS';
 
 var GC_SYSTEMS = {
   FGDS: {
-    label: 'FGDS — Fixed Gas Detection System',
+    label: 'FGDS',
     systemName: 'FIXED GAS SAMPLING SYSTEM',
     sensors: [
       {name:'HC WBT',                           zero:'0', span:'50 % LEL'},
@@ -2975,7 +2976,7 @@ var GC_SYSTEMS = {
     ]
   },
   VECS: {
-    label: 'VECS — Vapour Emission Control System',
+    label: 'VECS',
     systemName: 'VAPOUR EMISSION CONTROL SYSTEM',
     sensors: [
       {name:'OXYGEN',                            zero:'0', span:'20.9% VOL'},
@@ -2989,21 +2990,74 @@ var GC_SYSTEMS = {
       {name:'PUMP ROOM - OXYGEN',                zero:'0', span:'20.9% VOL'},
       {name:'CARGO CONTROL ROOM - OXYGEN',       zero:'0', span:'20.9% VOL'}
     ]
+  },
+  MSC: {
+    label: 'MSC',
+    systemName: 'FIXED GAS SAMPLING SYSTEM',
+    sensors: [
+      {name:'PART-1 (HC) CCR',                    zero:'0', span:'50 % LEL'},
+      {name:'PART-1 (HC) CCR (VOL)',               zero:'0', span:'50 % VOL'},
+      {name:'PART-1 (HC) ECR',                    zero:'0', span:'50 % LEL'},
+      {name:'PART-1 (HC) ECR (VOL)',               zero:'0', span:'50 % VOL'},
+      {name:'M/E TOP FWD (HC)',                    zero:'0', span:'50 % LEL'},
+      {name:'M/E TOP AFT (HC)',                    zero:'0', span:'50 % LEL'},
+      {name:'NO.1 G/E TOP (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.2 G/E TOP (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.3 G/E TOP (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.4 G/E TOP (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.1 G/E GVU (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.2 G/E GVU (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.3 G/E GVU (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.4 G/E GVU (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'NO.1 G/E GVU EXH. FAN OUT (HC)',      zero:'0', span:'50 % LEL'},
+      {name:'NO.2 G/E GVU EXH. FAN OUT (HC)',      zero:'0', span:'50 % LEL'},
+      {name:'NO.3 G/E GVU EXH. FAN OUT (HC)',      zero:'0', span:'50 % LEL'},
+      {name:'NO.4 G/E GVU EXH. FAN OUT (HC)',      zero:'0', span:'50 % LEL'},
+      {name:'AUX. BOILER TOP (HC)',                 zero:'0', span:'50 % LEL'},
+      {name:'AUX. BOILER GVU EXH. FAN (HC)',        zero:'0', span:'50 % LEL'},
+      {name:'AUX. BOILER GVU ENCL (HC)',            zero:'0', span:'50 % LEL'},
+      {name:'FAN ROOM (P) (HC)',                    zero:'0', span:'50 % LEL'},
+      {name:'FAN ROOM (S) (HC)',                    zero:'0', span:'50 % LEL'},
+      {name:'AIR INT. GALLEY (MEC) (HC)',           zero:'0', span:'50 % LEL'},
+      {name:'AIR INT. GALLEY (FCU) (HC)',           zero:'0', span:'50 % LEL'},
+      {name:'FGSS ROOM (P) (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'TANK CONN. SPACE (S) (HC)',            zero:'0', span:'50 % LEL'},
+      {name:'TANK CONN. SPACE (P) (HC)',            zero:'0', span:'50 % LEL'},
+      {name:'FGSS ROOM (C) (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'FGSS ROOM (S) (HC)',                   zero:'0', span:'50 % LEL'},
+      {name:'OTHER MACH ROOM (HC)',                 zero:'0', span:'50 % LEL'},
+      {name:'AIR COND. INTAKE MAIN (HC)',           zero:'0', span:'50 % LEL'},
+      {name:'AIR COND. GALLEY (NAT) (HC)',          zero:'0', span:'50 % LEL'},
+      {name:'GVT SPACE (HC)',                       zero:'0', span:'50 % LEL'},
+      {name:'BUNKERING STATION (P) (HC)',           zero:'0', span:'50 % LEL'},
+      {name:'BUNKERING STATION (S) (HC)',           zero:'0', span:'50 % LEL'},
+      {name:'FGSS VENT FAN OUTLET (HC)',            zero:'0', span:'50 % LEL'},
+      {name:'TCS VENT FAN OUTLET (HC)',             zero:'0', span:'50 % LEL'},
+      {name:'N2 GENERATOR (O2)',                    zero:'0', span:'20.9 %'},
+      {name:'N2 BUFFER TANK (O2)',                  zero:'0', span:'20.9 %'},
+      {name:'NO.1 G/E CRANK C. VENT (HC)',          zero:'0', span:'50 % LEL'},
+      {name:'NO.2 G/E CRANK C. VENT (HC)',          zero:'0', span:'50 % LEL'},
+      {name:'NO.3 G/E CRANK C. VENT (HC)',          zero:'0', span:'50 % LEL'},
+      {name:'NO.4 G/E CRANK C. VENT (HC)',          zero:'0', span:'50 % LEL'},
+      {name:'L.T COOLING F.W EXPAN. TK (HC)',       zero:'0', span:'50 % LEL'},
+      {name:'H.T COOLING F.W EXPAN. TK (HC)',       zero:'0', span:'50 % LEL'},
+      {name:'GLY. WAT. EXP. TANK IN FGSS (HC)',     zero:'0', span:'50 % LEL'},
+      {name:'LNG HOLD SPACE (P) (HC)',              zero:'0', span:'50 % LEL'},
+      {name:'LNG HOLD SPACE (S) (HC)',              zero:'0', span:'50 % LEL'},
+      {name:'CONDENSATE DRAIN TANK (HC)',            zero:'0', span:'50 % LEL'},
+      {name:'BOG COMP. FW CW RETURN (HC)',           zero:'0', span:'50 % LEL'}
+    ]
   }
 };
 
 window.gcSetType = function(type) {
   GC_TYPE = type;
-  var sys = GC_SYSTEMS[type];
-  // Toggle button styles
-  document.getElementById('gcTypeFGDS').style.cssText = type === 'FGDS'
-    ? 'flex:1;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer'
-    : 'flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer';
-  document.getElementById('gcTypeVECS').style.cssText = type === 'VECS'
-    ? 'flex:1;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer'
-    : 'flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer';
+  var active   = 'flex:1;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer';
+  var inactive = 'flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer';
+  document.getElementById('gcTypeFGDS').style.cssText = type === 'FGDS' ? active : inactive;
+  document.getElementById('gcTypeVECS').style.cssText = type === 'VECS' ? active : inactive;
+  document.getElementById('gcTypeMSC').style.cssText  = type === 'MSC'  ? active : inactive;
   document.getElementById('gcModalTitle').textContent = '\u2699 Gas Calibration Certificate \u2014 ' + type;
-  // Reset table with 5 blank rows for new type
   var tb = document.getElementById('gcBody');
   tb.innerHTML = '';
   for (var i = 0; i < 5; i++) tb.appendChild(gcMakeRow(i));
@@ -3029,8 +3083,8 @@ function gcMakeRow(idx, row) {
     + '<td style="padding:3px 4px;border:1px solid #ddd"><input id="gc_span_' + idx + '" value="' + row.span + '" style="width:100%;padding:5px 4px;font-size:12px;font-family:inherit;border:1px solid #ddd;border-radius:4px;text-align:center;box-sizing:border-box"></td>'
     + '<td style="padding:3px 4px;border:1px solid #ddd">'
     +   '<select style="width:100%;padding:5px 4px;font-size:12px;font-family:inherit;border:1px solid #ddd;border-radius:4px;background:#fff">'
-    +   '<option value="OK"' + (row.result === 'OK' ? ' selected' : '') + '>OK</option>'
-    +   '<option value="NO"' + (row.result === 'NO' ? ' selected' : '') + '>NO</option>'
+    +   '<option value="OK"'  + (row.result === 'OK'   ? ' selected' : '') + '>OK</option>'
+    +   '<option value="NO"'  + (row.result === 'NO'   ? ' selected' : '') + '>NO</option>'
     +   '</select></td>'
     + '<td style="padding:3px 4px;border:1px solid #ddd">'
     +   '<select style="width:100%;padding:5px 4px;font-size:12px;font-family:inherit;border:1px solid #ddd;border-radius:4px;background:#fff">'
@@ -3091,7 +3145,6 @@ window.openGasCert = function(id) {
   document.getElementById('gc_expiry').value   = expiryStr;
   document.getElementById('gc_rep').value      = j.attn     || j.customerName || '';
 
-  // Default to FGDS
   GC_TYPE = 'FGDS';
   window.gcSetType('FGDS');
 
