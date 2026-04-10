@@ -2901,10 +2901,10 @@ window.printFeedback=function(id){
     </div>
     <div style="padding:16px 20px 10px">
       <!-- Type selector -->
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <button id="gcTypeFGDS" onclick="window.gcSetType('FGDS')" style="flex:1;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">FGDS<br><span style="font-size:10px;font-weight:400">Fixed Gas Detection System</span></button>
-        <button id="gcTypeVECS" onclick="window.gcSetType('VECS')" style="flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">VECS<br><span style="font-size:10px;font-weight:400">Vapour Emission Control System</span></button>
-        <button id="gcTypeMSC"  onclick="window.gcSetType('MSC')"  style="flex:1;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">MSC<br><span style="font-size:10px;font-weight:400">MSC Vessel Gas Detection</span></button>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <button id="gcTypeFGDS" onclick="window.gcSetType('FGDS')" style="flex:1;min-width:100px;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">FGDS<br><span style="font-size:10px;font-weight:400">Fixed Gas Detection System</span></button>
+        <button id="gcTypeVECS" onclick="window.gcSetType('VECS')" style="flex:1;min-width:100px;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">VECS<br><span style="font-size:10px;font-weight:400">Vapour Emission Control System</span></button>
+        <button id="gcTypeMSC"  onclick="window.gcSetType('MSC')"  style="flex:1;min-width:100px;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">MSC<br><span style="font-size:10px;font-weight:400">MSC Vessel Gas Detection</span></button>
       </div>
       <!-- Header fields -->
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
@@ -3140,7 +3140,7 @@ window.openGasCert = function(id) {
   document.getElementById('gc_location').value = j.port     || '';
   document.getElementById('gc_caldate').value  = todayStr;
   document.getElementById('gc_expiry').value   = expiryStr;
-  document.getElementById('gc_rep').value      = j.attn     || j.customerName || '';
+  document.getElementById('gc_rep').value      = j.engineer || '';
 
   GC_TYPE = 'FGDS';
   window.gcSetType('FGDS');
