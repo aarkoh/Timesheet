@@ -28,6 +28,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .module-card.stock{border-left:4px solid #8B1A8B}
 .module-card.worker-view{border-left:4px solid #3B6D11}
 .module-card.jobs{border-left:4px solid #1a6641}
+.module-card.planner{border-left:4px solid #854F0B}
+.module-card.petty{border-left:4px solid #B45309}
+.mod-badge.amber{background:#FAEEDA;color:#854F0B}
 .mod-icon{font-size:28px;margin-bottom:10px;display:block}
 .mod-title{font-size:15px;font-weight:600;margin-bottom:3px}
 .mod-desc{font-size:12px;color:#888;line-height:1.5}
@@ -166,6 +169,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mod-desc">View worker stock recording page</div>
     </a>
   </div>
+
+  <div class="section-title">Planner</div>
+  <div class="module-grid">
+    <a href="planner.html" class="module-card planner">
+      <span class="mod-icon">&#128197;</span>
+      <span class="mod-badge amber">Manager</span>
+      <div class="mod-title">Job Planner</div>
+      <div class="mod-desc">Upcoming jobs by week, worker attendance and status overview</div>
+    </a>
+    <a href="https://aarkoh.github.io/Raycontrol/planner.html" class="module-card worker-view">
+      <span class="mod-icon">&#128197;</span>
+      <span class="mod-badge green">Staff</span>
+      <div class="mod-title">Job Planner (Staff)</div>
+      <div class="mod-desc">Staff view of upcoming jobs and attendance</div>
+    </a>
+  </div>
+  <div class="section-title">Petty Cash</div>
+  <div class="module-grid">
+    <a href="petty-cash-manager.html" class="module-card petty">
+      <span class="mod-icon">&#128181;</span>
+      <span class="mod-badge amber">Manager</span>
+      <div class="mod-title">Petty Cash Vouchers</div>
+      <div class="mod-desc">Create and manage petty cash voucher records</div>
+    </a>
+  </div>
+
   <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
     <span>PIN Management</span>
     <button onclick="togglePinFolder()" id="pinFolderBtn"
@@ -216,13 +245,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="pin-grid" id="staffPinGrid"></div>
       <button class="btn-save" onclick="saveStaffPins()" style="margin-top:0.75rem">Save staff codes</button>
       <div id="pinSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
-    </div>
-    <div class="section-box">
-      <h2>&#128203; Worker Full Names</h2>
-      <p>Full names are printed on the Work Summary PDF. Leave blank to use initials.</p>
-      <div id="workerNamesGrid" style="display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;max-width:400px;margin-bottom:0.75rem"></div>
-      <button class="btn-save" onclick="saveWorkerNames()">Save full names</button>
-      <div id="namesSaveMsg" style="font-size:12px;margin-top:8px;min-height:16px"></div>
     </div>
   </div>
 
@@ -337,33 +359,6 @@ window.saveStaffPins=async function(){
 
 let managerPin='1234';
 let adminPin='9999';
-let workerNamesData={};
-
-function renderWorkerNamesGrid(){
-  const grid=document.getElementById('workerNamesGrid');
-  if(!grid)return;
-  grid.innerHTML=WORKERS_ALL.map(w=>`
-    <label style="font-size:13px;font-weight:600;color:#555">${w}</label>
-    <input type="text" id="wn_${w}" value="${workerNamesData[w]||''}" placeholder="Full name" style="padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit">
-  `).join('');
-}
-
-window.saveWorkerNames=async function(){
-  const msg=document.getElementById('namesSaveMsg');
-  const newNames={};
-  WORKERS_ALL.forEach(w=>{
-    const v=(document.getElementById('wn_'+w)||{value:''}).value||'';
-    if(v.trim())newNames[w]=v.trim();
-  });
-  try{
-    await set(ref(db,'config/workerNames'),newNames);
-    workerNamesData=newNames;
-    msg.style.color='#3B6D11';msg.textContent='✓ Full names saved';
-    setTimeout(()=>msg.textContent='',3000);
-  }catch(e){
-    msg.style.color='#A32D2D';msg.textContent='Error: '+e.message;
-  }
-};
 
 window.changeAdminPin=async function(){
   const n=document.getElementById('newAdminPin').value.trim();
@@ -522,10 +517,6 @@ onAuthStateChanged(auth,user=>{
     window._activeWorkers=workers;
     renderWorkerList(workers);
     renderStaffPins(); // refresh pin grid to include new workers
-  });
-  onValue(ref(db,'config/workerNames'),snap=>{
-    if(snap.exists())workerNamesData=snap.val()||{};
-    renderWorkerNamesGrid();
   });
   onValue(ref(db,'config/staffPins'),snap=>{
     if(snap.exists()) staffPins={...staffPins,...snap.val()};
