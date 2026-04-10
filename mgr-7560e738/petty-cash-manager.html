@@ -397,7 +397,7 @@ window.saveVoucher=function(){
     voucherNo:vno,chequeNo:chqno,
     chequeAmount:parseFloat(chequeAmount.toFixed(2)),
     lineItems:lineItems.map(li=>({
-      date:li.date||'',billNo:li.billNo||'',company:li.company||'',
+      date:li.date||'',billNo:li.billNo||'',company:li.company||'',staff:li.staff||'',
       subAmount:parseFloat(li.subAmount)||0,
       gst:parseFloat(li.gst)||0,
       total:parseFloat(li.total)||0
