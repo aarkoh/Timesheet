@@ -356,13 +356,6 @@ window.openMarkPaid=function(id){
   _payId=id;
   document.getElementById('mp_ref').value='';
   document.getElementById('mp_date').value=new Date().toISOString().slice(0,10);
-  document.getElementById('mp_sgd').value='';
-  // Show SGD field only if invoice is in a foreign currency
-  var v=(window._vi_vis||{})[id]||{};
-  var cur=v.currency||'SGD';
-  var isForeign=cur!=='SGD';
-  document.getElementById('mp_sgd_row').style.display=isForeign?'block':'none';
-  document.getElementById('mp_sgd_hint').textContent=isForeign?'(invoice: '+cur+' '+(parseFloat(v.amount)||0).toFixed(2)+')':'';
   document.getElementById('mpModal').classList.add('show');
   setTimeout(()=>document.getElementById('mp_ref').focus(),100);
 };
@@ -371,8 +364,6 @@ window.saveMarkPaid=async function(){
   const pref=document.getElementById('mp_ref').value.trim();
   const pdate=document.getElementById('mp_date').value;
   const upd={status:'paid',paymentRef:pref,paidAt:pdate||new Date().toISOString().slice(0,10),updatedAt:new Date().toISOString()};
-  const sgdVal=parseFloat(document.getElementById('mp_sgd').value)||null;
-  if(sgdVal) upd.paidSGD=sgdVal;
   try{
     await update(ref(db,'vendorInvoices/'+_payId),upd);
     document.getElementById('mpModal').classList.remove('show');
@@ -714,10 +705,6 @@ setTimeout(()=>document.getElementById('ls').classList.add('hide'),5000);
       <label>Payment Date</label>
       <input type="date" id="mp_date">
     </div>
-    <div class="fi" id="mp_sgd_row" style="display:none">
-      <label>Amount Paid in SGD <span id="mp_sgd_hint" style="font-weight:400;color:#888;font-size:12px"></span></label>
-      <input type="number" id="mp_sgd" min="0" step="0.01" placeholder="e.g. 1234.56">
-    </div>
     <div class="mfoot">
       <button onclick="document.getElementById('mpModal').classList.remove('show')">Cancel</button>
       <button class="bg" onclick="saveMarkPaid()">&#10003; Confirm Paid</button>
@@ -743,11 +730,11 @@ window.saveBatchPay=async function(){
     window._batchIdsCopy=[];
     if(typeof clearBatchSelect==='function') clearBatchSelect();
     window.toast(ids.length+' invoice'+(ids.length>1?'s':'')+' marked as paid \u2713');
-    window.printBatchAdvice(ids,pref,pdate);
+    window.printBatchAdvice(ids,pref,pdate,bSgdVal||null);
   }catch(e){window.toast('Error: '+e.message);}
 };
 
-window.printBatchAdvice=function(ids,pref,pdate){
+window.printBatchAdvice=function(ids,pref,pdate,sgdTotal){
   var vis=window._vi_vis||{};
   var invoices=ids.map(function(id){return vis[id]||{};}).filter(function(v){return v.invNo;});
   if(!invoices.length){window.toast('No invoice data found');return;}
@@ -783,7 +770,7 @@ window.printBatchAdvice=function(ids,pref,pdate){
     +'</div>'
     +'<table class="dt"><thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Job Ref</th><th>Vessel</th><th>Description</th><th class="r">Amount</th></tr></thead>'
     +'<tbody>'+iRows+'</tbody>'
-    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID ('+cur+')</td><td style="text-align:right">'+cur+' '+totalStr+'</td></tr></tfoot></table>'
+    +(function(){      var tfoot='<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID ('+cur+')</td><td style="text-align:right">'+cur+' '+totalStr+'</td></tr>';      if(sgdTotal&&cur!=='SGD'){        var sgdStr=(parseFloat(sgdTotal)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});        tfoot+='<tr><td colspan="5" style="text-align:right;font-size:9pt;color:#555">SGD EQUIVALENT</td><td style="text-align:right;font-size:9pt;color:#555">SGD '+sgdStr+'</td></tr>';      }      tfoot+='</tfoot>';      return tfoot;    })()+'</table>'
     +'<div class="sr">'
       +'<div style="text-align:center;font-size:9pt"><img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>For Raycontrol Pte Ltd<br><div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div></div>'
       +'<div style="text-align:right;font-size:9pt;color:#555">'
@@ -836,7 +823,7 @@ window.printPayAdvice=function(id){
       +'<td>'+(v.desc||'-')+'</td>'
       +'<td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td>'
     +'</tr></tbody>'
-    +'<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr></tfoot></table>'
+    +(function(){      var tfoot='<tfoot><tr><td colspan="5" style="text-align:right">TOTAL PAID</td><td style="text-align:right">'+(v.currency||'SGD')+' '+amt+'</td></tr>';      if(v.paidSGD&&(v.currency||'SGD')!=='SGD'){        var sgdStr=(parseFloat(v.paidSGD)||0).toLocaleString('en-SG',{minimumFractionDigits:2,maximumFractionDigits:2});        tfoot+='<tr><td colspan="5" style="text-align:right;font-size:9pt;color:#555">SGD EQUIVALENT</td><td style="text-align:right;font-size:9pt;color:#555">SGD '+sgdStr+'</td></tr>';      }      tfoot+='</tfoot>';      return tfoot;    })()+'</table>'
     +'<div class="sr">'
       +'<div style="text-align:center;font-size:9pt"><img src="'+LSTAMP+'" style="height:80px;margin-bottom:4px;opacity:0.85"><br>For Raycontrol Pte Ltd<br><div style="margin-top:20px;border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature</div></div>'
       +'<div style="text-align:right;font-size:9pt;color:#555">'
