@@ -232,36 +232,36 @@ const db=getDatabase(initializeApp({
 const auth=getAuth();
 
 let vis={}, filt='all', editId=null;
-// ── 30-day average FX rates (SGD per 1 foreign unit) ─────────────
-var _viFxCache={SGD:1}, _viFxFetching=false, _viFxReady=false;
+// ── FX rates: SGD per 1 foreign unit ──────────────────────────────
+// Approximate fallback rates (used if API is unavailable)
+var _viFxFallback={SGD:1,USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
+var _viFxCache=Object.assign({},_viFxFallback);
+var _viFxFetching=false, _viFxReady=false;
 function viFetchFx(cb){
   if(_viFxReady){cb(_viFxCache);return;}
   if(_viFxFetching){setTimeout(function(){viFetchFx(cb);},300);return;}
   _viFxFetching=true;
-  var end=new Date(), start=new Date(end);
-  start.setDate(start.getDate()-30);
-  var fmt2=function(d){return d.toISOString().slice(0,10);};
-  fetch('https://api.frankfurter.app/'+fmt2(start)+'..'+fmt2(end)+'?from=SGD&to=USD,EUR,JPY,SEK,CNY,GBP')
-    .then(function(r){return r.json();})
+  // Use /latest endpoint — simpler and more reliable than date-range
+  fetch('https://api.frankfurter.app/latest?from=SGD&to=USD,EUR,JPY,SEK,CNY,GBP,AUD,HKD,GBP')
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(data){
-      var totals={}, counts={};
-      Object.values(data.rates||{}).forEach(function(day){
-        Object.entries(day).forEach(function(e){
-          totals[e[0]]=(totals[e[0]]||0)+e[1];
-          counts[e[0]]=(counts[e[0]]||0)+1;
-        });
-      });
-      Object.entries(totals).forEach(function(e){
-        _viFxCache[e[0]]=1/(e[1]/counts[e[0]]); // SGD per 1 foreign unit
+      // data.rates = {USD: 0.74, JPY: 109.5, ...} (SGD → foreign)
+      // invert to get SGD per 1 foreign unit
+      Object.entries(data.rates||{}).forEach(function(e){
+        if(e[1]) _viFxCache[e[0]]=1/e[1];
       });
       _viFxCache.SGD=1;
       _viFxReady=true; _viFxFetching=false;
       cb(_viFxCache);
     })
-    .catch(function(){_viFxFetching=false;cb({SGD:1});});
+    .catch(function(){
+      // API failed — use fallback rates (better than 1:1 for JPY etc.)
+      _viFxFetching=false; _viFxReady=true;
+      cb(_viFxCache); // _viFxCache already has fallback values
+    });
 }
 function toSGD(amount, currency, fx){
-  var rate=fx[currency]||1;
+  var rate=fx[currency]||fx[currency.toUpperCase()]||1;
   return (parseFloat(amount)||0)*rate;
 }
 
