@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
+.app{max-width:720px;margin:0 auto;padding:1.25rem 1rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1rem;border-bottom:1px solid #e0ddd6;padding-bottom:1rem;flex-wrap:wrap}
+.topbar h1{font-size:20px;font-weight:600;flex:1}
+.back{font-size:12px;color:#185FA5;text-decoration:none;padding:5px 10px;border:1px solid #B5D4F4;border-radius:8px;background:#E6F1FB;white-space:nowrap}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+/* Tabs */
+.tabs{display:flex;border:1px solid #ddd;border-radius:8px;overflow:hidden;background:#efefed;margin-bottom:1rem}
+.tab{font-family:inherit;font-size:13px;padding:7px 16px;border:none;background:transparent;cursor:pointer;color:#666;transition:background .12s;flex:1;font-weight:500}
+.tab.active{background:#fff;color:#1a1a1a;font-weight:600}
+/* Controls */
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem}
+.controls input[type=text]{flex:1;min-width:140px;padding:7px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #ccc;background:#fff;color:#1a1a1a;cursor:pointer}
+.add-btn{font-family:inherit;font-size:13px;padding:7px 14px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600;white-space:nowrap}
+/* Week */
+.week-header{display:flex;align-items:center;gap:8px;margin:1.2rem 0 0.5rem}
+.week-label{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.week-line{flex:1;height:1px;background:#e0ddd6}
+.week-today{font-size:11px;background:#FAEEDA;color:#854F0B;border-radius:10px;padding:2px 8px;font-weight:600}
+/* Service card */
+.entry-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.entry-header{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;padding:1rem}
+.entry-date-col{text-align:center}
+.entry-day{font-size:24px;font-weight:700;line-height:1}
+.entry-mon{font-size:11px;color:#888;text-transform:uppercase}
+.entry-dow{font-size:10px;color:#aaa;margin-top:2px}
+.entry-ref{font-size:13px;font-weight:700;color:#185FA5}
+.entry-vessel{font-size:14px;font-weight:600;margin:1px 0}
+.entry-loc{font-size:12px;color:#888;margin-top:2px}
+.entry-notes{font-size:12px;color:#666;margin-top:4px;font-style:italic}
+.entry-actions{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.btn-attend{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid #3B6D11;color:#3B6D11;background:#EAF3DE;cursor:pointer;font-weight:600;white-space:nowrap}
+.btn-attend.leave{border-color:#A32D2D;color:#A32D2D;background:#FCEBEB}
+.btn-edit{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #ddd;color:#555;background:#fff;cursor:pointer}
+.btn-del{font-family:inherit;font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #f5b8b8;color:#A32D2D;background:#FCEBEB;cursor:pointer}
+.entry-workers{border-top:1px solid #f0ede6;padding:8px 1rem;display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:#f9f9f7}
+.worker-chip{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:#EAF3DE;color:#3B6D11;border:1px solid #b8e4c5}
+.worker-chip.me{background:#1a6641;color:#fff;border-color:#1a6641}
+.workers-label{font-size:11px;color:#aaa;font-weight:500}
+.no-workers{font-size:11px;color:#aaa;font-style:italic}
+/* Supply card */
+.supply-card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.supply-header{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;padding:1rem 1rem 0.75rem}
+.supply-ref{font-size:13px;font-weight:700;color:#185FA5;margin-bottom:2px}
+.supply-vessel{font-size:14px;font-weight:600}
+.supply-customer{font-size:12px;color:#888;margin-top:2px}
+.supply-eta{font-size:12px;text-align:right}
+.eta-val{font-size:15px;font-weight:700}
+.eta-days{font-size:11px;margin-top:1px}
+.eta-overdue{color:#A32D2D}.eta-soon{color:#854F0B}.eta-ok{color:#3B6D11}.eta-none{color:#aaa}
+.status-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap;display:inline-block;margin-top:4px}
+.st-customer_po{background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4}
+.st-vendor_po{background:#F3E6F3;color:#8B1A8B;border:1px solid #d4b8d4}
+.st-do_wcc{background:#FAEEDA;color:#854F0B;border:1px solid #f0c08a}
+.st-invoice{background:#EAF3DE;color:#3B6D11;border:1px solid #b8e4c5}
+.st-other{background:#f5f5f3;color:#888;border:1px solid #ddd}
+/* Vendor delivery rows */
+.vendor-rows{border-top:1px solid #f0ede6}
+.vendor-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:8px 1rem;border-bottom:1px solid #f5f5f3}
+.vendor-row:last-child{border-bottom:none}
+.vendor-name{font-size:12px;font-weight:600;color:#8B1A8B}
+.vendor-ref{font-size:11px;color:#888;margin-top:1px}
+.delivery-sel{font-family:inherit;font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;background:#fff;cursor:pointer;color:#1a1a1a}
+.delivery-sel.pending{border-color:#ddd;color:#888}
+.delivery-sel.transit{border-color:#f0c08a;background:#FAEEDA;color:#854F0B}
+.delivery-sel.delivered{border-color:#b8e4c5;background:#EAF3DE;color:#3B6D11}
+/* Empty */
+.empty{font-size:13px;color:#aaa;text-align:center;padding:3rem;border:1px solid #e0ddd6;border-radius:12px;background:#fff}
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:1rem;overflow-y:auto}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;margin:auto;border:1px solid #e0ddd6}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.field{margin-bottom:0.85rem}
+.field label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;color:#1a1a1a;background:#f9f9f7}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#185FA5;background:#fff}
+.worker-check-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.wcheck{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid #ddd;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;background:#fff;transition:all .12s}
+.wcheck.checked{background:#EAF3DE;border-color:#3B6D11;color:#3B6D11}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+.btn-cancel{font-family:inherit;font-size:13px;padding:8px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer}
+.btn-save{font-family:inherit;font-size:13px;padding:8px 20px;border-radius:8px;border:none;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600}
+.loading-screen{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loading-screen.hide{display:none}
+.spinner{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{font-size:13px;color:#888}
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:13px;padding:9px 20px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading planner…</p></div>
+<div class="app">
+  <div class="topbar">
+    <h1>&#128197; Job Planner</h1>
+    <a href="https://aarkoh.github.io/Raycontrol/" class="back">&#8962; Hub</a>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tabService" onclick="switchTab('service')">🔧 Service</button>
+    <button class="tab" id="tabSupply" onclick="switchTab('supply')">📦 Supply</button>
+  </div>
+
+  <!-- Service controls -->
+  <div id="serviceControls" class="controls">
+    <input type="text" id="searchInp" placeholder="Search ref, vessel, location…" oninput="render()">
+    <select id="rangeFilter" onchange="render()">
+      <option value="upcoming">Upcoming</option>
+      <option value="week">This week</option>
+      <option value="month">This month</option>
+      <option value="all">All dates</option>
+      <option value="past">Past</option>
+    </select>
+    <button class="add-btn" onclick="openModal()">+ Schedule</button>
+  </div>
+
+  <!-- Supply controls -->
+  <div id="supplyControls" class="controls" style="display:none">
+    <input type="text" id="supSearchInp" placeholder="Search ref, vessel, customer…" oninput="renderSupply()">
+    <select id="supStatusFilter" onchange="renderSupply()">
+      <option value="">All active</option>
+      <option value="customer_po">Customer PO</option>
+      <option value="vendor_po">Vendor PO</option>
+      <option value="do_wcc">DO / WCC</option>
+    </select>
+  </div>
+
+  <div id="plannerContent"></div>
+</div>
+
+<!-- Service Schedule Modal -->
+<div class="modal-bg" id="schedModal">
+  <div class="modal">
+    <h2 id="modalTitle">Schedule a Job</h2>
+    <div class="field">
+      <label>Job Reference *</label>
+      <div style="position:relative">
+        <input type="text" id="sJobRef" placeholder="Type job ref or vessel…" autocomplete="off" oninput="filterJobSuggestions()">
+        <div id="jobSugDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;z-index:50;max-height:180px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+      </div>
+    </div>
+    <div class="field" id="jobInfoRow" style="display:none">
+      <div style="background:#f4f8fe;border:1px solid #B5D4F4;border-radius:8px;padding:8px 12px;font-size:13px">
+        <div id="jobInfoVessel" style="font-weight:600"></div>
+        <div id="jobInfoCustomer" style="color:#888;font-size:12px"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="field">
+        <label>Date *</label>
+        <input type="date" id="sDate">
+      </div>
+      <div class="field">
+        <label>Location</label>
+        <input type="text" id="sLoc" placeholder="e.g. Jurong Port">
+      </div>
+    </div>
+    <div class="field">
+      <label>Notes <span style="font-weight:400;color:#aaa">(optional)</span></label>
+      <textarea id="sNotes" rows="2" placeholder="Any additional details…" style="resize:vertical"></textarea>
+    </div>
+    <div class="field">
+      <label>Workers Attending</label>
+      <div class="worker-check-grid" id="workerCheckGrid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getDatabase,ref,onValue,push,update,remove}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+const app=initializeApp({apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"});
+const db=getDatabase(app);
+const auth=getAuth(app);
+
+const SL={quote:'Quote',customer_po:'Customer PO',vendor_po:'Vendor PO',do_wcc:'DO / WCC',invoice:'Invoice Sent',soa:'SOA Sent',closed:'Closed'};
+let schedule={}, jobs={}, supplyDelivery={}, workers=[], me='', editId=null, selJobId=null, activeTab='service';
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+function getMonday(d){const dt=new Date(d+'T00:00:00');const day=dt.getDay();dt.setDate(dt.getDate()-(day===0?6:day-1));return dt.toISOString().slice(0,10);}
+function daysDiff(d){if(!d)return null;const now=new Date();now.setHours(0,0,0,0);return Math.round((new Date(d+'T00:00:00')-now)/(864e5));}
+
+// ── Tab switching ───────────────────────────────────────────
+window.switchTab=function(tab){
+  activeTab=tab;
+  document.getElementById('tabService').classList.toggle('active',tab==='service');
+  document.getElementById('tabSupply').classList.toggle('active',tab==='supply');
+  document.getElementById('serviceControls').style.display=tab==='service'?'':'none';
+  document.getElementById('supplyControls').style.display=tab==='supply'?'':'none';
+  render();
+};
+
+window.render=function(){
+  if(activeTab==='service')renderService();
+  else renderSupply();
+};
+
+// ══════════════════════════════════════════════════════════
+// SERVICE TAB
+// ══════════════════════════════════════════════════════════
+function filterEntries(){
+  const q=(document.getElementById('searchInp').value||'').toLowerCase();
+  const rf=document.getElementById('rangeFilter').value;
+  const today=new Date();today.setHours(0,0,0,0);
+  const todayStr=today.toISOString().slice(0,10);
+  return Object.entries(schedule).filter(([id,e])=>{
+    if(q&&![e.jobRef,e.vessel,e.location,e.customer].filter(Boolean).some(x=>x.toLowerCase().includes(q)))return false;
+    const d=e.date||'';
+    if(rf==='upcoming')return d>=todayStr;
+    if(rf==='past')return d<todayStr;
+    if(rf==='week'){const end=new Date(today);end.setDate(today.getDate()+7);return d>=todayStr&&d<=end.toISOString().slice(0,10);}
+    if(rf==='month'){const end=new Date(today);end.setDate(today.getDate()+30);return d>=todayStr&&d<=end.toISOString().slice(0,10);}
+    return true;
+  }).sort((a,b)=>a[1].date.localeCompare(b[1].date));
+}
+
+function renderService(){
+  const list=filterEntries();
+  const cont=document.getElementById('plannerContent');
+  if(!list.length){cont.innerHTML='<div class="empty">No scheduled service jobs for this period</div>';return;}
+  const todayStr=new Date().toISOString().slice(0,10);
+  const weeks={};
+  list.forEach(([id,e])=>{
+    const wk=getMonday(e.date||todayStr);
+    if(!weeks[wk])weeks[wk]=[];
+    weeks[wk].push([id,e]);
+  });
+  let html='';
+  Object.entries(weeks).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([wk,items])=>{
+    const wkEnd=new Date(wk+'T00:00:00');wkEnd.setDate(wkEnd.getDate()+6);
+    const wkStr=wkEnd.toISOString().slice(0,10);
+    const isThisWeek=wk<=todayStr&&todayStr<=wkStr;
+    const wkLabel=fmtDate(wk).slice(0,6)+' – '+fmtDate(wkStr);
+    html+=`<div class="week-header"><span class="week-label">${wkLabel}</span>${isThisWeek?'<span class="week-today">This week</span>':''}<span class="week-line"></span></div>`;
+    items.forEach(([id,e])=>{
+      const ws=e.workers||[];
+      const iAttending=ws.includes(me);
+      const isPast=(e.date||'')<todayStr;
+      const dt=new Date(e.date+'T00:00:00');
+      let attendBtn='';
+      if(me&&!isPast){
+        attendBtn=iAttending
+          ?`<button class="btn-attend leave" onclick="toggleAttend('${id}',false)">✓ Attending — Leave</button>`
+          :`<button class="btn-attend" onclick="toggleAttend('${id}',true)">+ I'm Attending</button>`;
+      }
+      const editBtns=!isPast?`<button class="btn-edit" onclick="openModal('${id}')">✎ Edit</button><button class="btn-del" onclick="deleteEntry('${id}')">Delete</button>`:'';
+      const chips=ws.length?ws.map(w=>`<span class="worker-chip${w===me?' me':''}">${w}</span>`).join(''):`<span class="no-workers">No one signed up yet</span>`;
+      html+=`<div class="entry-card">
+        <div class="entry-header">
+          <div class="entry-date-col">
+            <div class="entry-day">${dt.getDate()}</div>
+            <div class="entry-mon">${MONTHS[dt.getMonth()]}</div>
+            <div class="entry-dow">${DAYS[dt.getDay()]}</div>
+          </div>
+          <div>
+            <div class="entry-ref">${e.jobRef||'—'}</div>
+            <div class="entry-vessel">${e.vessel||''}</div>
+            ${e.customer?`<div style="font-size:12px;color:#888">${e.customer}</div>`:''}
+            ${e.location?`<div class="entry-loc">📍 ${e.location}</div>`:''}
+            ${e.notes?`<div class="entry-notes">${e.notes}</div>`:''}
+          </div>
+          <div class="entry-actions">${attendBtn}${editBtns}</div>
+        </div>
+        <div class="entry-workers"><span class="workers-label" style="margin-right:4px">Attending:</span>${chips}</div>
+      </div>`;
+    });
+  });
+  cont.innerHTML=html;
+}
+
+// ── Service actions ─────────────────────────────────────────
+window.toggleAttend=async function(id,join){
+  const e=schedule[id];if(!e)return;
+  const ws=[...(e.workers||[])];
+  if(join&&!ws.includes(me))ws.push(me);
+  if(!join)ws.splice(ws.indexOf(me),1);
+  try{await update(ref(db,'schedule/'+id),{workers:ws});toast(join?'You\'re attending ✓':'Removed from schedule');}
+  catch(err){toast('Error: '+err.message);}
+};
+window.deleteEntry=async function(id){
+  if(!confirm('Delete this schedule entry?'))return;
+  try{await remove(ref(db,'schedule/'+id));toast('Deleted');}
+  catch(err){toast('Error: '+err.message);}
+};
+
+// ══════════════════════════════════════════════════════════
+// SUPPLY TAB
+// ══════════════════════════════════════════════════════════
+window.renderSupply=function(){
+  const q=(document.getElementById('supSearchInp').value||'').toLowerCase();
+  const sf=document.getElementById('supStatusFilter').value;
+  const SUPPLY_STATUSES=['customer_po','vendor_po','do_wcc','invoice'];
+  const cont=document.getElementById('plannerContent');
+  const todayStr=new Date().toISOString().slice(0,10);
+
+  // Filter: task contains 'supply' (case-insensitive) AND status in active supply statuses
+  const list=Object.entries(jobs).filter(([id,j])=>{
+    if(j.archived)return false;
+    if(!(j.task||'').toLowerCase().includes('supply'))return false;
+    const st=j.status||'quote';
+    if(sf)return st===sf;
+    return SUPPLY_STATUSES.includes(st);
+  }).filter(([id,j])=>{
+    if(!q)return true;
+    return [j.ref,j.vessel,j.customerName,j.equip].filter(Boolean).some(x=>x.toLowerCase().includes(q));
+  }).sort((a,b)=>{
+    // Sort by ETA, then by ref
+    const ea=a[1].eta||'9999';
+    const eb=b[1].eta||'9999';
+    return ea.localeCompare(eb)||( a[1].ref||'').localeCompare(b[1].ref||'');
+  });
+
+  if(!list.length){
+    cont.innerHTML='<div class="empty">No active supply jobs found.<br><span style="font-size:12px;color:#bbb">Supply jobs are jobs with task containing "Supply" at Customer PO stage or later.</span></div>';
+    return;
+  }
+
+  let html='';
+  list.forEach(([jid,j])=>{
+    const st=j.status||'quote';
+    const stClass=['customer_po','vendor_po','do_wcc','invoice'].includes(st)?'st-'+st:'st-other';
+    const d=daysDiff(j.eta);
+    let etaDaysHtml='';
+    if(j.eta){
+      let cls='eta-ok',label='';
+      if(d===null){cls='eta-none';label='No ETA';}
+      else if(d<0){cls='eta-overdue';label=Math.abs(d)+'d overdue';}
+      else if(d===0){cls='eta-soon';label='Today';}
+      else if(d<=7){cls='eta-soon';label='In '+d+'d';}
+      else{cls='eta-ok';label='In '+d+'d';}
+      etaDaysHtml=`<div class="eta-val ${cls}">${fmtDate(j.eta)}</div><div class="eta-days ${cls}">${label}</div>`;
+    } else {
+      etaDaysHtml=`<div class="eta-val eta-none">—</div><div class="eta-days eta-none">No ETA set</div>`;
+    }
+
+    // Vendor rows
+    const vNames=j.vendorNames||[];
+    const vRefs=j.vendorRefs||[];
+    const vids=j.vendors||[];
+    const delData=(supplyDelivery[jid])||{};
+    let vendorRowsHtml='';
+    if(vNames.length){
+      vendorRowsHtml=vNames.map((vn,i)=>{
+        const vref=vRefs[i]||'';
+        const vid=vids[i]||i;
+        const delKey=vid||i;
+        const delStatus=(delData[delKey])||'pending';
+        const selCls=delStatus==='delivered'?'delivered':delStatus==='transit'?'transit':'pending';
+        return `<div class="vendor-row">
+          <div>
+            <div class="vendor-name">📦 ${vn}</div>
+            ${vref?`<div class="vendor-ref">Ref: ${vref}</div>`:''}
+          </div>
+          <select class="delivery-sel ${selCls}" onchange="setDelivery('${jid}','${delKey}',this)">
+            <option value="pending"${delStatus==='pending'?' selected':''}>⏳ Pending</option>
+            <option value="transit"${delStatus==='transit'?' selected':''}>🚚 In Transit</option>
+            <option value="delivered"${delStatus==='delivered'?' selected':''}>✅ Delivered</option>
+          </select>
+        </div>`;
+      }).join('');
+    } else {
+      vendorRowsHtml='<div class="vendor-row"><span style="font-size:12px;color:#aaa">No vendors assigned to this job</span></div>';
+    }
+
+    html+=`<div class="supply-card">
+      <div class="supply-header">
+        <div>
+          <div class="supply-ref">${j.ref||'—'} <span class="status-badge ${stClass}">${SL[st]||st}</span></div>
+          <div class="supply-vessel">${j.vessel?'⚓ '+j.vessel:''}</div>
+          <div class="supply-customer">${j.customerName||''}</div>
+          ${j.equip?`<div style="font-size:11px;color:#aaa;margin-top:2px">${j.equip}${j.make?' · '+j.make:''}${j.model?' '+j.model:''}</div>`:''}
+        </div>
+        <div class="supply-eta">${etaDaysHtml}</div>
+      </div>
+      <div class="vendor-rows">${vendorRowsHtml}</div>
+    </div>`;
+  });
+  cont.innerHTML=html;
+};
+
+window.setDelivery=async function(jid,vid,sel){
+  const status=sel.value;
+  sel.className='delivery-sel '+(status==='delivered'?'delivered':status==='transit'?'transit':'pending');
+  try{
+    await update(ref(db,'supplyDelivery/'+jid),{[vid]:status});
+    toast(status==='delivered'?'Marked as delivered ✓':status==='transit'?'Marked in transit':'Marked pending');
+  }catch(err){toast('Error: '+err.message);}
+};
+
+// ══════════════════════════════════════════════════════════
+// SERVICE MODAL
+// ══════════════════════════════════════════════════════════
+window.openModal=function(id){
+  editId=id||null;selJobId=null;
+  const e=id?schedule[id]:{};
+  document.getElementById('modalTitle').textContent=id?'Edit Schedule Entry':'Schedule a Job';
+  document.getElementById('sJobRef').value=e.jobRef||'';
+  document.getElementById('sDate').value=e.date||new Date().toISOString().slice(0,10);
+  document.getElementById('sLoc').value=e.location||'';
+  document.getElementById('sNotes').value=e.notes||'';
+  if(id&&e.vessel){
+    document.getElementById('jobInfoVessel').textContent=e.vessel;
+    document.getElementById('jobInfoCustomer').textContent=e.customer||'';
+    document.getElementById('jobInfoRow').style.display='';
+    const found=Object.entries(jobs).find(([,j])=>j.ref===e.jobRef);
+    if(found)selJobId=found[0];
+  } else {
+    document.getElementById('jobInfoRow').style.display='none';
+  }
+  const ws=e.workers||[];
+  document.getElementById('workerCheckGrid').innerHTML=workers.map(w=>
+    `<div class="wcheck${ws.includes(w)?' checked':''}" data-worker="${w}" onclick="toggleWCheck(this)">${w}</div>`
+  ).join('');
+  document.getElementById('jobSugDrop').style.display='none';
+  document.getElementById('schedModal').classList.add('show');
+  setTimeout(()=>document.getElementById('sJobRef').focus(),80);
+};
+window.closeModal=function(){document.getElementById('schedModal').classList.remove('show');editId=null;selJobId=null;};
+window.toggleWCheck=function(div){div.classList.toggle('checked');};
+window.filterJobSuggestions=function(){
+  const q=(document.getElementById('sJobRef').value||'').toLowerCase();
+  const drop=document.getElementById('jobSugDrop');
+  document.getElementById('jobInfoRow').style.display='none';selJobId=null;
+  if(!q){drop.style.display='none';return;}
+  const matches=Object.entries(jobs).filter(([,j])=>!j.archived&&((j.ref||'').toLowerCase().includes(q)||(j.vessel||'').toLowerCase().includes(q))).slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML=matches.map(([jid,j])=>
+    `<div style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f0ede6;font-size:13px" onmousedown="selectJob('${jid}')">
+      <div style="font-weight:600">${j.ref||'—'} <span style="font-weight:400;color:#888;font-size:11px">${j.vessel||''}</span></div>
+      <div style="font-size:11px;color:#888">${j.customerName||''}</div>
+    </div>`
+  ).join('');
+  drop.style.display='block';
+};
+window.selectJob=function(jid){
+  const j=jobs[jid];if(!j)return;
+  selJobId=jid;
+  document.getElementById('sJobRef').value=j.ref||'';
+  document.getElementById('jobInfoVessel').textContent=(j.vessel||'')+(j.equip?' · '+j.equip:'');
+  document.getElementById('jobInfoCustomer').textContent=j.customerName||'';
+  document.getElementById('jobInfoRow').style.display='';
+  if(!document.getElementById('sLoc').value&&j.port)document.getElementById('sLoc').value=j.port;
+  document.getElementById('jobSugDrop').style.display='none';
+};
+document.addEventListener('click',e=>{if(!e.target.closest('#sJobRef')&&!e.target.closest('#jobSugDrop'))document.getElementById('jobSugDrop').style.display='none';});
+window.saveEntry=async function(){
+  const jobRef=document.getElementById('sJobRef').value.trim();
+  const date=document.getElementById('sDate').value;
+  if(!jobRef){toast('Job reference is required');return;}
+  if(!date){toast('Date is required');return;}
+  const j=selJobId?jobs[selJobId]:(Object.values(jobs).find(x=>x.ref===jobRef)||{});
+  const ws=[...document.querySelectorAll('#workerCheckGrid .wcheck.checked')].map(d=>d.dataset.worker);
+  const data={jobRef,date,location:document.getElementById('sLoc').value.trim(),notes:document.getElementById('sNotes').value.trim(),workers:ws,vessel:j.vessel||'',customer:j.customerName||'',updatedAt:new Date().toISOString()};
+  try{
+    if(editId){await update(ref(db,'schedule/'+editId),data);toast('Updated ✓');}
+    else{data.createdBy=me||'staff';data.createdAt=new Date().toISOString();await push(ref(db,'schedule'),data);toast('Scheduled ✓');}
+    closeModal();
+  }catch(err){toast('Error: '+err.message);}
+};
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user)return;
+  const staff=sessionStorage.getItem('rc_staff')||'';
+  me=staff&&staff!=='ADMIN'?staff:'';
+  onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
+    b.textContent=snap.val()?'Live':'Offline';
+    b.className='conn '+(snap.val()?'online':'offline');
+  });
+  onValue(ref(db,'config/workers'),snap=>{if(snap.exists()&&Array.isArray(snap.val()))workers=snap.val();});
+  onValue(ref(db,'jobs'),snap=>{jobs=snap.val()||{};document.getElementById('loadingScreen').classList.add('hide');render();});
+  onValue(ref(db,'schedule'),snap=>{schedule=snap.val()||{};if(activeTab==='service')renderService();});
+  onValue(ref(db,'supplyDelivery'),snap=>{supplyDelivery=snap.val()||{};if(activeTab==='supply')renderSupply();});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),6000);
+</script>
+</body>
+</html>
