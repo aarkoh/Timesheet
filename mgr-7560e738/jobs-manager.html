@@ -579,7 +579,7 @@ function buildDetail(id){
       var vCur=v.currency||'SGD';
       var amt=_viCost(v);
       var rateKey='_fx_'+vCur+'_SGD';
-      var rate=window[rateKey]||FX_FALLBACK[vCur]||1;
+      var rate=window[rateKey]||(window.FX_FALLBACK||{})[vCur]||1;
       var sgd=vCur==='SGD'?amt:amt*rate;
       var rateNote=vCur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+vCur+' '+fmt(amt)+' @ '+rate.toFixed(4)+')</span>':'';
       return '<div class="profit-row">'
@@ -608,13 +608,13 @@ function buildDetail(id){
           ch.forEach(function(c){
             var costAmt=(parseFloat(c.costPrice)||0)*(parseFloat(c.qty)||0);
             var cur=c.costCur||'SGD';
-            var rate=window['_fx_'+cur+'_SGD']||FX_FALLBACK[cur]||1;
+            var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
             total+=cur==='SGD'?costAmt:costAmt*rate;
           });
         } else {
           var costAmt=(parseFloat(it.costPrice)||0)*(parseFloat(it.qty)||0);
           var cur=it.costCur||'SGD';
-          var rate=window['_fx_'+cur+'_SGD']||FX_FALLBACK[cur]||1;
+          var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
           total+=cur==='SGD'?costAmt:costAmt*rate;
         }
       });
@@ -631,7 +631,7 @@ function buildDetail(id){
             if(!parseFloat(c.costPrice))return;
             var costAmt=(parseFloat(c.costPrice)||0)*(parseFloat(c.qty)||0);
             var cur=c.costCur||'SGD';
-            var rate=window['_fx_'+cur+'_SGD']||FX_FALLBACK[cur]||1;
+            var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
             var sgd=cur==='SGD'?costAmt:costAmt*rate;
             var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(costAmt)+' @ '+rate.toFixed(4)+')</span>':'';
             rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+'.'+(ci+1)+' '+(c.desc||'—').substring(0,40)+rateNote+'</span>'
@@ -641,7 +641,7 @@ function buildDetail(id){
           if(!parseFloat(it.costPrice))return;
           var costAmt=(parseFloat(it.costPrice)||0)*(parseFloat(it.qty)||0);
           var cur=it.costCur||'SGD';
-          var rate=window['_fx_'+cur+'_SGD']||FX_FALLBACK[cur]||1;
+          var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
           var sgd=cur==='SGD'?costAmt:costAmt*rate;
           var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(costAmt)+' @ '+rate.toFixed(4)+')</span>':'';
           rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+' '+(it.desc||'—').substring(0,40)+rateNote+'</span>'
@@ -654,7 +654,7 @@ function buildDetail(id){
     var vendorCostSGD=jobVIs.reduce(function(s,e){
       var v=e[1],vCur=v.currency||'SGD',amt=_viCost(v);
       var rateKey='_fx_'+vCur+'_SGD';
-      var rate=window[rateKey]||FX_FALLBACK[vCur]||1;
+      var rate=window[rateKey]||(window.FX_FALLBACK||{})[vCur]||1;
       return s+(vCur==='SGD'?amt:amt*rate);
     },0);
     var claimCostSGD=claims.reduce(function(s,c){return s+(parseFloat(c.amount)||0);},0);
@@ -839,8 +839,8 @@ onAuthStateChanged(auth,user=>{
   });
 
   // ── Forex: hardcoded fallbacks + live /latest endpoint ──
-  const FX_FALLBACK={USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
-  Object.entries(FX_FALLBACK).forEach(function(e){window['_fx_'+e[0]+'_SGD']=e[1];});
+  window.FX_FALLBACK={USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
+  Object.entries(window.FX_FALLBACK).forEach(function(e){window['_fx_'+e[0]+'_SGD']=e[1];});
   window.fetchForex=async function(){
     const currencies=['USD','EUR','JPY','GBP','CNY','AUD','SEK','HKD'];
     for(const cur of currencies){
