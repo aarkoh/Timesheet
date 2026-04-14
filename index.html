@@ -68,7 +68,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </style>
 </head>
 <body>
-<canvas id="staffWatermark" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998;opacity:0" aria-hidden="true"></canvas>
 <div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading…</p></div>
 <div class="app">
   <div class="topbar" style="position:relative">
@@ -80,17 +79,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button id="approvalBellBtn" onclick="toggleApprovalPanel()" style="display:none;background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#854F0B;margin-left:8px;vertical-align:middle">
       &#128276; Approvals <span id="approvalBadge" style="display:none;background:#A32D2D;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:700;padding:0 4px;align-items:center;justify-content:center;margin-left:4px">0</span>
     </button>
-    <button id="auditLogBtn" onclick="toggleAuditPanel()" style="display:none;background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#185FA5;margin-left:8px;vertical-align:middle">&#128065; Activity Log</button>
     <div id="approvalPanelWrap" style="display:none;position:absolute;top:100%;right:16px;width:360px;background:#fff;border:1px solid #e0ddd6;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:700;max-height:360px;overflow-y:auto">
       <div style="padding:10px 16px;border-bottom:1px solid #f0ede6;font-weight:700;font-size:13px;color:#854F0B">Pending Access Requests</div>
       <div id="approvalPanel"></div>
-    </div>
-    <div id="auditPanelWrap" style="display:none;position:absolute;top:100%;right:16px;width:420px;background:#fff;border:1px solid #e0ddd6;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:700;max-height:480px;overflow-y:auto">
-      <div style="padding:10px 16px;border-bottom:1px solid #f0ede6;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-weight:700;font-size:13px;color:#185FA5">&#128065; Activity Log</span>
-        <span style="font-size:11px;color:#aaa">Last 50 events</span>
-      </div>
-      <div id="auditPanel"><div style="padding:16px;text-align:center;color:#aaa;font-size:13px">Loading…</div></div>
     </div>
   </div>
   <div class="section-title">Live overview</div>
@@ -325,35 +316,6 @@ onValue(ref(db,'accessRequests'),function(snap){
 });
 window.approveAccess=function(id){set(ref(db,'accessRequests/'+id+'/status'),'approved');};
 window.denyAccess=function(id){set(ref(db,'accessRequests/'+id+'/status'),'denied');};
-// ── Activity audit log listener (last 50 events) ────────────────
-window._auditDb=db; window._auditRef=ref; window._auditPush=push; window._auditSet=set;
-onValue(ref(db,'auditLog'),function(snap){
-  var entries=snap.val()||{};
-  var sorted=Object.entries(entries).sort(function(a,b){return (b[1].ts||'').localeCompare(a[1].ts||'');}).slice(0,50);
-  var panel=document.getElementById('auditPanel');
-  if(!panel) return;
-  if(sorted.length===0){panel.innerHTML='<div style="padding:16px;text-align:center;color:#aaa;font-size:13px">No activity recorded yet</div>';return;}
-  var icons={'login':'🔑','logout':'🚪','module_access':'📂','print':'🖨️','tab_hidden':'👁️','tab_visible':'👁️'};
-  panel.innerHTML=sorted.map(function(e){
-    var ev=e[1];
-    var ico=icons[ev.action]||'📋';
-    var dt=ev.ts?new Date(ev.ts).toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'-';
-    var detail=ev.detail||'';
-    var ua=ev.ua||'';
-    // Highlight print and tab_hidden as suspicious
-    var hilight=(ev.action==='print'||ev.action==='tab_hidden')?'background:#fff8f0;border-left:3px solid #854F0B;':'border-left:3px solid transparent;';
-    return '<div style="'+hilight+'padding:10px 14px;border-bottom:1px solid #f5f3ef;display:flex;gap:10px;align-items:flex-start">'
-      +'<span style="font-size:16px;margin-top:1px">'+ico+'</span>'
-      +'<div style="flex:1;min-width:0">'
-      +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
-      +'<span style="font-weight:700;font-size:13px;color:#1a1a1a">'+ev.worker+'</span>'
-      +'<span style="font-size:12px;color:#555">'+detail+'</span>'
-      +'</div>'
-      +'<div style="font-size:11px;color:#aaa;margin-top:2px">'+dt+(ua?'&nbsp;·&nbsp;<span title="'+ua+'" style="cursor:help">device</span>':'')+'</div>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-});
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
 
@@ -488,137 +450,9 @@ function toggleApprovalPanel(){
 }
 function showApprovalBell(){
   var s=window.loggedInStaff||sessionStorage.getItem('rc_staff');
-  var isAdmin=(s==='ADMIN');
   var b=document.getElementById('approvalBellBtn');
-  var al=document.getElementById('auditLogBtn');
-  if(b) b.style.display=isAdmin?'inline-block':'none';
-  if(al) al.style.display=isAdmin?'inline-block':'none';
+  if(b) b.style.display=(s==='ADMIN')?'inline-block':'none';
 }
-function toggleAuditPanel(){
-  var w=document.getElementById('auditPanelWrap');
-  var w2=document.getElementById('approvalPanelWrap');
-  if(w2) w2.style.display='none';
-  w.style.display=(w.style.display==='none')?'block':'none';
-}
-</script>
-
-
-<script>
-// ═══════════════════════════════════════════════════════════════
-// AUDIT LOGGING + WATERMARK
-// ═══════════════════════════════════════════════════════════════
-
-// ── Log an event to Firebase ────────────────────────────────────
-function logAudit(action, detail){
-  var db=window._auditDb, refFn=window._auditRef, pushFn=window._auditPush;
-  if(!db||!refFn||!pushFn) return; // Firebase not ready yet
-  var worker=window.loggedInStaff||sessionStorage.getItem('rc_staff')||'unknown';
-  if(!worker||worker==='null') return;
-  try{
-    pushFn(refFn(db,'auditLog'),{
-      worker:worker,
-      action:action,
-      detail:detail||'',
-      ts:new Date().toISOString(),
-      ua:navigator.userAgent.slice(0,80)
-    });
-  }catch(e){}
-}
-
-// ── Watermark canvas ─────────────────────────────────────────────
-function drawWatermark(name){
-  var canvas=document.getElementById('staffWatermark');
-  if(!canvas) return;
-  var W=window.innerWidth, H=window.innerHeight;
-  canvas.width=W; canvas.height=H;
-  var ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  if(!name||name==='null'){canvas.style.opacity='0';return;}
-  ctx.font='bold 14px Arial,sans-serif';
-  ctx.fillStyle='rgba(0,0,0,0.18)';
-  ctx.rotate(-Math.PI/6);
-  var text=name.toUpperCase()+'  ·  RAYCONTROL CONFIDENTIAL';
-  var spacing=200;
-  for(var y=-H;y<W+H;y+=60){
-    for(var x=-W;x<W+H;x+=spacing){
-      ctx.fillText(text,x,y);
-    }
-  }
-  canvas.style.opacity='1';
-}
-window.drawWatermark=drawWatermark;
-function clearWatermark(){
-  var canvas=document.getElementById('staffWatermark');
-  if(!canvas) return;
-  var ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  canvas.style.opacity='0';
-}
-window.addEventListener('resize',function(){
-  var who=window.loggedInStaff||sessionStorage.getItem('rc_staff');
-  if(who&&who!=='null') drawWatermark(who);
-});
-
-// ── Intercept module link clicks to log access ───────────────────
-document.addEventListener('click',function(e){
-  var a=e.target.closest('a.module-card');
-  if(!a) return;
-  var title=a.querySelector('.mod-title');
-  var modName=title?title.textContent.trim():(a.getAttribute('href')||'');
-  logAudit('module_access','Opened: '+modName);
-});
-
-// ── Detect print / Save as PDF ───────────────────────────────────
-window.addEventListener('beforeprint',function(){
-  logAudit('print','Print / Save PDF triggered');
-});
-// Also catch Ctrl+P
-document.addEventListener('keydown',function(e){
-  if((e.ctrlKey||e.metaKey)&&e.key==='p'){
-    logAudit('print','Keyboard shortcut Ctrl+P / Cmd+P');
-  }
-  // Ctrl+S (save page)
-  if((e.ctrlKey||e.metaKey)&&e.key==='s'){
-    logAudit('print','Keyboard shortcut Ctrl+S / Cmd+S (save page)');
-  }
-});
-
-// ── Detect tab hidden (possible screen capture or alt-tab) ───────
-document.addEventListener('visibilitychange',function(){
-  if(document.hidden){
-    logAudit('tab_hidden','Page hidden (app switch or screenshot tool)');
-  }else{
-    logAudit('tab_visible','Page visible again');
-  }
-});
-
-// ── Hook into login / logout to log and draw watermark ───────────
-(function(){
-  // Patch doStaffLogin to log + draw watermark
-  var _orig=window.doStaffLogin;
-  window.doStaffLogin=function(){
-    _orig&&_orig.apply(this,arguments);
-    var who=window.loggedInStaff||sessionStorage.getItem('rc_staff');
-    if(who&&who!=='null'){
-      drawWatermark(who);
-      setTimeout(function(){logAudit('login','Logged in');},600);
-    }
-  };
-  // Patch doLogout
-  var _origOut=window.doLogout;
-  window.doLogout=function(){
-    logAudit('logout','Logged out');
-    clearWatermark();
-    _origOut&&_origOut.apply(this,arguments);
-  };
-  // If already logged in (session restore), draw watermark now
-  var saved=sessionStorage.getItem('rc_staff');
-  if(saved&&saved!=='null'){
-    drawWatermark(saved);
-    // Log session restore after Firebase is ready
-    setTimeout(function(){logAudit('login','Session restored');},1500);
-  }
-})();
 </script>
 
 </body>
