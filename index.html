@@ -70,12 +70,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <body>
 <div class="loading-screen" id="loadingScreen"><div class="spinner"></div><p>Loading…</p></div>
 <div class="app">
-  <div class="topbar">
+  <div class="topbar" style="position:relative">
     <h1>&#9881; Staff Hub</h1>
     <p>Select a module to get started</p>
     <div class="liveclock" id="liveClock"></div>
     <span class="conn syncing" id="connBadge">Connecting…</span>
     <button class="logout-btn" id="logoutBtn" onclick="doLogout()">&#128274; Logout</button>
+    <button id="approvalBellBtn" onclick="toggleApprovalPanel()" style="display:none;background:none;border:1px solid #ddd;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;color:#854F0B;margin-left:8px;vertical-align:middle">
+      &#128276; Approvals <span id="approvalBadge" style="display:none;background:#A32D2D;color:#fff;border-radius:50%;min-width:18px;height:18px;font-size:10px;font-weight:700;padding:0 4px;align-items:center;justify-content:center;margin-left:4px">0</span>
+    </button>
+    <div id="approvalPanelWrap" style="display:none;position:absolute;top:100%;right:16px;width:360px;background:#fff;border:1px solid #e0ddd6;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:700;max-height:360px;overflow-y:auto">
+      <div style="padding:10px 16px;border-bottom:1px solid #f0ede6;font-weight:700;font-size:13px;color:#854F0B">Pending Access Requests</div>
+      <div id="approvalPanel"></div>
+    </div>
   </div>
   <div class="section-title">Live overview</div>
   <div class="stats-row">
@@ -91,7 +98,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="mod-title">Clock In / Out</div>
       <div class="mod-desc">Clock in and out with GPS location and job number</div>
     </a>
-    <a href="stocktaking.html" class="module-card stock">
+    <a href="stocktaking.html" class="module-card stock" onclick="return gateAccess(event,'stocktaking.html','Stock In / Out')">
       <span class="mod-icon">&#128230;</span>
       <span class="mod-badge worker">Staff</span>
       <div class="mod-title">Stock In / Out</div>
@@ -100,13 +107,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="section-title">Jobs &amp; Invoices</div>
   <div class="module-grid">
-    <a href="jobs.html" class="module-card" style="border-left:4px solid #1a1a1a">
+    <a href="jobs.html" class="module-card" style="border-left:4px solid #1a1a1a" onclick="return gateAccess(event,'jobs.html','Job Register')">
       <span class="mod-icon">&#128188;</span>
       <span class="mod-badge worker">Staff</span>
       <div class="mod-title">Job Register</div>
       <div class="mod-desc">Create and track jobs, manage status pipeline and documents</div>
     </a>
-    <a href="vendor-invoices.html" class="module-card" style="border-left:4px solid #854F0B">
+    <a href="vendor-invoices.html" class="module-card" style="border-left:4px solid #854F0B" onclick="return gateAccess(event,'vendor-invoices.html','Vendor Invoices')">
       <span class="mod-icon">&#128467;</span>
       <span class="mod-badge worker">Staff</span>
       <div class="mod-title">Vendor Invoices</div>
@@ -115,7 +122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="section-title">Customers, Vendors &amp; Planner</div>
   <div class="module-grid">
-    <a href="contacts.html" class="module-card contacts">
+    <a href="contacts.html" class="module-card contacts" onclick="return gateAccess(event,'contacts.html','Contacts')">
       <span class="mod-icon">&#128101;</span>
       <span class="mod-badge worker">Staff</span>
       <div class="mod-title">Contacts</div>
@@ -153,6 +160,7 @@ function initStaffLogin(){
     document.getElementById('loginOverlay').style.display='none';
     var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
     var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
+    if(typeof showApprovalBell==='function') showApprovalBell();
     if(typeof renderOverview==='function') renderOverview();
     if(typeof renderWorkers==='function') renderWorkers();
     return;
@@ -183,6 +191,7 @@ function doStaffLogin(){
   var lb=document.getElementById('logoutBtn');if(lb)lb.classList.add('visible');
   // Hide loading screen and trigger page render in case data already loaded
   var ls=document.getElementById('loadingScreen');if(ls)ls.classList.add('hide');
+  if(typeof showApprovalBell==='function') showApprovalBell();
   if(typeof renderOverview==='function') renderOverview();
   if(typeof renderWorkers==='function') renderWorkers();
 }
@@ -222,12 +231,13 @@ function doLogout(){
 </script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, get, set} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, get, set, push} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 const firebaseConfig={apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",authDomain:"attendance-20d6a.firebaseapp.com",databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"attendance-20d6a",storageBucket:"attendance-20d6a.firebasestorage.app",messagingSenderId:"597668949951",appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"};
 const fbApp=initializeApp(firebaseConfig);
 const db=getDatabase(fbApp);
 const auth=getAuth(fbApp);
+window._accessDb=db; window._accessDbRef=ref; window._accessDbSet=set; window._accessDbPush=push; window._accessDbOnValue=onValue;
 function liveClock(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleDateString([],{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+n.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
 liveClock();setInterval(liveClock,1000);
 signInAnonymously(auth).catch(e=>console.error(e));
@@ -278,6 +288,34 @@ onAuthStateChanged(auth,async user=>{
   }catch(e){}
   try{const ws=await get(ref(db,'config/workers'));if(ws.exists()&&Array.isArray(ws.val())) window.WORKERS_LIST=ws.val();}catch(e){}
 });
+// ── Manager approval notification panel ────────────────────────
+onValue(ref(db,'accessRequests'),function(snap){
+  var reqs=snap.val()||{};
+  var pending=Object.entries(reqs).filter(function(e){return e[1].status==='pending';});
+  var badge=document.getElementById('approvalBadge');
+  var panel=document.getElementById('approvalPanel');
+  if(!badge||!panel) return;
+  if(pending.length===0){
+    badge.style.display='none';
+    panel.innerHTML='<div style="padding:16px;text-align:center;color:#888;font-size:13px">No pending requests</div>';
+    return;
+  }
+  badge.style.display='inline-flex';
+  badge.textContent=pending.length;
+  panel.innerHTML=pending.map(function(entry){
+    var rid=entry[0]; var r=entry[1];
+    var ts=r.requestedAt?new Date(r.requestedAt).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit'}):'';
+    var row='<div style="padding:12px 16px;border-bottom:1px solid #f0ede6;display:flex;align-items:center;gap:8px">'
+      +'<div style="flex:1"><div style="font-weight:700;font-size:13px">'+r.worker+' → '+r.moduleName+'</div>'
+      +'<div style="font-size:11px;color:#888;margin-top:2px">'+ts+'</div></div>'
+      +'<button data-rid="'+rid+'" onclick="window.approveAccess(this.dataset.rid)" style="padding:5px 10px;background:#1a6641;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;font-weight:600">Approve</button>'
+      +'<button data-rid="'+rid+'" onclick="window.denyAccess(this.dataset.rid)" style="padding:5px 10px;background:#A32D2D;color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;margin-left:4px">Deny</button>'
+      +'</div>';
+    return row;
+  }).join('');
+});
+window.approveAccess=function(id){set(ref(db,'accessRequests/'+id+'/status'),'approved');};
+window.denyAccess=function(id){set(ref(db,'accessRequests/'+id+'/status'),'denied');};
 setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),5000);
 </script>
 
@@ -303,6 +341,118 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),50
     }
   });
 })();
+</script>
+
+
+<!-- OFF-HOURS ACCESS REQUEST OVERLAY -->
+<div id="accessOverlay" style="display:none;position:fixed;inset:0;background:rgba(20,20,20,0.82);z-index:800;align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:#fff;border-radius:16px;max-width:380px;width:100%;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.35)">
+    <div id="accessHdr" style="background:#854F0B;padding:16px 20px;color:#fff">
+      <div style="font-weight:700;font-size:16px">&#128274; Access Restricted</div>
+      <div style="font-size:12px;margin-top:3px;opacity:0.85" id="accessSub">Outside business hours</div>
+    </div>
+    <div style="padding:20px">
+      <div id="accessMsg" style="font-size:14px;color:#333;margin-bottom:16px;line-height:1.5"></div>
+      <div id="accessSpinner" style="display:none;text-align:center;padding:12px 0">
+        <div style="width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#854F0B;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 8px"></div>
+        <div style="font-size:13px;color:#666">Waiting for manager approval&#8230;</div>
+      </div>
+      <div id="accessActions" style="display:flex;gap:10px;margin-top:4px">
+        <button onclick="cancelAccessReq()" style="flex:1;padding:10px;border:1px solid #ddd;border-radius:8px;background:#fff;font-family:inherit;font-size:14px;cursor:pointer;color:#555">Cancel</button>
+        <button id="accessSendBtn" onclick="submitAccessReq()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#854F0B;color:#fff;font-family:inherit;font-size:14px;cursor:pointer;font-weight:600">Send Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+var _gUrl=null, _gName=null, _gReqId=null, _gUnsubscribe=null;
+
+function isOffHours(){
+  var d=new Date(), day=d.getDay(), h=d.getHours();
+  if(day===0||day===6) return true;
+  return h>=18||h<8;
+}
+function offHoursReason(){
+  var d=new Date(), day=d.getDay();
+  if(day===0||day===6) return 'Weekends require manager approval.';
+  return 'Access between 18:00 and 08:00 requires manager approval.';
+}
+function gateAccess(e,url,name){
+  if(!isOffHours()) return true;
+  e.preventDefault();
+  _gUrl=url; _gName=name;
+  var who=window.loggedInStaff||sessionStorage.getItem('rc_staff')||'Unknown';
+  document.getElementById('accessMsg').innerHTML=
+    '<strong>'+who+'</strong> is requesting access to <strong>'+name+'</strong>.<br><br>'+offHoursReason()+'<br><br>Tap <strong>Send Request</strong> to notify the manager.';
+  document.getElementById('accessHdr').style.background='#854F0B';
+  document.getElementById('accessSub').textContent='Outside business hours — approval needed';
+  document.getElementById('accessSpinner').style.display='none';
+  document.getElementById('accessActions').style.display='flex';
+  document.getElementById('accessSendBtn').style.display='';
+  document.getElementById('accessOverlay').style.display='flex';
+  return false;
+}
+function submitAccessReq(){
+  var who=window.loggedInStaff||sessionStorage.getItem('rc_staff')||'Unknown';
+  var db2=window._accessDb, refFn=window._accessDbRef, setFn=window._accessDbSet;
+  var pushFn=window._accessDbPush, onValFn=window._accessDbOnValue;
+  if(!db2){alert('Database not ready — try again in a moment.');return;}
+  var newRef=pushFn(refFn(db2,'accessRequests'));
+  _gReqId=newRef.key;
+  setFn(newRef,{worker:who,module:_gUrl,moduleName:_gName,status:'pending',requestedAt:new Date().toISOString()}).then(function(){
+    document.getElementById('accessActions').style.display='none';
+    document.getElementById('accessSpinner').style.display='block';
+    document.getElementById('accessMsg').innerHTML='Request sent for <strong>'+_gName+'</strong>.<br>Waiting for manager&#8230;';
+    document.getElementById('accessHdr').style.background='#185FA5';
+    document.getElementById('accessSub').textContent='Approval pending';
+    _gUnsubscribe=onValFn(refFn(db2,'accessRequests/'+_gReqId+'/status'),function(snap){
+      var s=snap.val();
+      if(s==='approved'){
+        if(_gUnsubscribe)_gUnsubscribe();
+        setFn(refFn(db2,'accessRequests/'+_gReqId+'/status'),'done');
+        document.getElementById('accessOverlay').style.display='none';
+        window.location.href=_gUrl;
+      } else if(s==='denied'){
+        if(_gUnsubscribe)_gUnsubscribe();
+        document.getElementById('accessHdr').style.background='#A32D2D';
+        document.getElementById('accessSub').textContent='Access denied';
+        document.getElementById('accessSpinner').style.display='none';
+        document.getElementById('accessMsg').innerHTML='&#10060; Manager declined access to <strong>'+_gName+'</strong>.';
+        document.getElementById('accessActions').style.display='flex';
+        document.getElementById('accessSendBtn').style.display='none';
+      }
+    });
+    setTimeout(function(){
+      if(!_gReqId)return;
+      if(_gUnsubscribe)_gUnsubscribe();
+      document.getElementById('accessHdr').style.background='#854F0B';
+      document.getElementById('accessSub').textContent='Request timed out';
+      document.getElementById('accessSpinner').style.display='none';
+      document.getElementById('accessMsg').innerHTML='&#9200; No response after 5 minutes. Try again or contact the manager.';
+      document.getElementById('accessActions').style.display='flex';
+      document.getElementById('accessSendBtn').style.display='';
+      _gReqId=null;
+    },300000);
+  }).catch(function(err){alert('Failed to send: '+err.message);});
+}
+function cancelAccessReq(){
+  if(_gUnsubscribe){_gUnsubscribe();_gUnsubscribe=null;}
+  if(_gReqId&&window._accessDb)
+    window._accessDbSet(window._accessDbRef(window._accessDb,'accessRequests/'+_gReqId+'/status'),'cancelled');
+  _gReqId=null; _gUrl=null; _gName=null;
+  document.getElementById('accessOverlay').style.display='none';
+}
+function toggleApprovalPanel(){
+  var w=document.getElementById('approvalPanelWrap');
+  w.style.display=(w.style.display==='none')?'block':'none';
+}
+function showApprovalBell(){
+  var s=window.loggedInStaff||sessionStorage.getItem('rc_staff');
+  var b=document.getElementById('approvalBellBtn');
+  if(b) b.style.display=(s==='ADMIN')?'inline-block':'none';
+}
 </script>
 
 </body>
