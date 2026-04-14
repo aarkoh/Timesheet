@@ -599,6 +599,17 @@ function buildDetail(id){
         +'</div>'
       +'</div>';
     }).join('');
+    // ── Build vendor discount map: {vendorId -> discPct} ──
+    var vendorDiscMap={};
+    (j.vendors||[]).forEach(function(vid,i){
+      vendorDiscMap[vid]=parseFloat((j.vendorDiscs||[])[i])||0;
+    });
+    // Helper: effective cost for one item after vendor discount
+    function _effectiveCost(costPrice,qty,vendorId){
+      var raw=(parseFloat(costPrice)||0)*(parseFloat(qty)||0);
+      var disc=vendorDiscMap[vendorId]||0;
+      return raw*(1-disc/100);
+    }
     // ── Line item costs from job's own cost prices ──
     function _liCostSGD(items){
       var total=0;
@@ -606,13 +617,13 @@ function buildDetail(id){
         var ch=it.children||[];
         if(ch.length){
           ch.forEach(function(c){
-            var costAmt=(parseFloat(c.costPrice)||0)*(parseFloat(c.qty)||0);
+            var costAmt=_effectiveCost(c.costPrice,c.qty,c.vendorId||it.vendorId);
             var cur=c.costCur||'SGD';
             var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
             total+=cur==='SGD'?costAmt:costAmt*rate;
           });
         } else {
-          var costAmt=(parseFloat(it.costPrice)||0)*(parseFloat(it.qty)||0);
+          var costAmt=_effectiveCost(it.costPrice,it.qty,it.vendorId);
           var cur=it.costCur||'SGD';
           var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
           total+=cur==='SGD'?costAmt:costAmt*rate;
@@ -629,22 +640,30 @@ function buildDetail(id){
         if(ch.length){
           ch.forEach(function(c,ci){
             if(!parseFloat(c.costPrice))return;
-            var costAmt=(parseFloat(c.costPrice)||0)*(parseFloat(c.qty)||0);
+            var vid=c.vendorId||it.vendorId;
+            var disc=vendorDiscMap[vid]||0;
+            var raw=(parseFloat(c.costPrice)||0)*(parseFloat(c.qty)||0);
+            var costAmt=raw*(1-disc/100);
             var cur=c.costCur||'SGD';
             var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
             var sgd=cur==='SGD'?costAmt:costAmt*rate;
-            var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(costAmt)+' @ '+rate.toFixed(4)+')</span>':'';
-            rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+'.'+(ci+1)+' '+(c.desc||'—').substring(0,40)+rateNote+'</span>'
+            var discNote=disc>0?'<span style="font-size:10px;color:#888"> −'+disc+'%</span>':'';
+            var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(raw)+(disc>0?' −'+disc+'% = '+cur+' '+fmt(costAmt):'')+' @ '+rate.toFixed(4)+')</span>':'';
+            rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+'.'+(ci+1)+' '+(c.desc||'—').substring(0,40)+discNote+rateNote+'</span>'
               +'<span style="color:#A32D2D">- SGD '+fmt(sgd)+'</span></div>');
           });
         } else {
           if(!parseFloat(it.costPrice))return;
-          var costAmt=(parseFloat(it.costPrice)||0)*(parseFloat(it.qty)||0);
+          var vid=it.vendorId;
+          var disc=vendorDiscMap[vid]||0;
+          var raw=(parseFloat(it.costPrice)||0)*(parseFloat(it.qty)||0);
+          var costAmt=raw*(1-disc/100);
           var cur=it.costCur||'SGD';
           var rate=window['_fx_'+cur+'_SGD']||(window.FX_FALLBACK||{})[cur]||1;
           var sgd=cur==='SGD'?costAmt:costAmt*rate;
-          var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(costAmt)+' @ '+rate.toFixed(4)+')</span>':'';
-          rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+' '+(it.desc||'—').substring(0,40)+rateNote+'</span>'
+          var discNote=disc>0?'<span style="font-size:10px;color:#888"> −'+disc+'%</span>':'';
+          var rateNote=cur!=='SGD'?'<span style="font-size:10px;color:#888"> ('+cur+' '+fmt(raw)+(disc>0?' −'+disc+'% = '+cur+' '+fmt(costAmt):'')+' @ '+rate.toFixed(4)+')</span>':'';
+          rows.push('<div class="profit-row"><span style="color:#555">'+(i+1)+' '+(it.desc||'—').substring(0,40)+discNote+rateNote+'</span>'
             +'<span style="color:#A32D2D">- SGD '+fmt(sgd)+'</span></div>');
         }
       });
