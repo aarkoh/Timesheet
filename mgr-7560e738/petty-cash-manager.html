@@ -263,12 +263,12 @@ onValue(ref(db,'pettyVouchers'),snap=>{
 
 /* ── Next voucher number ── */
 function nextVoucherNo(){
-  let max=0;
+  let max=891;
   Object.values(vouchers).forEach(v=>{
-    const m=(v.voucherNo||'').match(/PCV-(\d+)/);
+    const m=(v.voucherNo||'').match(/^(\d+)$/);
     if(m) max=Math.max(max,parseInt(m[1]));
   });
-  return 'PCV-'+String(max+1).padStart(3,'0');
+  return String(max+1);
 }
 
 /* ── Render list ── */
