@@ -2978,10 +2978,22 @@ window.gcGetState = function() {
 // Save to Firebase jobs/{id}/gasCert
 window.saveGasCert = function() {
   if (!GC_JOB_ID) { alert('No job linked — cannot save.'); return; }
+  var _update = window._dbUpdate, _ref = window._dbRef, _db = window._db;
+  if (!_update || !_ref || !_db) { alert('Database not ready — try again.'); return; }
+  var btn = document.querySelector('#gcOverlay [onclick="window.saveGasCert()"]');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
   var state = window.gcGetState();
-  update(ref(db, 'jobs/' + GC_JOB_ID), { gasCert: state })
-    .then(function() { window.toast('Gas cert saved ✓'); })
-    .catch(function(e) { alert('Save failed: ' + e.message); });
+  _update(_ref(_db, 'jobs/' + GC_JOB_ID), { gasCert: state })
+    .then(function() {
+      document.getElementById('gcOverlay').style.display = 'none';
+      if (typeof toast === 'function') toast('Gas cert saved ✓');
+    })
+    .catch(function(e) {
+      alert('Save failed: ' + e.message);
+    })
+    .finally(function() {
+      if (btn) { btn.innerHTML = '&#128190; Save'; btn.disabled = false; }
+    });
 };
 
 var GC_SYSTEMS = {
@@ -3193,8 +3205,8 @@ window.openGasCert = function(id) {
       if (r.cells[1].querySelector('input')) r.cells[1].querySelector('input').value = rd.sensor || '';
       r.cells[2].querySelector('input').value  = rd.zero   || '';
       r.cells[3].querySelector('input').value  = rd.span   || '';
-      r.cells[4].querySelector('select').value = rd.result || 'PASS';
-      r.cells[5].querySelector('select').value = rd.remark || 'NIL';
+      r.cells[4].querySelector('select').value = rd.result || 'OK';
+      r.cells[5].querySelector('select').value = rd.remark || 'PASS';
     });
   } else {
     var today = new Date();
