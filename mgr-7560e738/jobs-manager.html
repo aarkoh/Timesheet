@@ -137,6 +137,7 @@ button:hover{background:#f0f0ee}
     <div class="toolbar">
       <input type="text" id="srch" placeholder="Search ref, customer, vessel, PO&hellip;" oninput="render()">
     <button onclick="openSOA()" style="border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128196; SOA</button>
+    <button onclick="openJobModal()" style="border-color:#1a6641;color:#fff;background:#1a6641;font-weight:600">+ New Job</button>
     </div>
     <div class="chips">
       <div class="chip on" onclick="setF('all',this)">All</div>
@@ -200,7 +201,7 @@ function amtWords(amount,cur){
 
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getDatabase,ref,onValue,update}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getDatabase,ref,onValue,update,push}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 /* ── Auth — identical mechanism to jobs.html ── */
@@ -459,6 +460,7 @@ function buildDetail(id){
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap">'
       +'<button onclick="showList()" style="font-size:12px;padding:5px 10px">&larr; Back to List</button>'
       +'<div style="font-size:22px;font-weight:700;flex:1">'+(j.ref||'&mdash;')+'</div>'
+      +'<button onclick="openJobModal(\''+id+'\')" class="bsm" style="border-color:#185FA5;color:#185FA5;background:#EAF0FA;font-weight:600">&#9998; Edit</button>'
       +(j.archived
         ?'<button onclick="mgrUnarchive(\''+id+'\')" class="bsm" style="border-color:#185FA5;color:#185FA5">&#9654; Restore</button>'
         :'<button onclick="mgrArchive(\''+id+'\')" class="bsm" style="border-color:#aaa;color:#888">&#128447; Archive</button>'
@@ -1575,5 +1577,269 @@ window.printSOA = function() {
 })();
 </script>
 
+
+<!-- ── JOB CREATE/EDIT MODAL ── -->
+<div class="mbg" id="jobModalBg">
+  <div class="modal" style="max-width:780px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h2 style="font-size:16px;font-weight:700" id="jobModalTitle">New Job</h2>
+      <button onclick="closeJobModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888">&times;</button>
+    </div>
+
+    <!-- Row 1 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Job Reference *</label>
+        <input id="jm_ref" maxlength="8" inputmode="numeric" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Date</label>
+        <input id="jm_date" type="date" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Job Type</label>
+        <select id="jm_type" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          <option value="supply">Supply</option><option value="service">Service</option><option value="both">Service + Supply</option>
+        </select></div>
+    </div>
+
+    <!-- Customer -->
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Customer *</label>
+      <div style="position:relative">
+        <input id="jm_cs_inp" placeholder="Search customer…" autocomplete="off" oninput="jmCsSearch()" onfocus="jmCsSearch()"
+          style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box">
+        <div id="jm_cs_drop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:400;max-height:180px;overflow-y:auto;margin-top:2px"></div>
+      </div>
+      <div id="jm_cs_sel" style="display:none;margin-top:4px;background:#E6F1FB;border:1px solid #B5D4F4;border-radius:6px;padding:5px 10px;font-size:12px;color:#185FA5;display:flex;align-items:center;gap:8px">
+        <span id="jm_cs_nm" style="flex:1"></span>
+        <button type="button" onclick="jmClrCust()" style="background:none;border:none;cursor:pointer;color:#185FA5;font-size:16px;line-height:1">&times;</button>
+      </div>
+      <input type="hidden" id="jm_cs_id">
+    </div>
+
+    <!-- Row 2 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Attn</label>
+        <input id="jm_attn" placeholder="Contact person" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Your Ref</label>
+        <input id="jm_yref" placeholder="Customer reference" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Customer PO No.</label>
+        <input id="jm_cpo" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+    </div>
+
+    <!-- Row 3 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Vessel</label>
+        <input id="jm_vessel" placeholder="e.g. CAPE AROLA" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Port</label>
+        <input id="jm_port" placeholder="e.g. SINGAPORE" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Equipment</label>
+        <input id="jm_equip" placeholder="e.g. BWTS" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+    </div>
+
+    <!-- Row 4 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Make</label>
+        <input id="jm_make" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Model</label>
+        <input id="jm_model" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Task</label>
+        <input id="jm_task" placeholder="e.g. REPAIR" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+    </div>
+
+    <!-- Row 5 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Currency</label>
+        <select id="jm_cur" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          <option value="SGD">SGD</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="JPY">JPY</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">GST</label>
+        <select id="jm_gst" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          <option value="no">No GST</option><option value="9">GST 9%</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Payment Terms</label>
+        <select id="jm_pay" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box">
+          <option value="Advance">Advance</option><option value="7 Days Nett">7 Days Nett</option><option value="30 Days Nett">30 Days Nett</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">ETA</label>
+        <input id="jm_eta" type="date" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+    </div>
+
+    <!-- Row 6 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Service Engineer</label>
+        <input id="jm_eng" placeholder="Name, phone" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">PO Price</label>
+        <input id="jm_cpoprice" placeholder="e.g. SGD 5,850.00" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+    </div>
+
+    <!-- Notes -->
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">Internal Notes</label>
+      <textarea id="jm_memo" rows="2" placeholder="Not printed…" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+
+    <div class="mfoot">
+      <button onclick="closeJobModal()" style="border-color:#ddd">Cancel</button>
+      <button id="jm_save_btn" onclick="saveJobModal()" style="background:#185FA5;color:#fff;border-color:#185FA5;font-weight:600">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var _jmEditId = null;
+
+function gvj(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+
+window.openJobModal = function(id) {
+  _jmEditId = id || null;
+  document.getElementById('jobModalTitle').textContent = id ? 'Edit Job' : 'New Job';
+
+  // Clear all fields first
+  ['jm_ref','jm_date','jm_attn','jm_yref','jm_cpo','jm_cpoprice','jm_vessel','jm_port',
+   'jm_equip','jm_make','jm_model','jm_task','jm_eng','jm_eta','jm_memo'].forEach(function(f){
+    var el=document.getElementById(f); if(el) el.value='';
+  });
+  document.getElementById('jm_type').value='supply';
+  document.getElementById('jm_cur').value='SGD';
+  document.getElementById('jm_gst').value='no';
+  document.getElementById('jm_pay').value='30 Days Nett';
+  jmClrCust();
+
+  if(id){
+    var j=jobs[id]||{};
+    document.getElementById('jm_ref').value=j.ref||'';
+    document.getElementById('jm_date').value=j.date||'';
+    document.getElementById('jm_attn').value=j.attn||'';
+    document.getElementById('jm_yref').value=j.yourRef||'';
+    document.getElementById('jm_cpo').value=j.custPO||'';
+    document.getElementById('jm_cpoprice').value=j.poPrice||'';
+    document.getElementById('jm_vessel').value=j.vessel||'';
+    document.getElementById('jm_port').value=j.port||'';
+    document.getElementById('jm_equip').value=j.equip||'';
+    document.getElementById('jm_make').value=j.make||'';
+    document.getElementById('jm_model').value=j.model||'';
+    document.getElementById('jm_task').value=j.task||'';
+    document.getElementById('jm_eng').value=j.engineer||'';
+    document.getElementById('jm_eta').value=j.eta||'';
+    document.getElementById('jm_memo').value=j.memo||'';
+    document.getElementById('jm_type').value=j.type||'supply';
+    document.getElementById('jm_cur').value=j.currency||'SGD';
+    document.getElementById('jm_gst').value=j.gst||'no';
+    document.getElementById('jm_pay').value=j.payTerms||'30 Days Nett';
+    if(j.customerId&&j.customerName){
+      document.getElementById('jm_cs_id').value=j.customerId;
+      document.getElementById('jm_cs_nm').textContent=j.customerName;
+      document.getElementById('jm_cs_sel').style.display='flex';
+      document.getElementById('jm_cs_inp').style.display='none';
+    }
+  } else {
+    // Auto-generate ref: year prefix + next seq
+    var prefix=new Date().getFullYear().toString().slice(2);
+    var maxSeq=Object.values(jobs).reduce(function(m,j){
+      if(!j.ref)return m;
+      var p=j.ref.slice(0,2), n=parseInt(j.ref.slice(2));
+      return p===prefix&&!isNaN(n)?Math.max(m,n):m;
+    },0);
+    document.getElementById('jm_ref').value=prefix+String(maxSeq+1).padStart(3,'0');
+    document.getElementById('jm_date').value=new Date().toISOString().slice(0,10);
+  }
+
+  document.getElementById('jobModalBg').classList.add('show');
+  setTimeout(function(){ document.getElementById('jm_ref').focus(); }, 100);
+};
+
+window.closeJobModal = function() {
+  document.getElementById('jobModalBg').classList.remove('show');
+  _jmEditId = null;
+};
+
+window.jmClrCust = function() {
+  document.getElementById('jm_cs_id').value='';
+  document.getElementById('jm_cs_nm').textContent='';
+  document.getElementById('jm_cs_sel').style.display='none';
+  document.getElementById('jm_cs_inp').style.display='';
+  document.getElementById('jm_cs_inp').value='';
+};
+
+window.jmCsSearch = function() {
+  var q=document.getElementById('jm_cs_inp').value.toLowerCase();
+  var drop=document.getElementById('jm_cs_drop');
+  var ctacts=window._mgr_contacts||{};
+  var matches=Object.entries(ctacts).filter(function(e){
+    var c=e[1];
+    return (c.types||[]).includes('customer')&&((c.company||c.name||'').toLowerCase().includes(q));
+  }).slice(0,8);
+  if(!matches.length){drop.style.display='none';return;}
+  drop.innerHTML='';
+  matches.forEach(function(e){
+    var nm=e[1].company||e[1].name||'';
+    var div=document.createElement('div');
+    div.style.cssText='padding:9px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3';
+    div.textContent=nm;
+    div.addEventListener('click',function(){
+      document.getElementById('jm_cs_id').value=e[0];
+      document.getElementById('jm_cs_nm').textContent=nm;
+      document.getElementById('jm_cs_sel').style.display='flex';
+      document.getElementById('jm_cs_inp').style.display='none';
+      drop.style.display='none';
+    });
+    drop.appendChild(div);
+  });
+  drop.style.display='block';
+  setTimeout(function(){
+    document.addEventListener('click',function h(ev){
+      if(!drop.contains(ev.target)&&ev.target.id!=='jm_cs_inp'){drop.style.display='none';}
+      document.removeEventListener('click',h);
+    });
+  },10);
+};
+
+window.saveJobModal = async function() {
+  var jref=gvj('jm_ref'); if(!jref){toast('Job reference required');return;}
+  var custId=gvj('jm_cs_id'); if(!custId){toast('Please select a customer');return;}
+  var custName=document.getElementById('jm_cs_nm').textContent||'';
+  var btn=document.getElementById('jm_save_btn');
+  btn.textContent='Saving…'; btn.disabled=true;
+
+  var data={
+    ref:jref, date:gvj('jm_date'),
+    customerId:custId, customerName:custName,
+    attn:gvj('jm_attn'), yourRef:gvj('jm_yref'),
+    custPO:gvj('jm_cpo'), poPrice:gvj('jm_cpoprice'),
+    vessel:gvj('jm_vessel'), port:gvj('jm_port'),
+    equip:gvj('jm_equip'), make:gvj('jm_make'), model:gvj('jm_model'), task:gvj('jm_task'),
+    type:document.getElementById('jm_type').value,
+    currency:document.getElementById('jm_cur').value,
+    gst:document.getElementById('jm_gst').value,
+    payTerms:document.getElementById('jm_pay').value,
+    eta:gvj('jm_eta'), memo:gvj('jm_memo'), engineer:gvj('jm_eng'),
+    updatedAt:new Date().toISOString()
+  };
+
+  try{
+    if(_jmEditId){
+      await update(ref(db,'jobs/'+_jmEditId),data);
+      toast('Job updated ✓');
+      closeJobModal();
+      buildDetail(_jmEditId);
+    } else {
+      // Check for duplicate ref
+      var exists=Object.values(jobs).some(function(j){return j.ref===jref;});
+      if(exists){toast('Job ref '+jref+' already exists');btn.textContent='Save Job';btn.disabled=false;return;}
+      data.status='quote';
+      data.createdAt=new Date().toISOString();
+      await push(ref(db,'jobs'),data);
+      toast('Job created ✓');
+      closeJobModal();
+    }
+  }catch(e){
+    toast('Error: '+e.message);
+  }
+  btn.textContent='Save Job'; btn.disabled=false;
+};
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('jobModalBg').classList.contains('show')){
+    closeJobModal();
+  }
+});
+</script>
 </body>
 </html>
