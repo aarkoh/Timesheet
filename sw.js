@@ -55,14 +55,16 @@ self.addEventListener('activate', function(event) {
 self.addEventListener('fetch', function(event) {
   var url = event.request.url;
 
-  // Always go to network for Firebase, Google APIs, and external resources
+  // Always go to network for Firebase, Google APIs, external resources,
+  // and the manager hub (which has its own service worker)
   if (
     url.includes('firebaseapp.com') ||
     url.includes('firebasedatabase.app') ||
     url.includes('googleapis.com') ||
     url.includes('gstatic.com') ||
     url.includes('frankfurter.app') ||
-    url.includes('chrome-extension')
+    url.includes('chrome-extension') ||
+    url.includes('/mgr-7560e738/')
   ) {
     return; // let browser handle normally
   }
