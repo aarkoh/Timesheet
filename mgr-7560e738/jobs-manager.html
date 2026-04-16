@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="RC Manager">
 <meta name="theme-color" content="#1a1a1a">
 <link rel="manifest" href="/Raycontrol/mgr-7560e738/mgr-manifest.json">
-<link rel="apple-touch-icon" href="/Raycontrol/mgr-7560e738/icons/icon-mgr-192.png">
+<link rel="apple-touch-icon" href="/Raycontrol/icons/icon-mgr-192.png">
 <title>Job Register — Manager</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1213,6 +1213,7 @@ function printInvData(id, selectedItems, invType, invPct, billTo, payTermsOverri
   w.document.open();
   w.document.write(html);
   w.document.close();
+  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
 }
 </script>
 
@@ -1554,6 +1555,7 @@ window.printSOA = function() {
   w.document.open();
   w.document.write(html);
   w.document.close();
+  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
 };
 </script>
 
@@ -2093,7 +2095,8 @@ if ('serviceWorker' in navigator) {
             }
           });
         });
-      }).catch(function(err) { console.warn('MGR SW failed:', err); });
+      })
+      .catch(function(err) { console.warn('MGR SW failed:', err); });
   });
 }
 </script>

@@ -508,7 +508,7 @@ window.printVoucher=function(id){
   if(!win){toast('Pop-up blocked — please allow pop-ups.');return;}
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+css+'</head><body>'+body+'</body></html>');
   win.document.close();
-  setTimeout(()=>{win.focus();win.print();},450);
+  setTimeout(()=>{win.focus();try{var cb=win.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){win.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';win.document.body.appendChild(cb);}catch(e){}win.print();},450);
 };
 
 /* ── Keyboard ── */
