@@ -1,7 +1,7 @@
 {
   "name": "Raycontrol Manager",
   "short_name": "RC Manager",
-  "description": "Raycontrol Engineering \u2014 Manager Dashboard",
+  "description": "Raycontrol Engineering Manager Hub",
   "start_url": "/Raycontrol/mgr-7560e738/",
   "scope": "/Raycontrol/mgr-7560e738/",
   "display": "standalone",
@@ -13,17 +13,25 @@
       "src": "/Raycontrol/mgr-7560e738/icons/icon-mgr-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/Raycontrol/mgr-7560e738/icons/icon-mgr-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/Raycontrol/mgr-7560e738/icons/icon-mgr-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/Raycontrol/mgr-7560e738/icons/icon-mgr-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "categories": [
-    "business",
-    "productivity"
   ]
 }
