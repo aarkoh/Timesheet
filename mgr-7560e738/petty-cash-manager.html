@@ -2,7 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="RC Manager">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="/Raycontrol/mgr-7560e738/mgr-manifest.json">
+<link rel="apple-touch-icon" href="/Raycontrol/icons/icon-mgr-192.png">
 <title>Petty Cash Vouchers – Manager</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -506,6 +513,28 @@ window.printVoucher=function(id){
 
 /* ── Keyboard ── */
 document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeModal();});
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Raycontrol/mgr-7560e738/mgr-sw.js', { scope: '/Raycontrol/mgr-7560e738/' })
+      .then(function(reg) {
+        setInterval(function() { reg.update(); }, 60000);
+        reg.addEventListener('updatefound', function() {
+          var nw = reg.installing;
+          nw.addEventListener('statechange', function() {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              if (confirm('A new version of Raycontrol Manager is available. Reload to update?')) {
+                nw.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+              }
+            }
+          });
+        });
+      }).catch(function(err) { console.warn('MGR SW failed:', err); });
+  });
+}
 </script>
 </body>
 </html>

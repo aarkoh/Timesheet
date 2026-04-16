@@ -1,0 +1,26 @@
+{
+  "name": "Raycontrol Manager",
+  "short_name": "RC Manager",
+  "description": "Raycontrol Engineering — Manager Dashboard",
+  "start_url": "/Raycontrol/mgr-7560e738/",
+  "scope": "/Raycontrol/mgr-7560e738/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
+  "icons": [
+    {
+      "src": "/Raycontrol/icons/icon-mgr-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Raycontrol/icons/icon-mgr-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"]
+}
