@@ -1977,6 +1977,8 @@ function rcOpenBlob(html) {
   w.document.open();
   w.document.write(html);
   w.document.close();
+  // Inject back button for PWA — not present in html string so works for all docs
+  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
 }
 function rcBaseStyle(pbColor) {
   return '<style>*{box-sizing:border-box;margin:0;padding:0}'
@@ -1984,7 +1986,7 @@ function rcBaseStyle(pbColor) {
     +'@page{size:A4;margin:0}'
     +'@media print{body{padding:10mm 14mm}#pb{display:none}}'
     +'.jbl{font-weight:700}'
-    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:'+(pbColor||'#1a1a1a')+';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
+    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:'+(pbColor||'#1a1a1a')+';color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'+'#cb{position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;z-index:9999}@media print{#cb{display:none}}'
     +'</style>';
 }
 function rcHeader(docTitle) {
@@ -2940,7 +2942,6 @@ window.printFeedback=function(id){
     </div>
     <div style="padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;border-radius:0 0 12px 12px">
       <button onclick="document.getElementById('gcOverlay').style.display='none'" style="padding:8px 18px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit;font-size:13px;cursor:pointer">Cancel</button>
-      <button onclick="window.saveGasCert()" style="padding:8px 18px;border:1px solid #1a6641;border-radius:7px;background:#EAF3DE;color:#1a6641;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600">&#128190; Save</button>
       <button onclick="window.printGasCert()" style="padding:8px 20px;border:none;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600">&#128424; Print Certificate</button>
     </div>
   </div>
@@ -2948,53 +2949,6 @@ window.printFeedback=function(id){
 
 <script>
 var GC_TYPE = 'FGDS';
-var GC_JOB_ID = null;
-
-// Collect full form state into a plain object
-window.gcGetState = function() {
-  var tb = document.getElementById('gcBody');
-  var rows = Array.from(tb.rows).map(function(r) {
-    return {
-      sensor: r.cells[1].querySelector('input') ? r.cells[1].querySelector('input').value : '',
-      zero:   r.cells[2].querySelector('input').value,
-      span:   r.cells[3].querySelector('input').value,
-      result: r.cells[4].querySelector('select').value,
-      remark: r.cells[5].querySelector('select').value
-    };
-  });
-  return {
-    type:    GC_TYPE,
-    vessel:  document.getElementById('gc_vessel').value,
-    model:   document.getElementById('gc_model').value,
-    ref:     document.getElementById('gc_ref').value,
-    location:document.getElementById('gc_location').value,
-    caldate: document.getElementById('gc_caldate').value,
-    expiry:  document.getElementById('gc_expiry').value,
-    rep:     document.getElementById('gc_rep').value,
-    rows:    rows
-  };
-};
-
-// Save to Firebase jobs/{id}/gasCert
-window.saveGasCert = function() {
-  if (!GC_JOB_ID) { alert('No job linked — cannot save.'); return; }
-  var _update = window._dbUpdate, _ref = window._dbRef, _db = window._db;
-  if (!_update || !_ref || !_db) { alert('Database not ready — try again.'); return; }
-  var btn = document.querySelector('#gcOverlay [onclick="window.saveGasCert()"]');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
-  var state = window.gcGetState();
-  _update(_ref(_db, 'jobs/' + GC_JOB_ID), { gasCert: state })
-    .then(function() {
-      document.getElementById('gcOverlay').style.display = 'none';
-      if (typeof toast === 'function') toast('Gas cert saved ✓');
-    })
-    .catch(function(e) {
-      alert('Save failed: ' + e.message);
-    })
-    .finally(function() {
-      if (btn) { btn.innerHTML = '&#128190; Save'; btn.disabled = false; }
-    });
-};
 
 var GC_SYSTEMS = {
   FGDS: {
@@ -3174,57 +3128,24 @@ window.gcRemoveRow = function(btn) {
 };
 
 window.openGasCert = function(id) {
-  GC_JOB_ID = id;
   var j = (window._jobs || {})[id] || {};
+  var today = new Date();
+  var pad = function(n) { return n < 10 ? '0' + n : String(n); };
+  var todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
+  var expiry = new Date(today);
+  expiry.setFullYear(expiry.getFullYear() + 1);
+  var expiryStr = expiry.getFullYear() + '-' + pad(expiry.getMonth() + 1) + '-' + pad(expiry.getDate());
 
-  // If a saved gas cert exists, restore it; otherwise pre-fill from job fields
-  var saved = j.gasCert;
-  if (saved) {
-    document.getElementById('gc_vessel').value   = saved.vessel   || '';
-    document.getElementById('gc_model').value    = saved.model    || '';
-    document.getElementById('gc_ref').value      = saved.ref      || '';
-    document.getElementById('gc_location').value = saved.location || '';
-    document.getElementById('gc_caldate').value  = saved.caldate  || '';
-    document.getElementById('gc_expiry').value   = saved.expiry   || '';
-    document.getElementById('gc_rep').value      = saved.rep      || '';
-    GC_TYPE = saved.type || 'FGDS';
-    window.gcSetType(GC_TYPE);
-    // Restore sensor rows
-    var tb = document.getElementById('gcBody');
-    var defaultRows = tb.rows.length;
-    var savedRows = saved.rows || [];
-    // Add extra rows if needed
-    while (tb.rows.length < savedRows.length) window.gcAddRow();
-    // Remove extra rows if saved has fewer (keep at least saved count)
-    while (tb.rows.length > savedRows.length && tb.rows.length > 1) {
-      tb.deleteRow(tb.rows.length - 1);
-    }
-    savedRows.forEach(function(rd, i) {
-      var r = tb.rows[i];
-      if (!r) return;
-      if (r.cells[1].querySelector('input')) r.cells[1].querySelector('input').value = rd.sensor || '';
-      r.cells[2].querySelector('input').value  = rd.zero   || '';
-      r.cells[3].querySelector('input').value  = rd.span   || '';
-      r.cells[4].querySelector('select').value = rd.result || 'OK';
-      r.cells[5].querySelector('select').value = rd.remark || 'PASS';
-    });
-  } else {
-    var today = new Date();
-    var pad = function(n) { return n < 10 ? '0' + n : String(n); };
-    var todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate());
-    var expiry = new Date(today);
-    expiry.setFullYear(expiry.getFullYear() + 1);
-    var expiryStr = expiry.getFullYear() + '-' + pad(expiry.getMonth() + 1) + '-' + pad(expiry.getDate());
-    document.getElementById('gc_vessel').value   = j.vessel   || '';
-    document.getElementById('gc_model').value    = j.model    || '';
-    document.getElementById('gc_ref').value      = j.ref      || '';
-    document.getElementById('gc_location').value = j.port     || '';
-    document.getElementById('gc_caldate').value  = todayStr;
-    document.getElementById('gc_expiry').value   = expiryStr;
-    document.getElementById('gc_rep').value      = j.engineer || '';
-    GC_TYPE = 'FGDS';
-    window.gcSetType('FGDS');
-  }
+  document.getElementById('gc_vessel').value   = j.vessel   || '';
+  document.getElementById('gc_model').value    = j.model    || '';
+  document.getElementById('gc_ref').value      = j.ref      || '';
+  document.getElementById('gc_location').value = j.port     || '';
+  document.getElementById('gc_caldate').value  = todayStr;
+  document.getElementById('gc_expiry').value   = expiryStr;
+  document.getElementById('gc_rep').value      = j.engineer || '';
+
+  GC_TYPE = 'FGDS';
+  window.gcSetType('FGDS');
 
   document.getElementById('gcOverlay').style.display = 'block';
 };
@@ -3335,7 +3256,7 @@ window.printGasCert = function() {
   if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Calibration Cert (' + GC_TYPE + ') ' + ref + '</title>' + css + '</head><body>' + body + '</body></html>');
   win.document.close();
-  setTimeout(function() { win.focus(); }, 300);
+  setTimeout(function() { win.focus(); try{var cb=win.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){win.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';win.document.body.appendChild(cb);}catch(e){} }, 300);
 };
 </script>
 </body>
