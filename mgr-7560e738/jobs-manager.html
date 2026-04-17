@@ -1208,12 +1208,14 @@ function printInvData(id, selectedItems, invType, invPct, billTo, payTermsOverri
     +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your support</em></div>'
     +'<div style="font-size:7.5pt;text-align:center;margin-top:4px;font-style:italic">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
     +'</body></html>';
-  var w=window.open('','_blank');
+  // Inject back button then open via Blob URL for proper PDF text selection
+  var cbBtn='<button id="cb" onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999">&#8592; Back</button><style>@media print{#cb{display:none}}</style>';
+  html=html.replace('<body>','<body>'+cbBtn);
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
   if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
+  w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
 }
 </script>
 
@@ -1550,12 +1552,14 @@ window.printSOA = function() {
     +'<div style="font-size:8pt;font-style:italic;color:#555;margin-top:6px">* Ageing based on invoice date. Please disregard if payment has already been made.</div>'
     +'<div style="border-top:1px solid #000;padding-top:6px;font-size:8pt;margin-top:14px;text-align:center">E.&amp; O.E. | <em>Thank you for your continued support</em><br><span style="font-size:7.5pt">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</span></div>';
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SOA - '+custNm+'</title><style>'+css+'</style></head><body>'+bdy+'</body></html>';
-  var w=window.open('','_blank');
+  // Inject back button then open via Blob URL for proper PDF text selection
+  var cbBtn='<button id="cb" onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999">&#8592; Back</button><style>@media print{#cb{display:none}}</style>';
+  html=html.replace('<body>','<body>'+cbBtn);
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
   if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
+  w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
 };
 </script>
 
