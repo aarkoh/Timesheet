@@ -158,7 +158,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
             <div class="field"><label>Model</label><input type="text" id="ni_model" placeholder="e.g. EX-200"></div>
           </div>
           <div class="field-row">
-            <div class="field"><label>Unit *</label><input type="text" id="ni_unit" placeholder="pcs, kg, m…"></div>
+            <div class="field"><label>Weight *</label><input type="text" id="ni_unit" placeholder="pcs, kg, m…"></div>
             <div class="field"><label>Min stock alert</label><input type="number" id="ni_min" min="0" step="any" placeholder="0"></div>
           </div>
           <div class="field"><label>Location / Warehouse</label><input type="text" id="ni_loc" placeholder="e.g. Warehouse A, Shelf 3"></div>
@@ -236,7 +236,7 @@ select{font-family:inherit;font-size:13px;padding:6px 10px;border-radius:8px;bor
     </div>
     <div class="field-row">
       <div class="field"><label>Current qty</label><input type="number" id="ei_qty" min="0" step="any"></div>
-      <div class="field"><label>Unit</label><input type="text" id="ei_unit"></div>
+      <div class="field"><label>Weight</label><input type="text" id="ei_unit"></div>
     </div>
     <div class="field-row">
       <div class="field"><label>Min stock alert</label><input type="number" id="ei_min" min="0" step="any"></div>
@@ -356,7 +356,7 @@ window.showDropdown=function(q=''){
     const st=i.qty<=0?'Empty':i.qty<=i.minQty&&i.minQty>0?'Low stock':'In stock';
     return '<div class="dropdown-item" onclick="selectItem(\''+id+'\')">'
       +'<div class="di-name">'+i.name+' <span class="stock-badge '+sc+'">'+st+'</span></div>'
-      +'<div class="di-meta">'+(i.sku?'SKU: '+i.sku+' · ':'')+''+(i.unit||'pcs')+' · Stock: '+(i.qty||0)+(i.location?' · '+i.location:'')+'</div></div>';
+      +'<div class="di-meta">'+(i.sku?'SKU: '+i.sku+' · ':'')+''+(i.weight||i.unit||'pcs')+' · Stock: '+(i.qty||0)+(i.location?' · '+i.location:'')+'</div></div>';
   }).join('');
   dd.style.display='block';
 };
@@ -364,13 +364,13 @@ window.selectItem=function(id){
   selItem={id,...items[id]};
   document.getElementById('itemSearch').value=selItem.name;
   document.getElementById('itemDropdown').style.display='none';
-  document.getElementById('unitLabel').textContent=selItem.unit||'pcs';
+  document.getElementById('unitLabel').textContent=selItem.weight||selItem.unit||'pcs';
   document.getElementById('newItemBanner').style.display='none';
   const sc=selItem.qty<=0?'stock-empty':selItem.minQty>0&&selItem.qty<=selItem.minQty?'stock-low':'stock-ok';
   const si=document.getElementById('selectedItem');
   si.style.display='block';
   si.innerHTML='<b>'+selItem.name+'</b>'+(selItem.sku?' <span style="color:#888">· '+selItem.sku+'</span>':'')
-    +'<br><span style="color:#888">Current stock: </span><b>'+(selItem.qty||0)+' '+(selItem.unit||'pcs')+'</b>'
+    +'<br><span style="color:#888">Current stock: </span><b>'+(selItem.qty||0)+' '+(selItem.weight||selItem.unit||'pcs')+'</b>'
     +' <span class="stock-badge '+sc+'">'+(selItem.qty<=0?'Empty':selItem.qty<=selItem.minQty&&selItem.minQty>0?'Low':'OK')+'</span>'
     +(selItem.location?'<br><span style="color:#888">Location: '+selItem.location+'</span>':'');
   checkSubmit();
@@ -476,13 +476,13 @@ window.submitMovement=async function(){
   const localTZ=Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Singapore';
   const localTime=new Date().toLocaleString('en-GB',{timeZone:localTZ,day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
   const newQty=moveType==='in'?(selItem.qty||0)+qty:(selItem.qty||0)-qty;
-  const entry={itemId:selItem.id,itemName:selItem.name,sku:selItem.sku||'',worker:sel,type:moveType,qty,unit:selItem.unit||'pcs',qtyBefore:selItem.qty||0,qtyAfter:newQty,job,notes,time:now,localTime,tz:localTZ};
+  const entry={itemId:selItem.id,itemName:selItem.name,sku:selItem.sku||'',worker:sel,type:moveType,qty,unit:selItem.weight||selItem.unit||'pcs',qtyBefore:selItem.qty||0,qtyAfter:newQty,job,notes,time:now,localTime,tz:localTZ};
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.textContent='Saving…';
   try{
     await push(ref(db,'stock/movements'),entry);
     await update(ref(db,'stock/items/'+selItem.id),{qty:newQty,lastUpdated:now,lastWorker:sel});
-    const itemName=selItem.name,unit=selItem.unit||'pcs',minQty=selItem.minQty||0;
+    const itemName=selItem.name,unit=selItem.weight||selItem.unit||'pcs',minQty=selItem.minQty||0;
     if(newQty<=minQty&&minQty>0)toast('⚠ Low stock: '+itemName+' at '+newQty+' '+unit);
     else toast(itemName+' '+(moveType==='in'?'IN':'OUT')+' recorded ✓');
     setTimeout(fetchMovements, 1000); // refresh log immediately
@@ -650,7 +650,7 @@ window.exportStockXL=function(){
   const today=new Date().toLocaleDateString("en-SG",{day:"2-digit",month:"short",year:"numeric"});
   // Sheet 1: Stock Overview
   const rows=[["Stock Overview — "+today],[""],
-    ["Name","SKU","Category","Make","Model","Qty","Unit","Min Stock","Location","Cost (S$)","Sell (S$)","Status"]];
+    ["Name","SKU","Category","Make","Model","Qty","Weight","Min Stock","Location","Cost (S$)","Sell (S$)","Status"]];
   Object.values(items).sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(function(i){
     const isEmpty=i.qty<=0,isLow=i.minQty>0&&i.qty>0&&i.qty<=i.minQty;
     const status=isEmpty?"Empty":isLow?"Low stock":"OK";
@@ -680,7 +680,7 @@ window.exportLogXL=function(){
   });
   // Sheet 1: Movement Log
   const rows=[["Stock Movement Log — "+today],[""],
-    ["Date / Time","Type","Item","SKU","Worker","Qty Change","Unit","Qty Before","Qty After","Job / Invoice Ref","Notes"]];
+    ["Date / Time","Type","Item","SKU","Worker","Qty Change","Weight","Qty Before","Qty After","Job / Invoice Ref","Notes"]];
   list.forEach(function(m){
     const t=m.localTime||new Date(m.time).toLocaleString([],{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
     const type=m.type==="in"?"IN":m.type==="out"?"OUT":"EDIT";
