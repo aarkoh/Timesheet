@@ -1972,14 +1972,18 @@ window.printSOA = function() {
 <script>
 // ═══════════════════════════ SHARED HELPERS ═══════════════════════════
 function rcOpenBlob(html) {
-  var w=window.open('','_blank');
+  // Inject back button into HTML string before writing
+  var backBtn='<button id="cb" onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999">&#8592; Back</button>';
+  var backStyle='<style>@media print{#cb{display:none}}</style>';
+  html=html.replace('<body>','<body>'+backStyle+backBtn);
+  // Use Blob URL so Chrome renders in standards mode → proper per-character PDF text selection
+  var blob=new Blob([html],{type:'text/html'});
+  var url=URL.createObjectURL(blob);
+  var w=window.open(url,'_blank');
   if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  // Inject back button for PWA — not present in html string so works for all docs
-  try{var cb=w.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){w.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';w.document.body.appendChild(cb);}catch(e){}
+  if(w)w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
 }
+
 function rcBaseStyle(pbColor) {
   return '<style>*{box-sizing:border-box;margin:0;padding:0}'
     +'body{font-family:Courier New,Courier,monospace;font-size:10pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}'
@@ -3252,12 +3256,14 @@ window.printGasCert = function() {
     + '<button id="pb" onclick="window.print()" style="position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.3)">&#128424; Print / Save PDF</button>'
     + '<style>@media print{#pb{display:none}}</style>';
 
-  var win = window.open('', '_blank');
-  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
   var gcBack='<button onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;z-index:9999">&#8592; Back</button>';
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Calibration Cert (' + GC_TYPE + ') ' + ref + '</title>' + css + '<style>@media print{#gcb{display:none}}</style></head><body>' + gcBack + body + '</body></html>');
-  win.document.close();
-  setTimeout(function() { win.focus(); try{var cb=win.document.createElement('button');cb.id='cb';cb.innerHTML='&#8592; Back';cb.onclick=function(){win.close();};cb.style.cssText='position:fixed;top:16px;left:16px;padding:10px 18px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999';win.document.body.appendChild(cb);}catch(e){} }, 300);
+  var gcHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Calibration Cert (' + GC_TYPE + ') ' + ref + '</title>' + css + '<style>@media print{#gcb,#cb{display:none}}</style></head><body>' + gcBack + body + '</body></html>';
+  var gcBlob=new Blob([gcHtml],{type:'text/html'});
+  var gcUrl=URL.createObjectURL(gcBlob);
+  var win=window.open(gcUrl,'_blank');
+  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
+  win.addEventListener('load',function(){URL.revokeObjectURL(gcUrl);},false);
+  setTimeout(function() { win.focus(); }, 300);
 };
 </script>
 </body>
