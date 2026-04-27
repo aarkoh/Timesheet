@@ -1897,9 +1897,12 @@ window.printSOA = function() {
       <a href="#" onclick="window.dowccSelectAll(false);return false" style="color:#185FA5">None</a>
     </div>
     <div class="cipl-sec">Document Info</div>
+    <div style="font-size:11px;color:#854F0B;background:#FAEEDA;border:1px solid #e0c88a;border-radius:6px;padding:6px 10px;margin-bottom:8px">
+      &#128197; <strong>Document Date:</strong> Set the date the job will be carried out. You can print this 1&ndash;2 days in advance.
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="cipl-fi"><label>DO / WCC No.</label><input type="text" id="dowcc_no"></div>
-      <div class="cipl-fi"><label>Date</label><input type="date" id="dowcc_date"></div>
+      <div class="cipl-fi"><label>Document Date <span style="font-weight:400;color:#888">(set job date, not print date)</span></label><input type="date" id="dowcc_date"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="cipl-fi"><label>Service Engineer</label><input type="text" id="dowcc_eng" placeholder="Name of engineer"></div>
