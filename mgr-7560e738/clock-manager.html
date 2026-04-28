@@ -622,7 +622,12 @@ function renderSummary(){
       const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
       // Use saved timezone from device (most accurate), fallback to location-derived tz
       const shiftTZ = s.in.tz || (overseas ? tzFromLoc(loc) : 'Asia/Singapore');
-      otMins+=calcOTMins(eIn,eOut,shiftTZ);
+      // Use manager's OT override if set, otherwise compute automatically
+      if(s.in.otOverride != null){
+        otMins += s.in.otOverride * 60;
+      } else {
+        otMins+=calcOTMins(eIn,eOut,shiftTZ);
+      }
       // OVS: count each calendar day within this shift if it's overseas
       if(overseas){
         // Walk each calendar day in this shift
@@ -919,7 +924,7 @@ function renderLog(){
     // Local time display: use saved localTime or convert UTC to worker's tz
     const displayTime = e.localTime || fmtInTZ(e.time, e.tz||'Asia/Singapore', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
     const shortTime = e.localTime ? e.localTime.split(',')[1]?.trim().slice(0,5) : fmtInTZ(e.time, e.tz||'Asia/Singapore');
-    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}${e.edited?'<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">Edited</span>':''}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?`<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">${e.job}${e.vessel?' · '+e.vessel:''}</span>`:''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="lts">${shortTime}</span><button onclick="openEditLog('${e.id}')" style="font-size:10px;padding:2px 8px;border:1px solid #185FA5;color:#185FA5;background:#E6F1FB;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">&#9998; Edit</button><button onclick="deleteLogEntry('${e.id}')" style="font-size:10px;padding:2px 8px;border:1px solid #A32D2D;color:#A32D2D;background:#FCEBEB;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">&#128465;</button></div></div>`;
+    return `<div class="lentry"><span class="ltype ${e.type}">${e.type==='in'?'IN':'OUT'}</span><div><div class="lworker">${e.worker}${tzLabel}${e.edited?'<span style="font-size:10px;background:#FAEEDA;color:#854F0B;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">Edited</span>':''}${e.otOverride!=null?'<span style="font-size:10px;background:#EAF3DE;color:#1a6641;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px">OT: '+e.otOverride+'h override</span>':''}</div><div class="ltime">${displayTime}</div><div class="lloc">${e.job?`<span style="background:#E6F1FB;color:#185FA5;font-size:10px;font-weight:600;padding:1px 6px;border-radius:10px;margin-right:4px">${e.job}${e.vessel?' · '+e.vessel:''}</span>`:''}${loc}${e.acc?' (±'+e.acc+'m)':''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="lts">${shortTime}</span><button onclick="openEditLog('${e.id}')" style="font-size:10px;padding:2px 8px;border:1px solid #185FA5;color:#185FA5;background:#E6F1FB;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">&#9998; Edit</button><button onclick="deleteLogEntry('${e.id}')" style="font-size:10px;padding:2px 8px;border:1px solid #A32D2D;color:#A32D2D;background:#FCEBEB;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">&#128465;</button></div></div>`;
   }).join('');
 }
 
@@ -1163,7 +1168,7 @@ onAuthStateChanged(auth,async user=>{
         for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)){
           const k=dateKey(d);
           if(!leaveMap[k])leaveMap[k]=[];
-          if(!leaveMap[k].includes(r.staffName))leaveMap[k].push(r.staffName);
+          if(!leaveMap[k].includes(r.worker))leaveMap[k].push(r.worker);
         }
       });
     }
@@ -1217,6 +1222,11 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10
         <div id="editLogJobDrop" style="display:none;position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:300;max-height:160px;overflow-y:auto;margin-top:2px"></div>
       </div>
     </div>
+    <div id="otOverrideSection" style="display:none;margin-bottom:.75rem;background:#EAF3DE;border:1px solid #9DC87A;border-radius:8px;padding:10px 12px">
+      <label style="font-size:12px;color:#1a6641;display:block;margin-bottom:3px;font-weight:600">&#9874; OT Override (hours)</label>
+      <div style="font-size:11px;color:#3a7a51;margin-bottom:6px">For onboard/multi-day shifts where computed OT is unrealistic. Leave blank to use auto-calculated OT.</div>
+      <input type="number" id="editLogOTOverride" min="0" step="0.5" placeholder="e.g. 8.5 — leave blank to auto-calculate" style="width:100%;padding:8px 11px;border:1px solid #9DC87A;border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
+    </div>
     <div style="margin-bottom:1rem">
       <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Reason for edit</label>
       <input type="text" id="editLogReason" placeholder="e.g. Wrong clock-out location" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
@@ -1250,6 +1260,10 @@ function openEditLog(id){
   document.getElementById('editLogJob').value = e.job||'';
   document.getElementById('editLogReason').value = '';
   document.getElementById('editLogJobDrop').style.display = 'none';
+  // Show OT override only for clock-in entries
+  var isIn = e.type === 'in';
+  document.getElementById('otOverrideSection').style.display = isIn ? 'block' : 'none';
+  document.getElementById('editLogOTOverride').value = (isIn && e.otOverride != null) ? e.otOverride : '';
   document.getElementById('editLogModal').style.display = 'flex';
 }
 function editLogJobSearch(q){
@@ -1338,6 +1352,12 @@ async function saveEditLog(){
     editedAt: new Date().toISOString(),
     editReason: reason||'Manual correction by manager'
   };
+  // Save OT override if this is a clock-in entry and a value was entered
+  if(e && e.type === 'in'){
+    var otOvEl = document.getElementById('editLogOTOverride');
+    var otOvVal = otOvEl.value.trim();
+    upd.otOverride = otOvVal !== '' ? parseFloat(otOvVal) : null;
+  }
   try{
     var db = window._clockDb;
     var ref2 = window._clockRef;
