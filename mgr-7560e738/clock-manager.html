@@ -1227,6 +1227,10 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10
       <div style="font-size:11px;color:#3a7a51;margin-bottom:6px">For onboard/multi-day shifts where computed OT is unrealistic. Leave blank to use auto-calculated OT.</div>
       <input type="number" id="editLogOTOverride" min="0" step="0.5" placeholder="e.g. 8.5 — leave blank to auto-calculate" style="width:100%;padding:8px 11px;border:1px solid #9DC87A;border-radius:8px;font-size:13px;font-family:inherit;background:#fff">
     </div>
+    <div style="margin-bottom:.75rem">
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Location <span style="font-weight:400;color:#bbb">(address or description)</span></label>
+      <input type="text" id="editLogLoc" placeholder="e.g. Tuas Power Plant, Singapore" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
+    </div>
     <div style="margin-bottom:1rem">
       <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Reason for edit</label>
       <input type="text" id="editLogReason" placeholder="e.g. Wrong clock-out location" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
@@ -1258,6 +1262,7 @@ function openEditLog(id){
   document.getElementById('editLogTime').value = hh+':'+mi;
   document.getElementById('editLogJobInp').value = e.job||'';
   document.getElementById('editLogJob').value = e.job||'';
+  document.getElementById('editLogLoc').value = e.loc||'';
   document.getElementById('editLogReason').value = '';
   document.getElementById('editLogJobDrop').style.display = 'none';
   // Show OT override only for clock-in entries
@@ -1344,10 +1349,12 @@ async function saveEditLog(){
   var log2 = window._clockLog||[];
   var e = log2.find(function(x){return x.id===id;});
   var jobVal = document.getElementById('editLogJob').value.trim() || document.getElementById('editLogJobInp').value.trim();
+  var locVal = document.getElementById('editLogLoc').value.trim();
   var upd = {
     time: utcTime,
     localTime: localTime,
     job: jobVal,
+    loc: locVal,
     edited: true,
     editedAt: new Date().toISOString(),
     editReason: reason||'Manual correction by manager'
