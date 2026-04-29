@@ -77,9 +77,11 @@ button:hover{background:#f0f0ee}
     <div class="ms">Leave Details</div>
     <div class="fi">
       <label>Leave Type</label>
-      <select id="leaveType">
+      <select id="leaveType" onchange="calcDays()">
         <option value="Annual Leave">Annual Leave</option>
         <option value="Unpaid Leave">Unpaid Leave</option>
+        <option value="Medical Leave (MC)">Medical Leave (MC) — up to 14 days</option>
+        <option value="Hospitalisation Leave (HL)">Hospitalisation Leave (HL) — up to 30 days</option>
       </select>
     </div>
     <div class="fr2">
@@ -188,19 +190,48 @@ function countWorkingDays(start,end){
 window.calcDays=function(){
   const s=document.getElementById("leaveStart").value;
   const e=document.getElementById("leaveEnd").value;
+  const type=document.getElementById("leaveType").value;
+  const isMC=type==="Medical Leave (MC)";
+  const isHL=type==="Hospitalisation Leave (HL)";
+  const usesCalendarDays=isMC||isHL;
   if(s&&e&&e>=s){
-    const days=countWorkingDays(new Date(s+"T12:00:00"),new Date(e+"T12:00:00"));
-    document.getElementById("leaveDays").value=days>0?days:"0 (all days are weekends/public holidays)";
-  }else{document.getElementById("leaveDays").value="";}
+    let days;
+    if(usesCalendarDays){
+      // MC and HL count calendar days (including weekends/PHs)
+      days=Math.round((new Date(e+"T12:00:00")-new Date(s+"T12:00:00"))/864e5)+1;
+    } else {
+      days=countWorkingDays(new Date(s+"T12:00:00"),new Date(e+"T12:00:00"));
+    }
+    const limit=isMC?14:isHL?30:null;
+    if(limit&&days>limit){
+      document.getElementById("leaveDays").value=days+" (exceeds "+limit+"-day "+( isMC?"MC":"HL")+" entitlement)";
+      document.getElementById("leaveDays").style.color="#A32D2D";
+    } else if(!usesCalendarDays&&days===0){
+      document.getElementById("leaveDays").value="0 (all days are weekends/public holidays)";
+      document.getElementById("leaveDays").style.color="#888";
+    } else {
+      document.getElementById("leaveDays").value=days;
+      document.getElementById("leaveDays").style.color="#888";
+    }
+  } else {
+    document.getElementById("leaveDays").value="";
+  }
 };
 window.submitLeave=function(){
   const type=document.getElementById("leaveType").value;
   const start=document.getElementById("leaveStart").value;
   const end=document.getElementById("leaveEnd").value;
-  const days=parseInt(document.getElementById("leaveDays").value)||0;
+  const daysRaw=document.getElementById("leaveDays").value;
+  const days=parseInt(daysRaw)||0;
   const reason=document.getElementById("leaveReason").value.trim();
+  const isMC=type==="Medical Leave (MC)";
+  const isHL=type==="Hospitalisation Leave (HL)";
+  const limit=isMC?14:isHL?30:null;
   if(!start||!end||end<start){toast("Please select valid dates.");return;}
-  if(days<1){toast("No working days in selected range (weekends/public holidays only).");return;}
+  if(days<1){toast("No days in selected range.");return;}
+  if(limit&&days>limit){
+    if(!confirm("This exceeds the "+limit+"-day "+(isMC?"MC":"HL")+" entitlement ("+days+" days selected). Submit anyway?"))return;
+  }
   push(ref(db,"leaveRequests"),{staffName,type,startDate:start,endDate:end,days,reason,status:"pending",submittedAt:Date.now()})
     .then(()=>{closeApply();toast("Leave request submitted!");})
     .catch(()=>toast("Error submitting."));
