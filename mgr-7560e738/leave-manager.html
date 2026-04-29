@@ -114,6 +114,8 @@ button:hover{background:#f0f0ee}
         <option value="all">All Types</option>
         <option value="Annual Leave">Annual Leave</option>
         <option value="Unpaid Leave">Unpaid Leave</option>
+        <option value="Medical Leave (MC)">Medical Leave (MC)</option>
+        <option value="Hospitalisation Leave (HL)">Hospitalisation Leave (HL)</option>
       </select>
     </div>
     <div id="leaveList"><div class="empty">No leave requests found.</div></div>
@@ -136,10 +138,12 @@ button:hover{background:#f0f0ee}
             <th>AL Used <span style="font-weight:400">(this year)</span></th>
             <th>AL Remaining</th>
             <th>UL Used <span style="font-weight:400">(this year)</span></th>
+            <th>MC Used <span style="font-weight:400">(this year)</span></th>
+            <th>HL Used <span style="font-weight:400">(this year)</span></th>
           </tr>
         </thead>
         <tbody id="balanceBody">
-          <tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Loading staff&hellip;</td></tr>
+          <tr><td colspan="9" style="text-align:center;color:#aaa;padding:2rem">Loading staff&hellip;</td></tr>
         </tbody>
       </table>
     </div>
@@ -227,6 +231,18 @@ function ulUsedThisYear(staffName){
     (new Date(v.startDate).getFullYear()===thisYear||new Date(v.endDate).getFullYear()===thisYear)
   ).reduce((s,v)=>s+v.days,0);
 }
+function mcUsedThisYear(staffName){
+  return Object.values(allLeave).filter(v=>
+    v.staffName===staffName&&v.status==="approved"&&v.type==="Medical Leave (MC)"&&
+    (new Date(v.startDate).getFullYear()===thisYear||new Date(v.endDate).getFullYear()===thisYear)
+  ).reduce((s,v)=>s+v.days,0);
+}
+function hlUsedThisYear(staffName){
+  return Object.values(allLeave).filter(v=>
+    v.staffName===staffName&&v.status==="approved"&&v.type==="Hospitalisation Leave (HL)"&&
+    (new Date(v.startDate).getFullYear()===thisYear||new Date(v.endDate).getFullYear()===thisYear)
+  ).reduce((s,v)=>s+v.days,0);
+}
 
 // ── TABS ─────────────────────────────────────────────────────────────────────
 window.switchTab=function(id,btn){
@@ -302,6 +318,14 @@ window.openReview=function(id){
     if(ent!==null){
       balHtml="AL Entitlement "+thisYear+": <strong>"+ent+" days</strong>&emsp;Used: <strong>"+used+" days</strong>&emsp;Remaining: <strong style='color:"+(rem>=0?"#1a6641":"#A32D2D")+"'>"+rem+" days</strong>";
     }
+  } else if(v.type==="Medical Leave (MC)"){
+    const used=mcUsedThisYear(v.staffName);
+    const rem=14-used;
+    balHtml="MC Entitlement "+thisYear+": <strong>14 days</strong>&emsp;Used: <strong>"+used+" days</strong>&emsp;Remaining: <strong style='color:"+(rem>=0?"#1a6641":"#A32D2D")+"'>"+rem+" days</strong>";
+  } else if(v.type==="Hospitalisation Leave (HL)"){
+    const used=hlUsedThisYear(v.staffName);
+    const rem=30-used;
+    balHtml="HL Entitlement "+thisYear+": <strong>30 days</strong>&emsp;Used: <strong>"+used+" days</strong>&emsp;Remaining: <strong style='color:"+(rem>=0?"#1a6641":"#A32D2D")+"'>"+rem+" days</strong>";
   }
   document.getElementById("reviewSummary").innerHTML=
     "<strong>"+v.staffName+"</strong> &mdash; "+v.type+"<br>"+
@@ -317,15 +341,29 @@ window.openReview=function(id){
     const ent=entitlement(jd);
     if(ent===null){
       warn.style.display="block";
-      warn.textContent="&#9888; No join date set for this staff member. Set it in the Leave Balances tab to track entitlement accurately.";
+      warn.textContent="⚠ No join date set for this staff member. Set it in the Leave Balances tab to track entitlement accurately.";
     } else {
       const used=alUsedThisYear(v.staffName);
       const rem=ent-used;
       if(rem<v.days){
         warn.style.display="block";
-        warn.textContent="&#9888; This request ("+v.days+" day"+(v.days>1?"s":"")+") exceeds the remaining AL balance of "+rem+" day"+(rem===1?"":"s")+".";
+        warn.textContent="⚠ This request ("+v.days+" day"+(v.days>1?"s":"")+") exceeds the remaining AL balance of "+rem+" day"+(rem===1?"":"s")+".";
       } else {warn.style.display="none";}
     }
+  } else if(v.type==="Medical Leave (MC)"){
+    const used=mcUsedThisYear(v.staffName);
+    const rem=14-used;
+    if(rem<v.days){
+      warn.style.display="block";
+      warn.textContent="⚠ This request ("+v.days+" day"+(v.days>1?"s":"")+") exceeds the remaining MC entitlement of "+rem+" day"+(rem===1?"":"s")+".";
+    } else {warn.style.display="none";}
+  } else if(v.type==="Hospitalisation Leave (HL)"){
+    const used=hlUsedThisYear(v.staffName);
+    const rem=30-used;
+    if(rem<v.days){
+      warn.style.display="block";
+      warn.textContent="⚠ This request ("+v.days+" day"+(v.days>1?"s":"")+") exceeds the remaining HL entitlement of "+rem+" day"+(rem===1?"":"s")+".";
+    } else {warn.style.display="none";}
   } else {warn.style.display="none";}
   document.getElementById("reviewRemarks").value=v.remarks||"";
   document.getElementById("reviewModal").classList.add("show");
@@ -385,11 +423,15 @@ function renderBalances(){
     const ent=jd?entitlement(jd):null;
     const alUsed=alUsedThisYear(name);
     const ulUsed=ulUsedThisYear(name);
+    const mcUsed=mcUsedThisYear(name);
+    const hlUsed=hlUsedThisYear(name);
     const rem=ent!==null?ent-alUsed:null;
     const remClass=rem===null?"":rem>=3?"bal-good":rem>=1?"bal-warn":"bal-bad";
     const yrsLabel=yrs===null?"—":yrs===0?"<1 yr":yrs+" yr"+(yrs>1?"s":"");
     const entLabel=ent===null?'<span style="color:#bbb">Set join date</span>':ent+" days"+(ent===14?' <span class="pill">max</span>':"");
     const remLabel=rem===null?'<span style="color:#bbb">—</span>':'<span class="'+remClass+'">'+rem+" day"+(rem===1?"":"s")+"</span>";
+    const mcClass=mcUsed>=14?"bal-bad":mcUsed>=10?"bal-warn":"";
+    const hlClass=hlUsed>=30?"bal-bad":hlUsed>=20?"bal-warn":"";
     return '<tr>'+
       '<td><strong>'+name+'</strong></td>'+
       '<td><input type="date" value="'+jd+'" data-key="'+k+'" onchange="saveJoinDate(this)" style="width:130px"></td>'+
@@ -398,6 +440,8 @@ function renderBalances(){
       '<td>'+(alUsed||"0")+" day"+(alUsed===1?"":"s")+'</td>'+
       '<td>'+remLabel+'</td>'+
       '<td style="color:#666">'+(ulUsed||"0")+" day"+(ulUsed===1?"":"s")+'</td>'+
+      '<td>'+(mcUsed?'<span class="'+mcClass+'">'+mcUsed+" day"+(mcUsed===1?"":"s")+" / 14</span>":"0 / 14")+'</td>'+
+      '<td>'+(hlUsed?'<span class="'+hlClass+'">'+hlUsed+" day"+(hlUsed===1?"":"s")+" / 30</span>":"0 / 30")+'</td>'+
       '</tr>';
   });
   document.getElementById("balanceBody").innerHTML=rows.join("");
