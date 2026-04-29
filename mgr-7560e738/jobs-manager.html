@@ -1454,13 +1454,17 @@ function soaGetJobs() {
   return Object.entries(jobs).filter(function(e){
     var j = e[1];
     if(j.customerId !== custId) return false;
-    var d = (j.date||j.createdAt||'').slice(0,10);
+    if(!['invoice','soa','closed'].includes(j.status)) return false;
+    if(totals(j).total <= 0) return false;
+    // Use invoiceDate first so date filter matches invoice date, not job creation date
+    var d = (j.invoiceDate||j.date||j.createdAt||'').slice(0,10);
     if(from && d < from) return false;
     if(to && d > to) return false;
-    if(!['invoice','soa','closed'].includes(j.status)) return false;
-    return totals(j).total > 0;
+    return true;
   }).sort(function(a,b){
-    return (a[1].date||a[1].createdAt||'').localeCompare(b[1].date||b[1].createdAt||'');
+    var da = (a[1].invoiceDate||a[1].date||a[1].createdAt||'');
+    var db = (b[1].invoiceDate||b[1].date||b[1].createdAt||'');
+    return da.localeCompare(db);
   });
 }
 
