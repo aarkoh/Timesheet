@@ -1481,7 +1481,7 @@ window.generateSOAPreview = function() {
     var balStr=Math.abs(bal)<0.005?'<span style="color:#1a6641">Settled</span>':'<span style="color:#A32D2D;font-weight:600">'+cur+' '+fmt(bal)+'</span>';
     tbl+='<tr style="border-bottom:1px solid #f0ede6">'
       +'<td style="padding:6px 10px;font-weight:600">'+(j.ref||'--')+'</td>'
-      +'<td style="padding:6px 10px;color:#888;white-space:nowrap">'+(fmtD?fmtD(j.date||j.createdAt):j.date||j.createdAt||'--')+'</td>'
+      +'<td style="padding:6px 10px;color:#888;white-space:nowrap">'+(fmtD?fmtD(j.invoiceDate||j.date||j.createdAt):j.invoiceDate||j.date||j.createdAt||'--')+'</td>'
       +'<td style="padding:6px 10px"><span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#f0ede6">'+(SL[j.status]||j.status||'')+'</span></td>'
       +'<td style="padding:6px 10px;text-align:right">'+cur+' '+fmt(t.total)+'</td>'
       +'<td style="padding:6px 10px;text-align:right;color:#1a6641">'+(rcvd>0?cur+' '+fmt(rcvd):'--')+'</td>'
