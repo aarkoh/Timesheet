@@ -284,13 +284,25 @@ window.saveOverheads=async function(){
   const msg=document.getElementById('ohSaveMsg');
   msg.textContent='Saving…';msg.style.color='#888';
   try{
-    await set(ref(db,'config/overheads'),overheads);
+    /* localStorage — always works, instant */
+    localStorage.setItem('rc_overheads',JSON.stringify(overheads));
+    /* Firebase — best-effort for multi-device sync */
+    set(ref(db,'config/overheads'),overheads).catch(()=>{});
     msg.textContent='✓ Saved';msg.style.color='#3B6D11';
     setTimeout(()=>msg.textContent='',3000);
   }catch(e){msg.textContent='Error: '+e.message;msg.style.color='#A32D2D';}
 };
 
-/* ── Forex — identical fallbacks + live fetch ── */
+/* ── Load overheads immediately from localStorage ── */
+try{
+  const stored=localStorage.getItem('rc_overheads');
+  if(stored){
+    const oh=JSON.parse(stored);
+    overheads=oh;
+    loadOverheadUI(oh);
+  }
+}catch(e){}
+dataReady.overheads=true;
 const FX={USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
 async function fetchForex(){
   for(const cur of ['USD','EUR','JPY','GBP','CNY','AUD','SEK','HKD']){
@@ -630,10 +642,13 @@ onAuthStateChanged(auth,user=>{
     tryRender();
   });
   onValue(ref(db,'config/overheads'),snap=>{
-    if(snap.exists()) loadOverheadUI(snap.val());
-    else { overheads={rental:0,salary:0,cpf:0,cpfAuto:true,other:0}; }
-    dataReady.overheads=true;
-    tryRender();
+    if(snap.exists()){
+      const oh=snap.val();
+      /* Firebase wins if it has data — update localStorage too */
+      localStorage.setItem('rc_overheads',JSON.stringify(oh));
+      loadOverheadUI(oh);
+    }
+    /* dataReady.overheads already true from localStorage load above */
   });
   fetchForex();
 });
