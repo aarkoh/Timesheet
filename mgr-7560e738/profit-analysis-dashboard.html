@@ -59,6 +59,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .crow-bar-fill{height:5px;border-radius:2px;background:#185FA5}
 .note{font-size:11px;color:#aaa;margin-top:1.5rem;line-height:1.7;padding-top:1rem;border-top:1px solid #e0ddd6}
 .empty-state{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.oh-panel{background:#fff;border:1px solid #e0ddd6;border-radius:12px;margin-bottom:1.25rem;overflow:hidden}
+.oh-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.25rem;cursor:pointer;user-select:none}
+.oh-header:hover{background:#f9f9f7}
+.oh-title{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.oh-body{padding:1rem 1.25rem;border-top:1px solid #f0ede6;display:none}
+.oh-body.open{display:block}
+.oh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:1rem}
+.oh-field label{font-size:11px;color:#888;display:block;margin-bottom:4px;font-weight:500}
+.oh-field input{width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7}
+.oh-field input:focus{outline:none;border-color:#185FA5;background:#fff}
+.oh-field input:disabled{background:#f0ede6;color:#aaa;cursor:not-allowed}
+.oh-total-bar{background:#f0f7ff;border:1px solid #B5D4F4;border-radius:8px;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:.75rem}
+.kpi.purple{border-top-color:#8B1A8B}
 @media(max-width:700px){.chart-row{grid-template-columns:1fr}.ins-row{grid-template-columns:1fr}}
 </style>
 </head>
@@ -80,9 +93,69 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   <div class="kpi-grid">
     <div class="kpi b"><div class="kpi-label">Total revenue</div><div class="kpi-val blu" id="kRev">—</div><div class="kpi-sub">SGD equivalent</div></div>
     <div class="kpi"><div class="kpi-label">Total costs</div><div class="kpi-val" id="kCost">—</div><div class="kpi-sub">All cost types</div></div>
-    <div class="kpi g"><div class="kpi-label">Gross profit</div><div class="kpi-val" id="kProfit">—</div><div class="kpi-sub">Before tax &amp; overhead</div></div>
+    <div class="kpi g"><div class="kpi-label">Gross profit</div><div class="kpi-val" id="kProfit">—</div><div class="kpi-sub">Before overhead</div></div>
     <div class="kpi g"><div class="kpi-label">Gross margin</div><div class="kpi-val" id="kMargin">—</div><div class="kpi-sub">Portfolio-wide</div></div>
     <div class="kpi r"><div class="kpi-label">Jobs at risk</div><div class="kpi-val" id="kRisk">—</div><div class="kpi-sub">Below 15% floor</div></div>
+  </div>
+
+  <!-- ── Overhead inputs ── -->
+  <div class="oh-panel">
+    <div class="oh-header" onclick="toggleOH()">
+      <div class="oh-title">🏢 Monthly overhead costs <span style="font-size:11px;font-weight:400;color:#888" id="ohSummaryInline"></span></div>
+      <button onclick="event.stopPropagation();toggleOH()" style="font-family:inherit;font-size:11px;padding:3px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#666;cursor:pointer" id="ohToggleBtn">▼ Show</button>
+    </div>
+    <div class="oh-body" id="ohBody">
+      <div class="oh-grid">
+        <div class="oh-field">
+          <label>Rental / month (SGD)</label>
+          <input type="number" id="ohRental" min="0" step="1" placeholder="0" oninput="ohLiveUpdate()">
+        </div>
+        <div class="oh-field">
+          <label>Total salaries / month (SGD)</label>
+          <input type="number" id="ohSalary" min="0" step="1" placeholder="0" oninput="ohLiveUpdate()">
+        </div>
+        <div class="oh-field">
+          <label>
+            CPF (employer) / month
+            <span style="margin-left:6px">
+              <label style="display:inline-flex;align-items:center;gap:4px;font-weight:400;cursor:pointer">
+                <input type="checkbox" id="ohCpfAuto" checked onchange="ohToggleCpf()" style="width:auto"> auto 17%
+              </label>
+            </span>
+          </label>
+          <input type="number" id="ohCpf" min="0" step="1" placeholder="0" disabled oninput="ohLiveUpdate()">
+        </div>
+        <div class="oh-field">
+          <label>Other overheads / month (SGD)</label>
+          <input type="number" id="ohOther" min="0" step="1" placeholder="0" oninput="ohLiveUpdate()">
+        </div>
+      </div>
+      <div class="oh-total-bar">
+        <div>
+          <div style="font-size:11px;color:#555;font-weight:600">Monthly overhead total</div>
+          <div style="font-size:20px;font-weight:700;color:#185FA5" id="ohMonthTotal">SGD 0</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:#555;font-weight:600">Annual projection</div>
+          <div style="font-size:14px;font-weight:700;color:#666" id="ohAnnual">SGD 0 / yr</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="saveOverheads()" style="font-family:inherit;font-size:12px;font-weight:600;padding:7px 18px;border:none;border-radius:8px;background:#185FA5;color:#fff;cursor:pointer">Save to Firebase</button>
+        <span style="font-size:12px;color:#888" id="ohSaveMsg"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Net profit KPIs (shown only when overheads are set) ── -->
+  <div id="netKpiRow" style="display:none">
+    <div class="sec-lbl" style="margin-top:0;margin-bottom:10px">Net profit (after monthly overheads)</div>
+    <div class="kpi-grid" style="margin-bottom:1.5rem">
+      <div class="kpi purple"><div class="kpi-label">Period overhead</div><div class="kpi-val" id="kOhTotal" style="color:#8B1A8B">—</div><div class="kpi-sub" id="kOhSub">— months × —/mo</div></div>
+      <div class="kpi purple"><div class="kpi-label">Net profit</div><div class="kpi-val" id="kNetProfit">—</div><div class="kpi-sub">After overheads</div></div>
+      <div class="kpi purple"><div class="kpi-label">Net margin</div><div class="kpi-val" id="kNetMargin">—</div><div class="kpi-sub">Revenue basis</div></div>
+      <div class="kpi purple"><div class="kpi-label">Break-even rev</div><div class="kpi-val" id="kBreakEven" style="color:#854F0B">—</div><div class="kpi-sub">To cover overhead</div></div>
+    </div>
   </div>
 
   <div class="sec-lbl" style="margin-top:0">Monthly revenue vs gross profit</div>
@@ -92,6 +165,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
         <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>Revenue (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#FAC775;border:1px dashed #854F0B"></span>Cost (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#1a6641"></span>Gross profit</span>
+        <span class="leg-item" id="ohLegItem" style="display:none"><span class="leg-sq" style="background:#8B1A8B;opacity:0.5"></span>Monthly overhead</span>
       </div>
       <div style="position:relative;height:240px"><canvas id="trendChart" role="img" aria-label="Monthly revenue cost and profit">No data yet.</canvas></div>
     </div>
@@ -136,7 +210,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script type="module">
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import{getDatabase,ref,onValue}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getDatabase,ref,onValue,set}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 /* ── Auth — same check as jobs-manager.html ── */
@@ -160,7 +234,61 @@ const auth=getAuth();
 
 /* ── State ── */
 let jobs={},mgrLog=[],otRates={},ovsRates={};
-const dataReady={jobs:false,log:false,rates:false,fx:false};
+let overheads={rental:0,salary:0,cpf:0,cpfAuto:true,other:0};
+const dataReady={jobs:false,log:false,rates:false,fx:false,overheads:false};
+
+/* ── Overhead UI helpers ── */
+window.toggleOH=function(){
+  const b=document.getElementById('ohBody');
+  const btn=document.getElementById('ohToggleBtn');
+  const open=b.classList.toggle('open');
+  btn.textContent=open?'▲ Hide':'▼ Show';
+};
+window.ohToggleCpf=function(){
+  const auto=document.getElementById('ohCpfAuto').checked;
+  const cpfEl=document.getElementById('ohCpf');
+  cpfEl.disabled=auto;
+  if(auto){
+    const sal=parseFloat(document.getElementById('ohSalary').value)||0;
+    cpfEl.value=Math.round(sal*0.17)||'';
+  }
+  ohLiveUpdate();
+};
+window.ohLiveUpdate=function(){
+  const auto=document.getElementById('ohCpfAuto').checked;
+  if(auto){
+    const sal=parseFloat(document.getElementById('ohSalary').value)||0;
+    document.getElementById('ohCpf').value=Math.round(sal*0.17)||'';
+  }
+  const rental=parseFloat(document.getElementById('ohRental').value)||0;
+  const salary=parseFloat(document.getElementById('ohSalary').value)||0;
+  const cpf=parseFloat(document.getElementById('ohCpf').value)||0;
+  const other=parseFloat(document.getElementById('ohOther').value)||0;
+  const total=rental+salary+cpf+other;
+  document.getElementById('ohMonthTotal').textContent='SGD '+Math.round(total).toLocaleString();
+  document.getElementById('ohAnnual').textContent='SGD '+(Math.round(total*12)).toLocaleString()+' / yr';
+  document.getElementById('ohSummaryInline').textContent=total>0?'— SGD '+Math.round(total).toLocaleString()+'/mo':'';
+  overheads={rental,salary,cpf,cpfAuto:auto,other};
+  tryRender();
+};
+function loadOverheadUI(oh){
+  document.getElementById('ohRental').value=oh.rental||'';
+  document.getElementById('ohSalary').value=oh.salary||'';
+  document.getElementById('ohCpfAuto').checked=oh.cpfAuto!==false;
+  document.getElementById('ohCpf').value=oh.cpf||'';
+  document.getElementById('ohCpf').disabled=oh.cpfAuto!==false;
+  document.getElementById('ohOther').value=oh.other||'';
+  window.ohLiveUpdate();
+}
+window.saveOverheads=async function(){
+  const msg=document.getElementById('ohSaveMsg');
+  msg.textContent='Saving…';msg.style.color='#888';
+  try{
+    await set(ref(db,'config/overheads'),overheads);
+    msg.textContent='✓ Saved';msg.style.color='#3B6D11';
+    setTimeout(()=>msg.textContent='',3000);
+  }catch(e){msg.textContent='Error: '+e.message;msg.style.color='#A32D2D';}
+};
 
 /* ── Forex — identical fallbacks + live fetch ── */
 const FX={USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
@@ -267,7 +395,7 @@ const FLOOR=15;
 const SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vndr PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
 
 function tryRender(){
-  if(!dataReady.jobs||!dataReady.log||!dataReady.rates||!dataReady.fx) return;
+  if(!dataReady.jobs||!dataReady.log||!dataReady.rates||!dataReady.fx||!dataReady.overheads) return;
   render();
 }
 
@@ -299,6 +427,30 @@ function render(){
   kr.textContent=risk.length+' / '+jd.length;
   kr.className='kpi-val '+(risk.length>0?'neg':'pos');
 
+  /* ── Net profit (overhead-adjusted) ── */
+  const ohMonthly=overheads.rental+overheads.salary+overheads.cpf+overheads.other;
+  const mKeys2=Object.keys((function(){const m={};jd.forEach(x=>{const ds=x.j.date||x.j.createdAt||'';if(ds)m[ds.slice(0,7)]=1;});return m;})()).sort();
+  const periodMonths=mKeys2.length||1;
+  const ohPeriod=ohMonthly*periodMonths;
+  const netProfit=tProfit-ohPeriod;
+  const netMargin=tRev>0?netProfit/tRev*100:0;
+  const breakEven=ohMonthly>0&&tMargin>0?(ohMonthly/(tMargin/100)):0;
+  const netRow=document.getElementById('netKpiRow');
+  if(ohMonthly>0){
+    netRow.style.display='block';
+    document.getElementById('kOhTotal').textContent='$'+Math.round(ohPeriod).toLocaleString();
+    document.getElementById('kOhSub').textContent=periodMonths+' month'+(periodMonths!==1?'s':'')+' × $'+Math.round(ohMonthly).toLocaleString()+'/mo';
+    const knp=document.getElementById('kNetProfit');
+    knp.textContent=(netProfit<0?'−':'')+'$'+Math.abs(Math.round(netProfit)).toLocaleString();
+    knp.className='kpi-val '+(netProfit>=0?'pos':'neg');
+    const knm=document.getElementById('kNetMargin');
+    knm.textContent=netMargin.toFixed(1)+'%';
+    knm.className='kpi-val '+(netMargin>=0?'pos':'neg');
+    document.getElementById('kBreakEven').textContent='$'+Math.round(breakEven).toLocaleString()+'/mo';
+  } else {
+    netRow.style.display='none';
+  }
+
   /* Alert */
   const band=document.getElementById('alertBand');
   if(risk.length){
@@ -326,6 +478,7 @@ function render(){
   const mLabels=mKeys.map(ym=>new Date(ym+'-01').toLocaleDateString('en-SG',{month:'short',year:'2-digit'}));
 
   if(tCI) tCI.destroy();
+  document.getElementById('ohLegItem').style.display=ohMonthly>0?'flex':'none';
   tCI=new Chart(document.getElementById('trendChart'),{
     type:'bar',
     data:{
@@ -333,7 +486,8 @@ function render(){
       datasets:[
         {label:'Revenue',data:mKeys.map(m=>Math.round(mMap[m].rev)),backgroundColor:'rgba(24,95,165,0.15)',borderColor:'#185FA5',borderWidth:1.5,order:2},
         {label:'Cost',data:mKeys.map(m=>Math.round(mMap[m].cost)),backgroundColor:'rgba(239,159,39,0.12)',borderColor:'#EF9F27',borderWidth:1,order:3},
-        {label:'Gross profit',data:mKeys.map(m=>Math.round(mMap[m].profit)),type:'line',backgroundColor:'transparent',borderColor:'#1a6641',borderWidth:2.5,pointBackgroundColor:'#1a6641',pointRadius:4,tension:0.35,order:1}
+        {label:'Gross profit',data:mKeys.map(m=>Math.round(mMap[m].profit)),type:'line',backgroundColor:'transparent',borderColor:'#1a6641',borderWidth:2.5,pointBackgroundColor:'#1a6641',pointRadius:4,tension:0.35,order:1},
+        ...(ohMonthly>0?[{label:'Monthly overhead',data:mKeys.map(()=>Math.round(ohMonthly)),type:'line',backgroundColor:'transparent',borderColor:'rgba(139,26,139,0.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,order:0}]:[])
       ]
     },
     options:{
@@ -473,6 +627,12 @@ onAuthStateChanged(auth,user=>{
   onValue(ref(db,'config/rates'),snap=>{
     if(snap.exists()){const r=snap.val();otRates=r.ot||{};ovsRates=r.ovs||{};}
     dataReady.rates=true;
+    tryRender();
+  });
+  onValue(ref(db,'config/overheads'),snap=>{
+    if(snap.exists()) loadOverheadUI(snap.val());
+    else { overheads={rental:0,salary:0,cpf:0,cpfAuto:true,other:0}; }
+    dataReady.overheads=true;
     tryRender();
   });
   fetchForex();
