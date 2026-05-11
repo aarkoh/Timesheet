@@ -129,7 +129,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div class="note">
-    <strong>Notes:</strong> Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded. Monthly chart uses job date field.
+    <strong>Notes:</strong> Only confirmed jobs (Customer PO and beyond) are included — quotes are excluded as unconfirmed revenue. Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded. Monthly chart uses job date field.
   </div>
 </div>
 
@@ -272,9 +272,10 @@ function tryRender(){
 }
 
 function render(){
-  const all=Object.entries(jobs).filter(([,j])=>!j.archived);
+  const CONFIRMED=['customer_po','vendor_po','do_wcc','invoice','soa','closed'];
+  const all=Object.entries(jobs).filter(([,j])=>!j.archived&&CONFIRMED.includes(j.status));
   if(!all.length){
-    document.getElementById('jobsBody').innerHTML='<tr><td colspan="6" class="empty-state">No jobs found in Firebase.</td></tr>';
+    document.getElementById('jobsBody').innerHTML='<tr><td colspan="6" class="empty-state">No confirmed jobs found (quotes excluded).</td></tr>';
     document.getElementById('custRows').innerHTML='<div class="empty-state">No data.</div>';
     return;
   }
