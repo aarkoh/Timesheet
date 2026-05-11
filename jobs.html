@@ -173,17 +173,39 @@ button:hover{background:#f0f0ee}
 <!-- LINE ITEM SEARCH MODAL -->
 <div class="lisrch-bg" id="liSearchBg">
   <div class="lisrch-modal">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
-      <h2 style="margin:0;flex:1">&#128269; Search Past Line Items</h2>
-      <button onclick="window.closeLISearch()" style="font-size:13px;padding:5px 12px">Close</button>
+
+    <!-- Panel 1: Search -->
+    <div id="liSrchPanel">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <h2 style="margin:0;flex:1">&#128269; Search Past Line Items</h2>
+        <button onclick="window.closeLISearch()" style="font-size:13px;padding:5px 12px">Close</button>
+      </div>
+      <input class="lisrch-inp" id="liSrchInp" placeholder="Search description, e.g. BWTS, overhaul, gasket…" autocomplete="off">
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px">
+        Search across all past job line items for reference pricing. Click <strong style="color:#185FA5">Import Item</strong> to add one item, or <strong style="color:#1a6641">Import All</strong> to add all matched items from that job.
+      </div>
+      <div class="lisrch-results" id="liSrchResults">
+        <div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>
+      </div>
     </div>
-    <input class="lisrch-inp" id="liSrchInp" placeholder="Search description, e.g. BWTS, overhaul, gasket…" autocomplete="off">
-    <div style="font-size:12px;color:#aaa;margin-bottom:10px">
-      Search across all past job line items for reference pricing. Click <strong style="color:#185FA5">Copy Item</strong> to add to current new job, or <strong style="color:#1a6641">Copy All</strong> to add all items from that job.
+
+    <!-- Panel 2: Job Picker -->
+    <div id="liJobPickerPanel" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <button onclick="window.liPickerBack()" style="font-size:12px;padding:5px 10px">&larr; Back</button>
+        <h2 style="margin:0;flex:1">&#128279; Import to which job?</h2>
+        <button onclick="window.closeLISearch()" style="font-size:13px;padding:5px 12px">Close</button>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;padding:8px 12px;background:#f9f9f7;border-radius:8px;border:1px solid #e0ddd6">
+        Importing: <strong id="liPickerSummary"></strong>
+      </div>
+      <button onclick="window.liPickerNewJob()" style="width:100%;padding:10px;margin-bottom:10px;border:2px dashed #185FA5;color:#185FA5;background:#E6F1FB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        + New Job
+      </button>
+      <input class="lisrch-inp" id="liJobPickerInp" placeholder="Search existing jobs by ref or customer…" autocomplete="off" style="margin-bottom:8px">
+      <div class="lisrch-results" id="liJobPickerList"></div>
     </div>
-    <div class="lisrch-results" id="liSrchResults">
-      <div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>
-    </div>
+
   </div>
 </div>
 
@@ -1134,8 +1156,14 @@ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.ge
 
 // ─── LINE ITEM SEARCH ────────────────────────────────────────────────────────
 
+// Pending import payload: {items:[{desc,qty,unit,unitPrice,costPrice,costCur,children}], summary:string}
+var _liPending = null;
+
 window.openLISearch = function() {
+  _liPending = null;
   document.getElementById("liSearchBg").classList.add("show");
+  document.getElementById("liSrchPanel").style.display = "";
+  document.getElementById("liJobPickerPanel").style.display = "none";
   var inp = document.getElementById("liSrchInp");
   inp.value = "";
   document.getElementById("liSrchResults").innerHTML = '<div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>';
@@ -1144,11 +1172,21 @@ window.openLISearch = function() {
 
 window.closeLISearch = function() {
   document.getElementById("liSearchBg").classList.remove("show");
+  _liPending = null;
+};
+
+window.liPickerBack = function() {
+  _liPending = null;
+  document.getElementById("liJobPickerPanel").style.display = "none";
+  document.getElementById("liSrchPanel").style.display = "";
+  setTimeout(function() { document.getElementById("liSrchInp").focus(); }, 60);
 };
 
 function escH(s) {
   return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+// ── Step 1: search & render results ──────────────────────────────────────────
 
 function liSearchRender(q) {
   var container = document.getElementById("liSrchResults");
@@ -1202,8 +1240,8 @@ function liSearchRender(q) {
       + '<span class="lisrch-job-ref">' + escH(j.ref || "—") + '</span>'
       + '<span class="lisrch-job-cust">' + custInfo + '</span>'
       + '<span class="lisrch-job-date">' + dateStr + '</span>'
-      + '<button class="lisrch-copy-all" data-jid="' + jobId + '" data-pidxs="' + matchedParentIdxs.join(",") + '" onclick="window.liCopyAll(this.dataset.jid,this.dataset.pidxs)">'
-      + 'Copy All (' + matchedParentIdxs.length + ')</button>'
+      + '<button class="lisrch-copy-all" data-jid="' + jobId + '" data-pidxs="' + matchedParentIdxs.join(",") + '" data-mode="all" onclick="window.liTriggerImport(this.dataset.jid,this.dataset.pidxs,this.dataset.mode)">'
+      + 'Import All (' + matchedParentIdxs.length + ')</button>'
       + '</div>';
 
     g.matches.forEach(function(r) {
@@ -1221,8 +1259,8 @@ function liSearchRender(q) {
         + ' data-pidx="' + r.parentIdx + '"'
         + ' data-cidx="' + r.childIdx + '"'
         + ' data-child="' + (r.isChild ? 1 : 0) + '"'
-        + ' onclick="window.liCopyOne(this.dataset.jid,+this.dataset.pidx,+this.dataset.cidx,+this.dataset.child)">'
-        + 'Copy Item</button>'
+        + ' data-mode="one" onclick="window.liTriggerImport(this.dataset.jid,this.dataset.pidx,this.dataset.mode,+this.dataset.cidx,+this.dataset.child)">'
+        + 'Import Item</button>'
         + '</div>';
     });
 
@@ -1230,42 +1268,86 @@ function liSearchRender(q) {
   }).join("");
 }
 
-window.liCopyOne = function(jobId, parentIdx, childIdx, isChild) {
-  var j = jobs[jobId]; if (!j) return;
-  var it = isChild
-    ? ((j.lineItems || [])[parentIdx] || {}).children && (j.lineItems[parentIdx].children || [])[childIdx]
-    : (j.lineItems || [])[parentIdx];
-  if (!it) { toast("Item not found"); return; }
-  ensureModalOpen(function() {
-    window.addLI(it.desc, it.qty, it.unit, it.unitPrice, "", it.costPrice || "", it.costCur || "SGD");
-    toast("Line item copied ✓");
-    window.closeLISearch();
-  });
-};
+// ── Step 2: pick a target job ─────────────────────────────────────────────────
 
-window.liCopyAll = function(jobId, idxStr) {
-  var j = jobs[jobId]; if (!j) return;
-  var idxs = (idxStr || "").split(",").map(Number).filter(function(n) { return !isNaN(n); });
-  var items = (j.lineItems || []).filter(function(_, i) { return idxs.includes(i); });
-  if (!items.length) { toast("No items found"); return; }
-  ensureModalOpen(function() {
-    items.forEach(function(it) {
-      window.addLI(it.desc, it.qty, it.unit, it.unitPrice, "", it.costPrice || "", it.costCur || "SGD");
-      var pN = liCount;
-      (it.children || []).forEach(function(c) {
-        window.addSubLI(pN, c.desc, c.qty, c.unit, c.unitPrice, "", c.costPrice || "", c.costCur || "SGD");
-      });
+// Called when user clicks Import Item or Import All
+window.liTriggerImport = function(srcJobId, pidxOrIdxs, mode, childIdx, isChild) {
+  var j = jobs[srcJobId]; if (!j) return;
+  var items = [];
+
+  if (mode === 'one') {
+    var it = isChild
+      ? ((j.lineItems || [])[+pidxOrIdxs] || {children:[]}).children[childIdx]
+      : (j.lineItems || [])[+pidxOrIdxs];
+    if (!it) { toast("Item not found"); return; }
+    items = [{ desc: it.desc, qty: it.qty, unit: it.unit, unitPrice: it.unitPrice, costPrice: it.costPrice, costCur: it.costCur, children: [] }];
+  } else {
+    var idxs = String(pidxOrIdxs).split(",").map(Number).filter(function(n) { return !isNaN(n); });
+    items = (j.lineItems || []).filter(function(_, i) { return idxs.includes(i); }).map(function(it) {
+      return { desc: it.desc, qty: it.qty, unit: it.unit, unitPrice: it.unitPrice, costPrice: it.costPrice, costCur: it.costCur, children: it.children || [] };
     });
-    toast(items.length + " item(s) copied ✓");
-    window.closeLISearch();
-  });
+  }
+
+  if (!items.length) { toast("Nothing to import"); return; }
+
+  _liPending = {
+    items: items,
+    summary: items.length === 1
+      ? ('"' + (items[0].desc || "item").slice(0, 50) + '"')
+      : (items.length + ' item(s) from job ' + escH(j.ref || "—"))
+  };
+
+  // Show the job picker panel
+  document.getElementById("liSrchPanel").style.display = "none";
+  document.getElementById("liJobPickerPanel").style.display = "";
+  document.getElementById("liPickerSummary").textContent = _liPending.summary.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  liJobPickerRender("");
+  setTimeout(function() { document.getElementById("liJobPickerInp").focus(); }, 60);
 };
 
-function ensureModalOpen(cb) {
-  var modal = document.getElementById("jobModal");
-  if (modal.classList.contains("show")) { cb(); return; }
+function liJobPickerRender(q) {
+  var container = document.getElementById("liJobPickerList");
+  var ql = (q || "").toLowerCase();
+  var list = Object.entries(jobs).filter(function(e) {
+    var j = e[1];
+    if (j.archived) return false;
+    if (!ql) return true;
+    return [j.ref, j.customerName, j.vessel, j.equip].filter(Boolean).some(function(x) {
+      return x.toLowerCase().includes(ql);
+    });
+  }).sort(function(a, b) {
+    return ((b[1].updatedAt || b[1].createdAt || "")).localeCompare((a[1].updatedAt || a[1].createdAt || ""));
+  }).slice(0, 25);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="lisrch-empty">No matching jobs found.</div>';
+    return;
+  }
+  container.innerHTML = list.map(function(e) {
+    var id = e[0], j = e[1];
+    var jst = j.status || "quote";
+    var bcMap = {quote:"bq",customer_po:"bcp",vendor_po:"bvp",do_wcc:"bdw",invoice:"bi",soa:"bs",closed:"bc"};
+    var slMap = {quote:"Quote",customer_po:"Customer PO",vendor_po:"Vendor PO",do_wcc:"DO/WCC",invoice:"Invoice",soa:"SOA",closed:"Closed"};
+    var badge = '<span class="badge ' + (bcMap[jst]||"bq") + '" style="font-size:10px">' + (slMap[jst]||jst) + '</span>';
+    var sub = j.vessel ? (' <span style="color:#aaa;font-size:11px">· ' + escH(j.vessel) + '</span>') : '';
+    return '<div class="lisrch-item" style="cursor:pointer" data-id="' + id + '" onclick="window.liPickerSelect(this.dataset.id)">'
+      + '<span class="lisrch-desc" style="flex:1">'
+      + '<strong>' + escH(j.ref || "—") + '</strong>'
+      + ' <span style="color:#555;font-size:12px">' + escH(j.customerName || "") + '</span>' + sub
+      + '</span>'
+      + badge
+      + '<button class="lisrch-copy-one" style="pointer-events:none">Import here</button>'
+      + '</div>';
+  }).join("");
+}
+
+window.liPickerNewJob = function() {
+  if (!_liPending) return;
+  var payload = _liPending;
+  window.closeLISearch();
   window.openNewJob();
   setTimeout(function() {
+    // Remove blank starter row
     var body = document.getElementById("liBody");
     var rows = Array.from(body.querySelectorAll("tr"));
     if (rows.length === 1) {
@@ -1273,23 +1355,57 @@ function ensureModalOpen(cb) {
       var firstDesc = (document.getElementById("ld_" + firstN) || {}).value || "";
       if (!firstDesc) { window.removeLI(firstN); liCount = 0; }
     }
-    cb();
+    liInjectItems(payload.items);
+    toast(payload.items.length + " item(s) imported ✓");
   }, 80);
+};
+
+window.liPickerSelect = function(targetJobId) {
+  if (!_liPending) return;
+  var payload = _liPending;
+  window.closeLISearch();
+  window.openEditJob(targetJobId);
+  setTimeout(function() {
+    liInjectItems(payload.items);
+    toast(payload.items.length + " item(s) added to job ✓");
+  }, 100);
+};
+
+function liInjectItems(items) {
+  items.forEach(function(it) {
+    window.addLI(it.desc, it.qty, it.unit, it.unitPrice, "", it.costPrice || "", it.costCur || "SGD");
+    var pN = liCount;
+    (it.children || []).forEach(function(c) {
+      window.addSubLI(pN, c.desc, c.qty, c.unit, c.unitPrice, "", c.costPrice || "", c.costCur || "SGD");
+    });
+  });
 }
+
+// ── Wire up inputs ────────────────────────────────────────────────────────────
 
 (function() {
   var inp = document.getElementById("liSrchInp");
-  if (!inp) return;
-  var t;
-  inp.addEventListener("input", function() {
-    clearTimeout(t);
-    t = setTimeout(function() { liSearchRender(inp.value.trim()); }, 250);
-  });
+  var pickInp = document.getElementById("liJobPickerInp");
+  if (inp) {
+    var t;
+    inp.addEventListener("input", function() {
+      clearTimeout(t);
+      t = setTimeout(function() { liSearchRender(inp.value.trim()); }, 250);
+    });
+  }
+  if (pickInp) {
+    var t2;
+    pickInp.addEventListener("input", function() {
+      clearTimeout(t2);
+      t2 = setTimeout(function() { liJobPickerRender(pickInp.value.trim()); }, 200);
+    });
+  }
   document.addEventListener("keydown", function(e) {
     if (e.key === "Escape" && document.getElementById("liSearchBg").classList.contains("show"))
       window.closeLISearch();
   });
 })();
+
 </script>
 
 
