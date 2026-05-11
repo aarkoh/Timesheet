@@ -2,454 +2,481 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio Profit Analysis — Manager</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="RC Manager">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="manifest" href="/Raycontrol/mgr-7560e738/mgr-manifest.json">
+<link rel="apple-touch-icon" href="/Raycontrol/icons/icon-mgr-192.png">
+<title>Profit Analysis — Manager</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh}
-.app{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 3rem}
-.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;border-bottom:3px solid #1a6641;padding-bottom:1rem;flex-wrap:wrap}
+.app{max-width:1100px;margin:0 auto;padding:1.25rem 1rem 3rem}
+.topbar{display:flex;align-items:center;gap:8px;margin-bottom:1.25rem;border-bottom:3px solid #1a6641;padding-bottom:1rem;flex-wrap:wrap}
 .topbar h1{font-size:20px;font-weight:700;flex:1}
-.mgr-tag{background:#1a6641;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
-.btn-hub{font-size:12px;text-decoration:none;padding:5px 12px;border-radius:8px;font-weight:500;color:#1a6641;background:#EAF3DE;border:1px solid #C0DD97}
-
-/* Alert */
-.alert-band{background:#FAEEDA;border:1px solid #FAC775;border-radius:10px;padding:.8rem 1rem;margin-bottom:1.5rem;display:flex;align-items:flex-start;gap:10px}
-.alert-icon{font-size:16px;color:#854F0B;flex-shrink:0;margin-top:1px}
-.alert-band p{font-size:12px;color:#633806;line-height:1.6}
-
-/* KPI cards */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem}
-.kpi{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:.9rem 1rem}
+.mgr-tag{background:#185FA5;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
+.btn-hub{font-size:12px;text-decoration:none;padding:5px 12px;border-radius:8px;font-weight:500;color:#1a6641;background:#EAF3DE;border:1px solid #C0DD97;white-space:nowrap}
+.conn{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.conn.online{background:#EAF3DE;color:#3B6D11}.conn.offline{background:#FCEBEB;color:#A32D2D}.conn.syncing{background:#FAEEDA;color:#854F0B}
+.ls{position:fixed;inset:0;background:#f5f5f3;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:12px}
+.ls.hide{display:none}
+.sp{width:28px;height:28px;border:3px solid #e0ddd6;border-top-color:#185FA5;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.alert-band{border-radius:10px;padding:.8rem 1rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px}
+.alert-band.warn{background:#FAEEDA;border:1px solid #FAC775}
+.alert-band p{font-size:12px;line-height:1.6;color:#633806}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:1.5rem}
+.kpi{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:.9rem 1rem;border-top:3px solid #e0ddd6}
+.kpi.b{border-top-color:#185FA5}.kpi.g{border-top-color:#1a6641}.kpi.r{border-top-color:#A32D2D}
 .kpi-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.kpi-val{font-size:22px;font-weight:700;line-height:1.1}
-.kpi-sub{font-size:11px;color:#aaa;margin-top:4px}
+.kpi-val{font-size:21px;font-weight:700;line-height:1.15}
+.kpi-sub{font-size:11px;color:#aaa;margin-top:3px}
 .kpi-val.pos{color:#1a6641}.kpi-val.neg{color:#A32D2D}.kpi-val.blu{color:#185FA5}
-
-/* Charts row */
-.chart-row{display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:1.5rem;align-items:start}
+.sec-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:10px;margin-top:1.5rem}
 .card{background:#fff;border:1px solid #e0ddd6;border-radius:12px;padding:1rem 1.25rem}
-.section-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:10px}
-.legend-row{display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap}
+.chart-row{display:grid;grid-template-columns:1fr 260px;gap:16px;margin-bottom:0;align-items:start}
+.leg-row{display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap}
 .leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
 .leg-sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-
-/* Jobs table */
-.jobs-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.jobs-table th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:8px 10px;border-bottom:1px solid #e0ddd6;text-align:left;background:#f9f9f7}
-.jobs-table th.nr{text-align:right}
-.jobs-table td{padding:8px 10px;border-bottom:1px solid #f0ede6;vertical-align:middle}
-.jobs-table td.nr{text-align:right}
-.jobs-table tr:last-child td{border-bottom:none}
-.margin-bar-wrap{display:flex;align-items:center;gap:6px}
-.margin-bar-bg{flex:1;height:6px;background:#f0ede6;border-radius:3px;overflow:hidden;min-width:40px}
-.margin-bar-fill{height:6px;border-radius:3px}
-.badge-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
-.bpg{background:#EAF3DE;color:#3B6D11}.bpa{background:#FAEEDA;color:#854F0B}.bpr{background:#FCEBEB;color:#A32D2D}
-
-/* Insight row */
-.insight-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1.5rem}
-.cust-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0ede6}
-.cust-row:last-child{border-bottom:none}
-.cust-bar-bg{flex:1;height:5px;background:#f0ede6;border-radius:2px;overflow:hidden}
-.cust-bar-fill{height:5px;border-radius:2px;background:#185FA5}
-
-/* Footer note */
+.jtbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.jtbl th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:8px 10px;border-bottom:1px solid #e0ddd6;text-align:left;background:#f9f9f7}
+.jtbl th.nr{text-align:right}
+.jtbl td{padding:8px 10px;border-bottom:1px solid #f0ede6;vertical-align:middle}
+.jtbl td.nr{text-align:right;font-variant-numeric:tabular-nums}
+.jtbl tr:last-child td{border-bottom:none}
+.mbar-wrap{display:flex;align-items:center;gap:6px}
+.mbar-bg{flex:1;height:6px;background:#f0ede6;border-radius:3px;overflow:hidden;min-width:40px}
+.mbar-fill{height:6px;border-radius:3px}
+.pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.pill.g{background:#EAF3DE;color:#3B6D11}.pill.a{background:#FAEEDA;color:#854F0B}.pill.r{background:#FCEBEB;color:#A32D2D}
+.ins-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1.5rem}
+.crow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f0ede6}
+.crow:last-child{border-bottom:none}
+.crow-bar-bg{flex:1;height:5px;background:#f0ede6;border-radius:2px;overflow:hidden}
+.crow-bar-fill{height:5px;border-radius:2px;background:#185FA5}
 .note{font-size:11px;color:#aaa;margin-top:1.5rem;line-height:1.7;padding-top:1rem;border-top:1px solid #e0ddd6}
-
-@media(max-width:700px){
-  .chart-row{grid-template-columns:1fr}
-  .insight-row{grid-template-columns:1fr}
-}
+.empty-state{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+@media(max-width:700px){.chart-row{grid-template-columns:1fr}.ins-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="app">
+<div class="ls" id="ls"><div class="sp"></div><p>Loading…</p></div>
+<div class="app" id="app" style="display:none">
   <div class="topbar">
-    <h1>📊 Portfolio Profit Analysis</h1>
+    <h1>📈 Profit Analysis</h1>
     <span class="mgr-tag">MANAGER</span>
-    <a href="jobs-manager.html" class="btn-hub">← Job Register</a>
+    <a href="https://aarkoh.github.io/Raycontrol/mgr-7560e738/" class="btn-hub">▲ Manager Hub</a>
+    <a href="jobs-manager.html" class="btn-hub" style="color:#185FA5;background:#E6F1FB;border-color:#B5D4F4">Job Register</a>
+    <span class="conn syncing" id="connBadge">Connecting…</span>
   </div>
 
-  <div class="alert-band">
-    <div class="alert-icon">⚠️</div>
-    <p id="alertText">Scanning for at-risk jobs…</p>
+  <div class="alert-band warn" id="alertBand" style="display:none">
+    <p id="alertText"></p>
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi">
-      <div class="kpi-label">Total revenue</div>
-      <div class="kpi-val blu" id="kRevenue">—</div>
-      <div class="kpi-sub">SGD equivalent</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Total costs</div>
-      <div class="kpi-val" id="kCosts">—</div>
-      <div class="kpi-sub">All cost types</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Gross profit</div>
-      <div class="kpi-val pos" id="kProfit">—</div>
-      <div class="kpi-sub">Before tax &amp; overhead</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Gross margin</div>
-      <div class="kpi-val pos" id="kMargin">—</div>
-      <div class="kpi-sub">Portfolio-wide</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Jobs at risk</div>
-      <div class="kpi-val neg" id="kRisk">—</div>
-      <div class="kpi-sub">Below 15% margin floor</div>
-    </div>
+    <div class="kpi b"><div class="kpi-label">Total revenue</div><div class="kpi-val blu" id="kRev">—</div><div class="kpi-sub">SGD equivalent</div></div>
+    <div class="kpi"><div class="kpi-label">Total costs</div><div class="kpi-val" id="kCost">—</div><div class="kpi-sub">All cost types</div></div>
+    <div class="kpi g"><div class="kpi-label">Gross profit</div><div class="kpi-val" id="kProfit">—</div><div class="kpi-sub">Before tax &amp; overhead</div></div>
+    <div class="kpi g"><div class="kpi-label">Gross margin</div><div class="kpi-val" id="kMargin">—</div><div class="kpi-sub">Portfolio-wide</div></div>
+    <div class="kpi r"><div class="kpi-label">Jobs at risk</div><div class="kpi-val" id="kRisk">—</div><div class="kpi-sub">Below 15% floor</div></div>
   </div>
 
+  <div class="sec-lbl" style="margin-top:0">Monthly revenue vs gross profit</div>
   <div class="chart-row">
     <div class="card">
-      <div class="section-label">Monthly revenue vs gross profit</div>
-      <div class="legend-row">
-        <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>Revenue</span>
-        <span class="leg-item"><span class="leg-sq" style="background:#FAC775;border:1px dashed #854F0B"></span>Cost</span>
+      <div class="leg-row">
+        <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>Revenue (SGD)</span>
+        <span class="leg-item"><span class="leg-sq" style="background:#FAC775;border:1px dashed #854F0B"></span>Cost (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#1a6641"></span>Gross profit</span>
       </div>
-      <div style="position:relative;height:240px">
-        <canvas id="trendChart" role="img" aria-label="Monthly revenue, cost and gross profit trend Jan–May 2025"></canvas>
-      </div>
+      <div style="position:relative;height:240px"><canvas id="trendChart" role="img" aria-label="Monthly revenue cost and profit">No data yet.</canvas></div>
     </div>
     <div class="card">
-      <div class="section-label">Cost composition</div>
-      <div style="position:relative;height:170px">
-        <canvas id="costDonut" role="img" aria-label="Cost breakdown by type"></canvas>
-      </div>
-      <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px" id="costLegend"></div>
+      <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px">Cost breakdown</div>
+      <div style="position:relative;height:170px"><canvas id="costDonut" role="img" aria-label="Cost breakdown by type">No data yet.</canvas></div>
+      <div id="costLegend" style="margin-top:10px;display:flex;flex-direction:column;gap:5px"></div>
     </div>
   </div>
 
-  <div class="section-label">Jobs ranked by gross margin</div>
-  <div class="card" style="padding:0;overflow:hidden;margin-bottom:0">
-    <table class="jobs-table">
-      <thead>
-        <tr>
-          <th style="width:90px">Job ref</th>
-          <th>Vessel / job</th>
-          <th class="nr" style="width:100px">Revenue (SGD)</th>
-          <th class="nr" style="width:90px">Profit</th>
-          <th style="width:140px">Margin</th>
-          <th style="width:80px">Customer</th>
-          <th style="width:72px">Status</th>
-        </tr>
-      </thead>
-      <tbody id="jobsBody"></tbody>
+  <div class="sec-lbl">Jobs ranked by gross margin</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="jtbl">
+      <thead><tr>
+        <th style="width:88px">Ref</th>
+        <th>Customer / vessel</th>
+        <th class="nr" style="width:105px">Revenue (SGD)</th>
+        <th class="nr" style="width:95px">Profit (SGD)</th>
+        <th style="width:145px">Margin</th>
+        <th style="width:68px">Status</th>
+      </tr></thead>
+      <tbody id="jobsBody"><tr><td colspan="6" class="empty-state">Loading…</td></tr></tbody>
     </table>
   </div>
 
-  <div class="insight-row">
+  <div class="ins-row">
     <div class="card">
-      <div class="section-label">Customer profitability</div>
-      <div id="custRows" style="margin-top:4px"></div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:10px">Customer profitability</div>
+      <div id="custRows"><div class="empty-state">Loading…</div></div>
     </div>
     <div class="card">
-      <div class="section-label">Margin distribution</div>
-      <div style="position:relative;height:180px">
-        <canvas id="distChart" role="img" aria-label="Distribution of jobs by gross margin band"></canvas>
-      </div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#aaa;margin-bottom:10px">Margin distribution</div>
+      <div style="position:relative;height:180px"><canvas id="distChart" role="img" aria-label="Margin distribution">No data yet.</canvas></div>
     </div>
   </div>
 
   <div class="note">
-    <strong>Notes:</strong> Revenue converted to SGD using live forex rates (fallbacks: USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs − worker OT − overseas allowances − manual claims. Excludes company overhead, tax, and finance charges. OT costs derived from timesheet entries at configured hourly rates. Data sourced live from Firebase — refresh page for latest figures.
+    <strong>Notes:</strong> Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded. Monthly chart uses job date field.
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-// ─────────────────────────────────────────────────────────────────
-// SAMPLE DATA  (replace with live Firebase reads to match your app)
-// ─────────────────────────────────────────────────────────────────
-const JOBS = [
-  {ref:'2506001', vessel:'Pacific Navigator', cur:'SGD', revSGD:45200,  costs:21600,  status:'invoice',     cust:'Pacific Marine Ltd'},
-  {ref:'2506002', vessel:'Nordic Star',       cur:'USD', revSGD:38475,  costs:24300,  status:'customer_po', cust:'Nordic Shipping'},
-  {ref:'2505003', vessel:'Sea Dragon',        cur:'SGD', revSGD:12800,  costs:11200,  status:'invoice',     cust:'Asia Pacific Corp'},
-  {ref:'2505004', vessel:'Golden Eagle',      cur:'EUR', revSGD:21900,  costs:9800,   status:'closed',      cust:'Eagle Offshore'},
-  {ref:'2504005', vessel:'Meridian Sun',      cur:'SGD', revSGD:88400,  costs:71200,  status:'invoice',     cust:'Pacific Marine Ltd'},
-  {ref:'2504006', vessel:'Atlas Prime',       cur:'JPY', revSGD:25760,  costs:22100,  status:'invoice',     cust:'Asia Pacific Corp'},
-  {ref:'2503007', vessel:'Coral Venture',     cur:'SGD', revSGD:34600,  costs:18300,  status:'closed',      cust:'Eagle Offshore'},
-  {ref:'2503008', vessel:'Iron Tide',         cur:'SGD', revSGD:7200,   costs:8900,   status:'soa',         cust:'Oceanic Ventures'},
-  {ref:'2502009', vessel:'Silver Horizon',    cur:'USD', revSGD:55350,  costs:31200,  status:'closed',      cust:'Nordic Shipping'},
-  {ref:'2501010', vessel:'Titan Star',        cur:'SGD', revSGD:21500,  costs:14200,  status:'closed',      cust:'Oceanic Ventures'},
-];
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getDatabase,ref,onValue}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import{getAuth,signInAnonymously,onAuthStateChanged}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-// Cost composition breakdown (aggregated from all jobs)
-const COST_BREAKDOWN = [
-  {label:'Line item costs', value:198000, color:'#185FA5'},
-  {label:'Worker OT',       value:24000,  color:'#854F0B'},
-  {label:'Overseas allowances', value:9600, color:'#1a6641'},
-  {label:'Manual claims',   value:9100,   color:'#A32D2D'},
-];
-
-// Monthly aggregates (Jan–May 2025)
-const MONTHLY = {
-  labels:['Jan','Feb','Mar','Apr','May'],
-  revenue:[76850, 55350, 41800, 113160, 84475],
-  costs:  [45400, 31200, 27200,  92300, 44600],
-  profit: [31450, 24150, 14600,  20860, 39875],
-};
-
-const STATUS_LABEL = {
-  quote:'Quote', customer_po:'Cust PO', vendor_po:'Vndr PO',
-  do_wcc:'DO/WCC', invoice:'Invoice', soa:'SOA', closed:'Closed'
-};
-const FLOOR = 15; // margin floor %
-
-function fmtSGD(n) {
-  const abs = Math.abs(Math.round(n));
-  return (n < 0 ? '−$' : '$') + abs.toLocaleString();
+/* ── Auth — same check as jobs-manager.html ── */
+const _t=localStorage.getItem('rc_manager');
+if(!_t||(Date.now()-parseInt(_t))>=28800000){
+  window.location.href='https://aarkoh.github.io/Raycontrol/mgr-7560e738/';
 }
-function pct(p) { return p.toFixed(1) + '%'; }
+document.getElementById('app').style.display='block';
 
-// ─── Compute portfolio totals ─────────────────────────────────────
-const totalRev    = JOBS.reduce((s,j) => s + j.revSGD, 0);
-const totalCosts  = JOBS.reduce((s,j) => s + j.costs, 0);
-const totalProfit = totalRev - totalCosts;
-const totalMargin = totalRev > 0 ? totalProfit / totalRev * 100 : 0;
-const atRisk      = JOBS.filter(j => ((j.revSGD - j.costs) / j.revSGD * 100) < FLOOR);
+/* ── Firebase — identical config ── */
+const db=getDatabase(initializeApp({
+  apiKey:"AIzaSyBOTxO07JoBnygdNhrZsCCnY33mUlm9oo4",
+  authDomain:"attendance-20d6a.firebaseapp.com",
+  databaseURL:"https://attendance-20d6a-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"attendance-20d6a",
+  storageBucket:"attendance-20d6a.firebasestorage.app",
+  messagingSenderId:"597668949951",
+  appId:"1:597668949951:web:f7fcc8c3b4450f8f80bb0a"
+}));
+const auth=getAuth();
 
-// ─── KPI cards ───────────────────────────────────────────────────
-document.getElementById('kRevenue').textContent = fmtSGD(totalRev);
-document.getElementById('kCosts').textContent   = fmtSGD(totalCosts);
-const kP = document.getElementById('kProfit');
-kP.textContent = fmtSGD(totalProfit);
-kP.className = 'kpi-val ' + (totalProfit >= 0 ? 'pos' : 'neg');
-document.getElementById('kMargin').textContent  = pct(totalMargin);
-const kR = document.getElementById('kRisk');
-kR.textContent = atRisk.length + ' / ' + JOBS.length;
-kR.className = 'kpi-val ' + (atRisk.length > 0 ? 'neg' : 'pos');
+/* ── State ── */
+let jobs={},mgrLog=[],otRates={},ovsRates={};
+const dataReady={jobs:false,log:false,rates:false,fx:false};
 
-// ─── Alert band ───────────────────────────────────────────────────
-const alertEl = document.getElementById('alertText');
-if (atRisk.length === 0) {
-  document.querySelector('.alert-band').style.background = '#EAF3DE';
-  document.querySelector('.alert-band').style.borderColor = '#C0DD97';
-  document.querySelector('.alert-icon').textContent = '✓';
-  document.querySelector('.alert-icon').style.color = '#1a6641';
-  alertEl.style.color = '#27500A';
-  alertEl.textContent = 'All jobs are above the ' + FLOOR + '% margin floor.';
-} else {
-  const names = atRisk.map(j => {
-    const m = (j.revSGD - j.costs) / j.revSGD * 100;
-    return j.ref + ' ' + j.vessel + ' (' + pct(m) + ')';
-  }).join(', ');
-  alertEl.innerHTML = '<strong style="color:#633806">' + atRisk.length + ' job' +
-    (atRisk.length > 1 ? 's' : '') + ' flagged:</strong> ' + names +
-    ' — below the ' + FLOOR + '% margin floor. Review cost overruns or renegotiate scope.';
+/* ── Forex — identical fallbacks + live fetch ── */
+const FX={USD:1.35,EUR:1.46,JPY:0.0092,GBP:1.72,SEK:0.13,CNY:0.19,AUD:0.87,HKD:0.17};
+async function fetchForex(){
+  for(const cur of ['USD','EUR','JPY','GBP','CNY','AUD','SEK','HKD']){
+    try{
+      const r=await fetch('https://api.frankfurter.app/latest?from='+cur+'&to=SGD');
+      const d=await r.json();
+      if((d.rates||{}).SGD) FX[cur]=d.rates.SGD;
+    }catch(e){/*use fallback*/}
+  }
+  dataReady.fx=true;
+  tryRender();
+}
+function fxRate(cur){return cur==='SGD'?1:(FX[cur]||1);}
+
+/* ── totals() — identical to jobs-manager.html ── */
+function totals(j){
+  const its=j.lineItems||[];
+  const iSub=its.reduce(function(s,it){
+    const ch=it.children||[];
+    if(ch.length) return s+ch.reduce(function(cs,c){return cs+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0);
+    return s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
+  },0);
+  const ca=j.courier==='amt'?parseFloat(j.courierAmt)||0:0;
+  const pa=j.packing==='amt'?parseFloat(j.packingAmt)||0:0;
+  const fa=j.freight==='amt'?parseFloat(j.freightAmt)||0:0;
+  const sub=iSub+ca+pa+fa;
+  const gst=j.gst==='9'?sub*0.09:0;
+  const bf=parseFloat(j.bankFee)||0;
+  return{sub,gst,bf,total:sub+gst+bf};
 }
 
-// ─── Jobs table ───────────────────────────────────────────────────
-const sorted = JOBS.map(j => ({
-  ...j,
-  profit: j.revSGD - j.costs,
-  margin: (j.revSGD - j.costs) / j.revSGD * 100
-})).sort((a, b) => b.margin - a.margin);
+/* ── OT helpers — identical to jobs-manager.html ── */
+const SG_PH=new Set(['2025-01-01','2025-01-29','2025-01-30','2025-03-31','2025-04-18','2025-05-01','2025-05-12','2025-06-06','2025-08-09','2025-12-25','2026-01-01','2026-02-17','2026-02-18','2026-03-21','2026-04-03','2026-05-01','2026-05-27','2026-05-31','2026-06-01','2026-08-09','2026-08-10','2026-11-08','2026-11-09','2026-12-25']);
+function _dKey(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function _inTZ(dt,tz){if(!tz)return dt;try{const f=new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});const p=Object.fromEntries(f.formatToParts(dt).map(x=>[x.type,x.value]));return new Date(`${p.year}-${p.month}-${p.day}T${p.hour==='24'?'00':p.hour}:${p.minute}:${p.second}`);}catch(e){return dt;}}
+function _isOT(dt,tz){const loc=tz?_inTZ(dt,tz):dt;const dow=loc.getDay(),key=_dKey(loc);if(dow===0||dow===6||SG_PH.has(key))return true;const h=loc.getHours()+loc.getMinutes()/60;return h<8||h>=18;}
+function _calcOTMins(inT,outT,tz){const C=5*60*1000;let ot=0,t=new Date(inT);while(t<outT){const n=new Date(Math.min(t.getTime()+C,outT.getTime()));if(_isOT(t,tz))ot+=(n-t)/60000;t=n;}return ot;}
+function _inSG(lat,lon){if(lat!=null&&lon!=null)return lat>=1.15&&lat<=1.48&&lon>=103.59&&lon<=104.10;return null;}
+function _locSG(loc){if(!loc)return null;return loc.toLowerCase().includes('singapore');}
 
-const tbody = document.getElementById('jobsBody');
-sorted.forEach(j => {
-  const m = j.margin;
-  const barColor = m < 0 ? '#A32D2D' : m < FLOOR ? '#854F0B' : '#1a6641';
-  const barW = Math.max(0, Math.min(100, m));
-  const profClass = m >= FLOOR ? 'bpg' : m >= 0 ? 'bpa' : 'bpr';
-  const shortCust = j.cust.split(' ')[0];
-  tbody.innerHTML += `
-    <tr>
-      <td style="font-family:monospace;font-size:11px;color:#888">${j.ref}</td>
-      <td><span style="font-weight:600">${j.vessel}</span> <span style="font-size:10px;color:#aaa">${j.cur}</span></td>
-      <td class="nr" style="font-size:12px">${fmtSGD(j.revSGD)}</td>
-      <td class="nr"><span class="${profClass} badge-pill">${fmtSGD(j.profit)}</span></td>
-      <td>
-        <div class="margin-bar-wrap">
-          <div class="margin-bar-bg">
-            <div class="margin-bar-fill" style="width:${barW}%;background:${barColor}"></div>
-          </div>
-          <span style="font-size:11px;font-weight:700;color:${barColor};min-width:40px;text-align:right">${pct(m)}</span>
-        </div>
-      </td>
-      <td style="font-size:11px;color:#666">${shortCust}</td>
-      <td style="font-size:11px;color:#888">${STATUS_LABEL[j.status] || j.status}</td>
+/* ── Per-job profit — exact same formula as jobs-manager.html ── */
+function calcProfit(j){
+  const t=totals(j);
+  const jobCur=j.currency||'SGD';
+  const revSGD=t.total*fxRate(jobCur);
+
+  /* vendor discount map */
+  const disc={};
+  (j.vendors||[]).forEach(function(vid,i){disc[vid]=parseFloat((j.vendorDiscs||[])[i])||0;});
+
+  /* line item costs */
+  let liCost=0;
+  (j.lineItems||[]).forEach(function(it){
+    const ch=it.children||[];
+    const items=ch.length?ch.map(c=>({...c,vendorId:c.vendorId||it.vendorId})):[it];
+    items.forEach(function(item){
+      const raw=(parseFloat(item.costPrice)||0)*(parseFloat(item.qty)||0);
+      const d=disc[item.vendorId]||0;
+      const cost=raw*(1-d/100);
+      const cur=item.costCur||'SGD';
+      liCost+=cur==='SGD'?cost:cost*fxRate(cur);
+    });
+  });
+
+  /* worker claims */
+  const claimCost=(j.workerClaims||[]).reduce(function(s,c){return s+(parseFloat(c.amount)||0);},0);
+
+  /* OT + overseas from timesheet */
+  const jobLog=mgrLog.filter(function(e){return e.job===j.ref;});
+  const workers=[...new Set(jobLog.map(function(e){return e.worker;}))];
+  let otCost=0,ovsCost=0;
+  workers.forEach(function(w){
+    const wLog=jobLog.filter(function(e){return e.worker===w;}).sort(function(a,b){return new Date(a.time)-new Date(b.time);});
+    let openIn=null,otMins=0;
+    const ovsSet=new Set();
+    wLog.forEach(function(e){
+      if(e.type==='in'){openIn=e;}
+      else if(e.type==='out'&&openIn){
+        const inT=new Date(openIn.time),outT=new Date(e.time);
+        const overseas=openIn.lat!=null?(_inSG(openIn.lat,openIn.lon)===false):(_locSG(openIn.loc||'')===false);
+        otMins+=_calcOTMins(inT,outT,openIn.tz||'Asia/Singapore');
+        if(overseas){
+          const d=new Date(inT);d.setHours(0,0,0,0);
+          while(d<=outT){ovsSet.add(_dKey(d));d.setDate(d.getDate()+1);}
+        }
+        openIn=null;
+      }
+    });
+    otCost+=Math.round(otMins/60)*(otRates[w]||0);
+    ovsCost+=ovsSet.size*(ovsRates[w]||0);
+  });
+
+  const totalCost=liCost+claimCost+otCost+ovsCost;
+  const profit=revSGD-totalCost;
+  const margin=revSGD>0?profit/revSGD*100:0;
+  return{revSGD,totalCost,liCost,claimCost,otCost,ovsCost,profit,margin};
+}
+
+/* ── Chart instances ── */
+let tCI=null,dCI=null,distCI=null;
+const FLOOR=15;
+const SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vndr PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
+
+function tryRender(){
+  if(!dataReady.jobs||!dataReady.log||!dataReady.rates||!dataReady.fx) return;
+  render();
+}
+
+function render(){
+  const all=Object.entries(jobs).filter(([,j])=>!j.archived);
+  if(!all.length){
+    document.getElementById('jobsBody').innerHTML='<tr><td colspan="6" class="empty-state">No jobs found in Firebase.</td></tr>';
+    document.getElementById('custRows').innerHTML='<div class="empty-state">No data.</div>';
+    return;
+  }
+
+  const jd=all.map(([id,j])=>({id,j,...calcProfit(j)}));
+
+  /* KPIs */
+  const tRev=jd.reduce((s,x)=>s+x.revSGD,0);
+  const tCost=jd.reduce((s,x)=>s+x.totalCost,0);
+  const tProfit=tRev-tCost;
+  const tMargin=tRev>0?tProfit/tRev*100:0;
+  const risk=jd.filter(x=>x.margin<FLOOR);
+
+  document.getElementById('kRev').textContent='$'+Math.round(tRev).toLocaleString();
+  document.getElementById('kCost').textContent='$'+Math.round(tCost).toLocaleString();
+  const kp=document.getElementById('kProfit');
+  kp.textContent=(tProfit<0?'−':'')+'$'+Math.abs(Math.round(tProfit)).toLocaleString();
+  kp.className='kpi-val '+(tProfit>=0?'pos':'neg');
+  document.getElementById('kMargin').textContent=tMargin.toFixed(1)+'%';
+  const kr=document.getElementById('kRisk');
+  kr.textContent=risk.length+' / '+jd.length;
+  kr.className='kpi-val '+(risk.length>0?'neg':'pos');
+
+  /* Alert */
+  const band=document.getElementById('alertBand');
+  if(risk.length){
+    band.style.display='flex';
+    document.getElementById('alertText').innerHTML=
+      '<strong>'+risk.length+' job'+(risk.length>1?'s':'')+' below '+FLOOR+'% margin floor:</strong> '+
+      risk.map(x=>x.j.ref+' ('+x.margin.toFixed(1)+'%)').join(', ')+
+      ' — review costs or renegotiate scope.';
+  } else {
+    band.style.display='none';
+  }
+
+  /* Monthly trend — keyed by job date */
+  const mMap={};
+  jd.forEach(function(x){
+    const ds=x.j.date||x.j.createdAt||'';
+    if(!ds) return;
+    const ym=ds.slice(0,7);
+    if(!mMap[ym]) mMap[ym]={rev:0,cost:0,profit:0};
+    mMap[ym].rev+=x.revSGD;
+    mMap[ym].cost+=x.totalCost;
+    mMap[ym].profit+=x.profit;
+  });
+  const mKeys=Object.keys(mMap).sort();
+  const mLabels=mKeys.map(ym=>new Date(ym+'-01').toLocaleDateString('en-SG',{month:'short',year:'2-digit'}));
+
+  if(tCI) tCI.destroy();
+  tCI=new Chart(document.getElementById('trendChart'),{
+    type:'bar',
+    data:{
+      labels:mLabels,
+      datasets:[
+        {label:'Revenue',data:mKeys.map(m=>Math.round(mMap[m].rev)),backgroundColor:'rgba(24,95,165,0.15)',borderColor:'#185FA5',borderWidth:1.5,order:2},
+        {label:'Cost',data:mKeys.map(m=>Math.round(mMap[m].cost)),backgroundColor:'rgba(239,159,39,0.12)',borderColor:'#EF9F27',borderWidth:1,order:3},
+        {label:'Gross profit',data:mKeys.map(m=>Math.round(mMap[m].profit)),type:'line',backgroundColor:'transparent',borderColor:'#1a6641',borderWidth:2.5,pointBackgroundColor:'#1a6641',pointRadius:4,tension:0.35,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'$'+Math.round(ctx.parsed.y).toLocaleString()}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},autoSkip:false,maxRotation:45}},
+        y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:11},callback:v=>'$'+(Math.abs(v)>=1000?(v/1000).toFixed(0)+'k':v)}}
+      }
+    }
+  });
+
+  /* Cost donut */
+  const totLI=jd.reduce((s,x)=>s+x.liCost,0);
+  const totOT=jd.reduce((s,x)=>s+x.otCost,0);
+  const totOVS=jd.reduce((s,x)=>s+x.ovsCost,0);
+  const totClaim=jd.reduce((s,x)=>s+x.claimCost,0);
+  const parts=[
+    {label:'Line item costs',value:totLI,color:'#185FA5'},
+    {label:'Worker OT',value:totOT,color:'#854F0B'},
+    {label:'Overseas allow.',value:totOVS,color:'#1a6641'},
+    {label:'Manual claims',value:totClaim,color:'#A32D2D'},
+  ].filter(c=>c.value>0);
+  const totAll=parts.reduce((s,c)=>s+c.value,0)||1;
+  if(dCI) dCI.destroy();
+  if(parts.length){
+    dCI=new Chart(document.getElementById('costDonut'),{
+      type:'doughnut',
+      data:{labels:parts.map(c=>c.label),datasets:[{data:parts.map(c=>c.value),backgroundColor:parts.map(c=>c.color),borderWidth:0,hoverOffset:5}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const p=(ctx.parsed/totAll*100).toFixed(1);return ctx.label+': $'+Math.round(ctx.parsed).toLocaleString()+' ('+p+'%)' ;}}}}}
+    });
+    const leg=document.getElementById('costLegend');
+    leg.innerHTML='';
+    parts.forEach(c=>{
+      const p=(c.value/totAll*100).toFixed(0);
+      leg.innerHTML+=`<div class="leg-item" style="justify-content:space-between"><span style="display:flex;align-items:center;gap:5px"><span class="leg-sq" style="background:${c.color}"></span>${c.label}</span><span style="font-size:11px;font-weight:600;color:#1a1a1a">$${Math.round(c.value).toLocaleString()} <span style="color:#aaa;font-weight:400">${p}%</span></span></div>`;
+    });
+  }
+
+  /* Jobs table */
+  const sorted=[...jd].sort((a,b)=>b.margin-a.margin);
+  const tbody=document.getElementById('jobsBody');
+  tbody.innerHTML='';
+  sorted.forEach(function(x){
+    const m=x.margin;
+    const bc=m<0?'#A32D2D':m<FLOOR?'#854F0B':'#1a6641';
+    const bw=Math.max(0,Math.min(100,Math.abs(m)));
+    const pc=m>=FLOOR?'g':m>=0?'a':'r';
+    tbody.innerHTML+=`<tr>
+      <td style="font-family:monospace;font-size:11px;color:#888">${x.j.ref||'—'}</td>
+      <td><div style="font-weight:600;font-size:12px">${(x.j.customerName||'—').substring(0,20)}</div>${x.j.vessel||x.j.equip?'<div style="font-size:11px;color:#888">'+(x.j.vessel||x.j.equip||'').substring(0,18)+'</div>':''}</td>
+      <td class="nr">$${Math.round(x.revSGD).toLocaleString()}</td>
+      <td class="nr"><span class="pill ${pc}">${x.profit<0?'−':''}$${Math.abs(Math.round(x.profit)).toLocaleString()}</span></td>
+      <td><div class="mbar-wrap"><div class="mbar-bg"><div class="mbar-fill" style="width:${bw}%;background:${bc}"></div></div><span style="font-size:11px;font-weight:700;color:${bc};min-width:42px;text-align:right">${m.toFixed(1)}%</span></div></td>
+      <td style="font-size:11px;color:#888">${SL[x.j.status]||x.j.status||'—'}</td>
     </tr>`;
-});
+  });
 
-// ─── Customer profitability ───────────────────────────────────────
-const custMap = {};
-JOBS.forEach(j => {
-  if (!custMap[j.cust]) custMap[j.cust] = { rev: 0, profit: 0, jobs: 0 };
-  custMap[j.cust].rev    += j.revSGD;
-  custMap[j.cust].profit += j.revSGD - j.costs;
-  custMap[j.cust].jobs++;
-});
-const custs = Object.entries(custMap).sort((a, b) => b[1].profit - a[1].profit);
-const maxP  = custs[0][1].profit;
-const custDiv = document.getElementById('custRows');
-custs.forEach(([name, d]) => {
-  const m = d.profit / d.rev * 100;
-  const profClass = m >= FLOOR ? 'bpg' : m >= 0 ? 'bpa' : 'bpr';
-  custDiv.innerHTML += `
-    <div class="cust-row">
+  /* Customer profitability */
+  const cMap={};
+  jd.forEach(function(x){
+    const n=x.j.customerName||'Unknown';
+    if(!cMap[n]) cMap[n]={rev:0,profit:0,count:0};
+    cMap[n].rev+=x.revSGD;
+    cMap[n].profit+=x.profit;
+    cMap[n].count++;
+  });
+  const custs=Object.entries(cMap).sort((a,b)=>b[1].profit-a[1].profit);
+  const maxP=Math.max(...custs.map(([,d])=>d.profit),1);
+  const custDiv=document.getElementById('custRows');
+  custDiv.innerHTML='';
+  custs.forEach(function([name,d]){
+    const m=d.rev>0?d.profit/d.rev*100:0;
+    const pc=m>=FLOOR?'g':m>=0?'a':'r';
+    custDiv.innerHTML+=`<div class="crow">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
         <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
-          <div class="cust-bar-bg">
-            <div class="cust-bar-fill" style="width:${Math.round(d.profit / maxP * 100)}%"></div>
-          </div>
-          <span style="font-size:10px;color:#aaa;white-space:nowrap">${d.jobs} job${d.jobs > 1 ? 's' : ''}</span>
+          <div class="crow-bar-bg"><div class="crow-bar-fill" style="width:${Math.max(0,Math.round(d.profit/maxP*100))}%"></div></div>
+          <span style="font-size:10px;color:#aaa">${d.count} job${d.count>1?'s':''}</span>
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0;margin-left:12px">
-        <div style="font-size:13px;font-weight:700;color:#1a6641">${fmtSGD(d.profit)}</div>
-        <div style="margin-top:2px"><span class="${profClass} badge-pill">${pct(m)}</span></div>
+        <div style="font-size:13px;font-weight:700;color:${d.profit>=0?'#1a6641':'#A32D2D'}">${d.profit<0?'−':''}$${Math.abs(Math.round(d.profit)).toLocaleString()}</div>
+        <div style="margin-top:2px"><span class="pill ${pc}">${m.toFixed(1)}%</span></div>
       </div>
     </div>`;
-});
+  });
 
-// ─── Monthly trend chart ──────────────────────────────────────────
-new Chart(document.getElementById('trendChart'), {
-  type: 'bar',
-  data: {
-    labels: MONTHLY.labels,
-    datasets: [
-      {
-        label: 'Revenue',
-        data: MONTHLY.revenue,
-        backgroundColor: 'rgba(24,95,165,0.15)',
-        borderColor: '#185FA5',
-        borderWidth: 1.5,
-        order: 2
-      },
-      {
-        label: 'Cost',
-        data: MONTHLY.costs,
-        backgroundColor: 'rgba(239,159,39,0.12)',
-        borderColor: '#EF9F27',
-        borderWidth: 1,
-        borderDash: [4, 3],
-        order: 3
-      },
-      {
-        label: 'Gross profit',
-        data: MONTHLY.profit,
-        type: 'line',
-        backgroundColor: 'transparent',
-        borderColor: '#1a6641',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#1a6641',
-        pointRadius: 4,
-        tension: 0.35,
-        order: 1
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ctx.dataset.label + ': $' + Math.round(ctx.parsed.y).toLocaleString()
-        }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: {
-        grid: { color: 'rgba(0,0,0,0.04)' },
-        ticks: { font: { size: 11 }, callback: v => '$' + (v / 1000).toFixed(0) + 'k' }
-      }
+  /* Margin distribution */
+  const bands=[
+    {label:'< 0%',color:'#FCEBEB',border:'#A32D2D',count:0},
+    {label:'0–15%',color:'#FAEEDA',border:'#854F0B',count:0},
+    {label:'15–40%',color:'rgba(24,95,165,0.18)',border:'#185FA5',count:0},
+    {label:'> 40%',color:'#EAF3DE',border:'#1a6641',count:0},
+  ];
+  jd.forEach(function(x){
+    if(x.margin<0)        bands[0].count++;
+    else if(x.margin<15)  bands[1].count++;
+    else if(x.margin<40)  bands[2].count++;
+    else                   bands[3].count++;
+  });
+  if(distCI) distCI.destroy();
+  distCI=new Chart(document.getElementById('distChart'),{
+    type:'bar',
+    data:{labels:bands.map(b=>b.label),datasets:[{label:'Jobs',data:bands.map(b=>b.count),backgroundColor:bands.map(b=>b.color),borderColor:bands.map(b=>b.border),borderWidth:1.5,borderRadius:4}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y+' job'+(ctx.parsed.y!==1?'s':'')}}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{stepSize:1,font:{size:11}}}}
     }
-  }
-});
+  });
+}
 
-// ─── Cost composition donut ───────────────────────────────────────
-const totalCostBreakdown = COST_BREAKDOWN.reduce((s, c) => s + c.value, 0);
-new Chart(document.getElementById('costDonut'), {
-  type: 'doughnut',
-  data: {
-    labels: COST_BREAKDOWN.map(c => c.label),
-    datasets: [{
-      data: COST_BREAKDOWN.map(c => c.value),
-      backgroundColor: COST_BREAKDOWN.map(c => c.color),
-      borderWidth: 0,
-      hoverOffset: 5
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '68%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => {
-            const p = (ctx.parsed / totalCostBreakdown * 100).toFixed(1);
-            return ctx.label + ': $' + ctx.parsed.toLocaleString() + ' (' + p + '%)';
-          }
-        }
-      }
-    }
-  }
+/* ── Firebase listeners ── */
+signInAnonymously(auth).catch(e=>console.error(e));
+onAuthStateChanged(auth,user=>{
+  if(!user) return;
+  onValue(ref(db,'.info/connected'),snap=>{
+    const b=document.getElementById('connBadge');
+    b.textContent=snap.val()?'Live':'Offline';
+    b.className='conn '+(snap.val()?'online':'offline');
+    document.getElementById('ls').classList.add('hide');
+  });
+  onValue(ref(db,'jobs'),snap=>{
+    jobs=snap.val()||{};
+    dataReady.jobs=true;
+    tryRender();
+  });
+  onValue(ref(db,'log'),snap=>{
+    mgrLog=[];
+    if(snap.exists()) Object.entries(snap.val()).forEach(([k,v])=>mgrLog.push({id:k,...v}));
+    mgrLog.sort((a,b)=>new Date(a.time)-new Date(b.time));
+    dataReady.log=true;
+    tryRender();
+  });
+  onValue(ref(db,'config/rates'),snap=>{
+    if(snap.exists()){const r=snap.val();otRates=r.ot||{};ovsRates=r.ovs||{};}
+    dataReady.rates=true;
+    tryRender();
+  });
+  fetchForex();
 });
-const costLegDiv = document.getElementById('costLegend');
-COST_BREAKDOWN.forEach(c => {
-  const p = (c.value / totalCostBreakdown * 100).toFixed(0);
-  costLegDiv.innerHTML += `
-    <div class="leg-item" style="justify-content:space-between">
-      <span style="display:flex;align-items:center;gap:5px">
-        <span class="leg-sq" style="background:${c.color}"></span>${c.label}
-      </span>
-      <span style="font-weight:600;color:#1a1a1a">$${c.value.toLocaleString()} <span style="color:#aaa;font-weight:400">${p}%</span></span>
-    </div>`;
-});
-
-// ─── Margin distribution histogram ───────────────────────────────
-const bands = [
-  { label: '< 0%',   color: '#FCEBEB', border: '#A32D2D', count: 0 },
-  { label: '0–15%',  color: '#FAEEDA', border: '#854F0B', count: 0 },
-  { label: '15–40%', color: 'rgba(24,95,165,0.18)', border: '#185FA5', count: 0 },
-  { label: '> 40%',  color: '#EAF3DE', border: '#1a6641', count: 0 },
-];
-sorted.forEach(j => {
-  if      (j.margin < 0)  bands[0].count++;
-  else if (j.margin < 15) bands[1].count++;
-  else if (j.margin < 40) bands[2].count++;
-  else                    bands[3].count++;
-});
-new Chart(document.getElementById('distChart'), {
-  type: 'bar',
-  data: {
-    labels: bands.map(b => b.label),
-    datasets: [{
-      label: 'Jobs',
-      data: bands.map(b => b.count),
-      backgroundColor: bands.map(b => b.color),
-      borderColor: bands.map(b => b.border),
-      borderWidth: 1.5,
-      borderRadius: 4
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: { label: ctx => ctx.parsed.y + ' job' + (ctx.parsed.y !== 1 ? 's' : '') }
-      }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { stepSize: 1, font: { size: 11 } } }
-    }
-  }
-});
+setTimeout(()=>document.getElementById('ls').classList.add('hide'),6000);
 </script>
 </body>
 </html>
