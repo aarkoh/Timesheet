@@ -91,6 +91,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .mf-chip.on[data-f="fair"]{background:#E6F1FB;color:#185FA5;border-color:#185FA5}
 .mf-chip.on[data-f="good"]{background:#EAF3DE;color:#1a6641;border-color:#1a6641}
 .job-count-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0ede6;color:#888;white-space:nowrap}
+.kpi.amber{border-top-color:#854F0B}
+.kpi.teal{border-top-color:#0E7490}
+/* Pipeline stage badges */
+.ps{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.ps.cp{background:#E6F1FB;color:#185FA5}.ps.vp{background:#F3E6F3;color:#8B1A8B}.ps.dw{background:#CFFAFE;color:#0E7490}
+/* 6-month trend arrow */
+.t-arrow{font-size:12px;font-weight:700;padding:1px 5px;border-radius:4px}
+.t-arrow.up{background:#EAF3DE;color:#1a6641}.t-arrow.dn{background:#FCEBEB;color:#A32D2D}.t-arrow.flat{background:#f0ede6;color:#888}
+/* AR zero state */
+.kpi-val.teal{color:#0E7490}
 @media(max-width:700px){.chart-row{grid-template-columns:1fr}.ins-row{grid-template-columns:1fr}}
 </style>
 </head>
@@ -110,11 +120,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div class="kpi-grid">
-    <div class="kpi b"><div class="kpi-label">Total revenue</div><div class="kpi-val blu" id="kRev">—</div><div class="kpi-sub">SGD equivalent</div></div>
+    <div class="kpi b"><div class="kpi-label">Total revenue</div><div class="kpi-val blu" id="kRev">—</div><div class="kpi-sub">SGD equivalent, invoiced</div></div>
     <div class="kpi"><div class="kpi-label">Total costs</div><div class="kpi-val" id="kCost">—</div><div class="kpi-sub">All cost types</div></div>
     <div class="kpi g"><div class="kpi-label">Gross profit</div><div class="kpi-val" id="kProfit">—</div><div class="kpi-sub">Before overhead</div></div>
     <div class="kpi g"><div class="kpi-label">Gross margin</div><div class="kpi-val" id="kMargin">—</div><div class="kpi-sub">Portfolio-wide</div></div>
     <div class="kpi r"><div class="kpi-label">Jobs at risk</div><div class="kpi-val" id="kRisk">—</div><div class="kpi-sub">Below 15% floor</div></div>
+    <div class="kpi amber"><div class="kpi-label">Pipeline</div><div class="kpi-val" id="kPipe" style="color:#854F0B">—</div><div class="kpi-sub" id="kPipeSub">Confirmed, not invoiced</div></div>
+    <div class="kpi teal"><div class="kpi-label">Outstanding AR</div><div class="kpi-val" id="kAR">—</div><div class="kpi-sub" id="kARSub">Invoiced, not collected</div></div>
   </div>
 
   <!-- ── Overhead inputs ── -->
@@ -177,21 +189,46 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     </div>
   </div>
 
-  <div class="sec-lbl" style="margin-top:0">Monthly revenue vs gross profit</div>
+  <div class="sec-lbl" style="margin-top:0">Monthly invoiced revenue vs gross profit</div>
   <div class="chart-row">
     <div class="card">
       <div class="leg-row">
         <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>Revenue (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#FAC775;border:1px dashed #854F0B"></span>Cost (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#1a6641"></span>Gross profit</span>
+        <span class="leg-item"><span class="leg-sq" style="background:#0E7490;opacity:0.7"></span>Cash collected</span>
         <span class="leg-item" id="ohLegItem" style="display:none"><span class="leg-sq" style="background:#8B1A8B;opacity:0.5"></span>Monthly overhead</span>
       </div>
-      <div style="position:relative;height:240px"><canvas id="trendChart" role="img" aria-label="Monthly revenue cost and profit">No data yet.</canvas></div>
+      <div style="position:relative;height:240px"><canvas id="trendChart" role="img" aria-label="Monthly invoiced revenue, cost and gross profit">No data yet.</canvas></div>
     </div>
     <div class="card">
       <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px">Cost breakdown</div>
       <div style="position:relative;height:170px"><canvas id="costDonut" role="img" aria-label="Cost breakdown by type">No data yet.</canvas></div>
       <div id="costLegend" style="margin-top:10px;display:flex;flex-direction:column;gap:5px"></div>
+    </div>
+  </div>
+
+  <!-- ── Pipeline — confirmed but not yet invoiced ── -->
+  <div class="sec-panel" style="margin-top:1.25rem">
+    <div class="sec-hdr" onclick="toggleSection('pipe')">
+      <span class="sec-hdr-title">📋 Pipeline — Confirmed, not yet invoiced</span>
+      <div id="pipeStageBreakdown" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+      <span class="job-count-badge" id="pipeCountBadge">—</span>
+      <button class="sec-toggle" id="pipeToggleBtn" onclick="event.stopPropagation();toggleSection('pipe')">▶ Show</button>
+    </div>
+    <div class="sec-bd" id="pipeSectionBody">
+      <div style="overflow-x:auto">
+        <table class="jtbl">
+          <thead><tr>
+            <th style="width:88px">Ref</th>
+            <th>Customer / vessel</th>
+            <th class="nr" style="width:115px">Est. Value (SGD)</th>
+            <th style="width:95px">Stage</th>
+            <th style="width:85px">Job date</th>
+          </tr></thead>
+          <tbody id="pipeBody"><tr><td colspan="5" class="empty-state">No pipeline jobs.</td></tr></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -245,7 +282,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div class="note">
-    <strong>Notes:</strong> Only confirmed jobs (Customer PO and beyond) are included — quotes are excluded as unconfirmed revenue. Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded. Monthly chart uses job date field.
+    <strong>Notes:</strong> Only confirmed jobs (Customer PO and beyond) are included — quotes are excluded as unconfirmed revenue. <strong>Monthly chart uses invoice date only</strong> — jobs without an invoice date are excluded from the trend chart but included in all KPI totals. Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded.
   </div>
 </div>
 
@@ -502,13 +539,24 @@ function renderJobsTable(data){
 }
 
 function renderCustRows(data){
+  // 6-month cutoff for trend comparison
+  const sixMoAgo=new Date();
+  sixMoAgo.setMonth(sixMoAgo.getMonth()-6);
+  const sixMoStr=sixMoAgo.toISOString().slice(0,10);
+
   const cMap={};
   data.forEach(function(x){
     const n=x.j.customerName||'Unknown';
-    if(!cMap[n]) cMap[n]={rev:0,profit:0,count:0};
+    if(!cMap[n]) cMap[n]={rev:0,profit:0,count:0,r6rev:0,r6profit:0,r6count:0};
     cMap[n].rev+=x.revSGD;
     cMap[n].profit+=x.profit;
     cMap[n].count++;
+    // Recent 6-month bucket — only invoiced jobs within window
+    if(x.j.invoiceDate&&x.j.invoiceDate>=sixMoStr){
+      cMap[n].r6rev+=x.revSGD;
+      cMap[n].r6profit+=x.profit;
+      cMap[n].r6count++;
+    }
   });
   const custs=Object.entries(cMap).sort((a,b)=>b[1].profit-a[1].profit);
   const maxP=Math.max(...custs.map(([,d])=>d.profit),1);
@@ -519,6 +567,18 @@ function renderCustRows(data){
   custs.forEach(function([name,d]){
     const m=d.rev>0?d.profit/d.rev*100:0;
     const pc=m>=FLOOR?'g':m>=0?'a':'r';
+    // 6-month trend
+    let trendHtml='';
+    if(d.r6count>0){
+      const r6m=d.r6rev>0?d.r6profit/d.r6rev*100:0;
+      const diff=r6m-m;
+      const cls=diff>3?'up':diff<-3?'dn':'flat';
+      const arrow=diff>3?'↑ '+r6m.toFixed(1)+'%':diff<-3?'↓ '+r6m.toFixed(1)+'%':'→ '+r6m.toFixed(1)+'%';
+      const label=diff>3?'improving':diff<-3?'declining':'stable';
+      trendHtml=`<span class="t-arrow ${cls}" title="Last 6 months: ${r6m.toFixed(1)}% (${label})">${arrow}</span>`;
+    } else {
+      trendHtml='<span style="font-size:10px;color:#ccc">no recent inv.</span>';
+    }
     custDiv.innerHTML+=`<div class="crow">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
@@ -529,7 +589,10 @@ function renderCustRows(data){
       </div>
       <div style="text-align:right;flex-shrink:0;margin-left:12px">
         <div style="font-size:13px;font-weight:700;color:${d.profit>=0?'#1a6641':'#A32D2D'}">${d.profit<0?'−':''}$${Math.abs(Math.round(d.profit)).toLocaleString()}</div>
-        <div style="margin-top:2px"><span class="pill ${pc}">${m.toFixed(1)}%</span></div>
+        <div style="margin-top:3px;display:flex;align-items:center;justify-content:flex-end;gap:5px">
+          <span class="pill ${pc}" title="All-time margin">${m.toFixed(1)}%</span>
+          ${trendHtml}
+        </div>
       </div>
     </div>`;
   });
@@ -550,6 +613,53 @@ function render(){
   }
 
   const jd=all.map(([id,j])=>({id,j,...calcProfit(j)}));
+
+  /* ── Pipeline — confirmed but not yet invoiced ── */
+  const PIPE_ST=['customer_po','vendor_po','do_wcc'];
+  const pipeJobs=Object.entries(jobs)
+    .filter(([,j])=>!j.archived&&PIPE_ST.includes(j.status))
+    .map(([id,j])=>({id,j,valSGD:totals(j).total*fxRate(j.currency||'SGD')}))
+    .sort((a,b)=>b.valSGD-a.valSGD);
+  const pipeTotal=pipeJobs.reduce((s,x)=>s+x.valSGD,0);
+  // Stage breakdown header
+  const stageCount={customer_po:0,vendor_po:0,do_wcc:0};
+  pipeJobs.forEach(x=>stageCount[x.j.status]=(stageCount[x.j.status]||0)+1);
+  const stageDiv=document.getElementById('pipeStageBreakdown');
+  stageDiv.innerHTML=(stageCount.customer_po?`<span class="ps cp">Cust PO ×${stageCount.customer_po}</span>`:'')
+    +(stageCount.vendor_po?`<span class="ps vp">Vndr PO ×${stageCount.vendor_po}</span>`:'')
+    +(stageCount.do_wcc?`<span class="ps dw">DO/WCC ×${stageCount.do_wcc}</span>`:'');
+  const pipeBadge=document.getElementById('pipeCountBadge');
+  pipeBadge.textContent='$'+Math.round(pipeTotal).toLocaleString()+' SGD · '+pipeJobs.length+' job'+(pipeJobs.length!==1?'s':'');
+  document.getElementById('kPipe').textContent='$'+Math.round(pipeTotal).toLocaleString();
+  document.getElementById('kPipeSub').textContent=pipeJobs.length+' job'+(pipeJobs.length!==1?'s':'')+' in progress';
+  // Pipeline table
+  const fmtDate=ds=>ds?new Date(ds+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'—';
+  const pipeBody=document.getElementById('pipeBody');
+  if(pipeJobs.length){
+    pipeBody.innerHTML=pipeJobs.map(x=>{
+      const stageCls={customer_po:'cp',vendor_po:'vp',do_wcc:'dw'}[x.j.status]||'cp';
+      return `<tr>
+        <td style="font-family:monospace;font-size:11px;color:#888">${x.j.ref||'—'}</td>
+        <td><div style="font-weight:600;font-size:12px">${(x.j.customerName||'—').substring(0,20)}</div>${x.j.vessel||x.j.equip?'<div style="font-size:11px;color:#888">'+(x.j.vessel||x.j.equip||'').substring(0,18)+'</div>':''}</td>
+        <td class="nr" style="font-weight:600">$${Math.round(x.valSGD).toLocaleString()}</td>
+        <td><span class="ps ${stageCls}">${SL[x.j.status]||x.j.status}</span></td>
+        <td style="font-size:11px;color:#888">${fmtDate(x.j.date)}</td>
+      </tr>`;
+    }).join('');
+  } else {
+    pipeBody.innerHTML='<tr><td colspan="5" class="empty-state">No pipeline jobs.</td></tr>';
+  }
+
+  /* ── Outstanding AR — invoiced but not fully collected ── */
+  const arJobs=jd.filter(x=>x.j.invoiceDate&&['invoice','soa'].includes(x.j.status));
+  const arTotal=arJobs.reduce((s,x)=>{
+    const collected=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+    return s+Math.max(0,x.revSGD-collected);
+  },0);
+  const arEl=document.getElementById('kAR');
+  arEl.textContent='$'+Math.round(arTotal).toLocaleString();
+  arEl.className='kpi-val '+(arTotal>0?'neg':'teal');
+  document.getElementById('kARSub').textContent=arTotal>0?arJobs.length+' unpaid invoice'+(arJobs.length!==1?'s':''):'All collected ✓';
 
   /* KPIs */
   const tRev=jd.reduce((s,x)=>s+x.revSGD,0);
@@ -604,16 +714,19 @@ function render(){
     band.style.display='none';
   }
 
-  /* Monthly trend — keyed by job date */
+  /* Monthly trend — invoiced jobs only, keyed by invoiceDate */
   const mMap={};
   jd.forEach(function(x){
-    const ds=x.j.date||x.j.createdAt||'';
-    if(!ds) return;
+    const ds=x.j.invoiceDate||'';
+    if(!ds) return; // exclude jobs not yet invoiced
     const ym=ds.slice(0,7);
-    if(!mMap[ym]) mMap[ym]={rev:0,cost:0,profit:0};
+    if(!mMap[ym]) mMap[ym]={rev:0,cost:0,profit:0,collected:0};
     mMap[ym].rev+=x.revSGD;
     mMap[ym].cost+=x.totalCost;
     mMap[ym].profit+=x.profit;
+    // Cash collected: payment received for this invoice cohort
+    const paid=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+    mMap[ym].collected+=Math.min(paid,x.revSGD); // cap at invoice value
   });
   const mKeys=Object.keys(mMap).sort();
   const mLabels=mKeys.map(ym=>new Date(ym+'-01').toLocaleDateString('en-SG',{month:'short',year:'2-digit'}));
@@ -628,6 +741,7 @@ function render(){
         {label:'Revenue',data:mKeys.map(m=>Math.round(mMap[m].rev)),backgroundColor:'rgba(24,95,165,0.15)',borderColor:'#185FA5',borderWidth:1.5,order:2},
         {label:'Cost',data:mKeys.map(m=>Math.round(mMap[m].cost)),backgroundColor:'rgba(239,159,39,0.12)',borderColor:'#EF9F27',borderWidth:1,order:3},
         {label:'Gross profit',data:mKeys.map(m=>Math.round(mMap[m].profit)),type:'line',backgroundColor:'transparent',borderColor:'#1a6641',borderWidth:2.5,pointBackgroundColor:'#1a6641',pointRadius:4,tension:0.35,order:1},
+        {label:'Cash collected',data:mKeys.map(m=>Math.round(mMap[m].collected||0)),type:'line',backgroundColor:'transparent',borderColor:'#0E7490',borderWidth:2,borderDash:[4,3],pointBackgroundColor:'#0E7490',pointRadius:3,tension:0.35,order:0},
         ...(ohMonthly>0?[{label:'Monthly overhead',data:mKeys.map(()=>Math.round(ohMonthly)),type:'line',backgroundColor:'transparent',borderColor:'rgba(139,26,139,0.5)',borderWidth:1.5,borderDash:[5,4],pointRadius:0,order:0}]:[])
       ]
     },
