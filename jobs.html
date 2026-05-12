@@ -1871,6 +1871,7 @@ window.openSOA = function() {
   document.getElementById('soa_cs_sel').style.display = 'none';
   document.getElementById('soa_cs_inp').style.display = '';
   document.getElementById('soaPreview').style.display = 'none';
+  window._soaIgnoreDates = false;
   var now = new Date();
   document.getElementById('soa_from').value = now.getFullYear() + '-01-01';
   document.getElementById('soa_to').value = now.toISOString().slice(0,10);
@@ -1952,8 +1953,8 @@ window.soaSelectOverdue = function(btn) {
   document.getElementById('soa_cs_nm').textContent = nm;
   document.getElementById('soa_cs_sel').style.display = 'flex';
   document.getElementById('soa_cs_inp').style.display = 'none';
-  // Clear from filter and generate preview
   document.getElementById('soaPreviewName').textContent = nm;
+  window._soaIgnoreDates = true; // show ALL outstanding, ignore date range
   generateSOAPreview();
 };
 
@@ -1993,6 +1994,7 @@ window.soaCsSelect = function(id, nm) {
   document.getElementById('soa_cs_inp').style.display = 'none';
   document.getElementById('soa_cs_drop').style.display = 'none';
   document.getElementById('soaPreviewName').textContent = nm;
+  window._soaIgnoreDates = false; // respect date range for manual selection
 };
 
 window.soaCsClear = function() {
@@ -2010,17 +2012,20 @@ function soaGetJobs() {
   var custId = document.getElementById('soa_cs_id').value;
   var from = document.getElementById('soa_from').value;
   var to = document.getElementById('soa_to').value;
+  var ignoreDates = !!window._soaIgnoreDates;
   if(!custId){toast('Please select a customer.');return null;}
   return Object.entries(jobs).filter(function(e){
     var j = e[1];
     if(j.customerId !== custId) return false;
-    var d = (j.date||j.createdAt||'').slice(0,10);
-    if(from && d < from) return false;
-    if(to && d > to) return false;
+    if(!ignoreDates){
+      var d = (j.invoiceDate||j.date||j.createdAt||'').slice(0,10);
+      if(from && d < from) return false;
+      if(to && d > to) return false;
+    }
     if(!['invoice','soa','closed'].includes(j.status)) return false;
     return totals(j).total > 0;
   }).sort(function(a,b){
-    return (a[1].date||a[1].createdAt||'').localeCompare(b[1].date||b[1].createdAt||'');
+    return (a[1].invoiceDate||a[1].date||a[1].createdAt||'').localeCompare(b[1].invoiceDate||b[1].date||b[1].createdAt||'');
   });
 }
 
@@ -2087,9 +2092,11 @@ window.printSOA = function() {
   var custAddr=(contacts[custId]||{}).address||'';
   var from=document.getElementById('soa_from').value;
   var to=document.getElementById('soa_to').value;
+  var ignoreDates=!!window._soaIgnoreDates;
   function fmtD(d){if(!d)return'--';try{return new Date(d.slice(0,10)+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
   var todayFmt=to?fmtD(to):new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   var fromFmt=from?fmtD(from):'--', toFmt=to?fmtD(to):'--';
+  var periodLabel=ignoreDates?'All outstanding':fromFmt+' – '+toFmt;
   var age0=0,age30=0,age60=0,age90=0,totalInv=0,totalRcvd=0;
   var SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vendor PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
   var iRows=rows.map(function(e,i){
@@ -2126,7 +2133,7 @@ window.printSOA = function() {
     +'<div class="ttl">STATEMENT OF ACCOUNT</div>'
     +'<div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:9.5pt">'
       +'<div><div>To:</div><div style="font-weight:700;font-size:11pt">'+custNm+'</div>'+(custAddr?'<div style="font-size:9pt;margin-top:2px">'+custAddr+'</div>':'')+'</div>'
-      +'<div><table style="border-collapse:collapse"><tr><td style="font-weight:700;padding:1px 6px">Date</td><td style="padding:1px 6px">'+todayFmt+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">Period</td><td style="padding:1px 6px">'+fromFmt+' - '+toFmt+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">Currency</td><td style="padding:1px 6px">SGD</td></tr></table></div>'
+      +'<div><table style="border-collapse:collapse"><tr><td style="font-weight:700;padding:1px 6px">Date</td><td style="padding:1px 6px">'+todayFmt+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">Period</td><td style="padding:1px 6px">'+periodLabel+'</td></tr><tr><td style="font-weight:700;padding:1px 6px">Currency</td><td style="padding:1px 6px">SGD</td></tr></table></div>'
     +'</div>'
     +'<table class="it"><thead><tr><th>Ref No.</th><th>Date</th><th>Status</th><th>Cust PO</th><th class="r">Invoice Amt</th><th class="r">Payment Rcvd</th><th class="r">Balance</th><th class="c">Ageing</th></tr></thead>'
     +'<tbody>'+iRows+'</tbody>'
