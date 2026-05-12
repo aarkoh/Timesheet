@@ -126,7 +126,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     <div class="kpi g"><div class="kpi-label">Gross margin</div><div class="kpi-val" id="kMargin">—</div><div class="kpi-sub">Portfolio-wide</div></div>
     <div class="kpi r"><div class="kpi-label">Jobs at risk</div><div class="kpi-val" id="kRisk">—</div><div class="kpi-sub">Below 15% floor</div></div>
     <div class="kpi amber"><div class="kpi-label">Pipeline</div><div class="kpi-val" id="kPipe" style="color:#854F0B">—</div><div class="kpi-sub" id="kPipeSub">Confirmed, not invoiced</div></div>
-    <div class="kpi teal"><div class="kpi-label">Outstanding AR</div><div class="kpi-val" id="kAR">—</div><div class="kpi-sub" id="kARSub">Invoiced, not collected</div></div>
+    <div class="kpi teal" id="kARCard" onclick="toggleARDrilldown()" style="cursor:pointer;transition:box-shadow .15s" onmouseenter="this.style.boxShadow='0 2px 10px rgba(0,0,0,0.1)'" onmouseleave="this.style.boxShadow=''">
+      <div class="kpi-label">Outstanding AR <span style="font-size:10px;font-weight:400;color:#aaa">↓ click to view</span></div>
+      <div class="kpi-val" id="kAR">—</div>
+      <div class="kpi-sub" id="kARSub">Invoiced, not collected</div>
+    </div>
+  </div>
+
+  <!-- ── Outstanding AR drill-down ── -->
+  <div class="sec-panel" id="arDrilldown" style="display:none;margin-top:.75rem;border-top:3px solid #0E7490">
+    <div class="sec-hdr" onclick="toggleARDrilldown()" style="background:#f0fdff">
+      <span class="sec-hdr-title" style="color:#0E7490">📋 Outstanding AR — Unpaid invoices</span>
+      <span class="job-count-badge" id="arJobCount">—</span>
+      <button class="sec-toggle" style="border-color:#0E7490;color:#0E7490" onclick="event.stopPropagation();toggleARDrilldown()">▲ Close</button>
+    </div>
+    <div class="sec-bd open">
+      <div style="overflow-x:auto">
+        <table class="jtbl">
+          <thead><tr>
+            <th style="width:88px">Ref</th>
+            <th>Customer</th>
+            <th class="nr" style="width:110px">Invoiced (SGD)</th>
+            <th class="nr" style="width:100px">Paid (SGD)</th>
+            <th class="nr" style="width:110px">Outstanding</th>
+            <th style="width:90px">Invoice date</th>
+            <th style="width:55px">Age</th>
+          </tr></thead>
+          <tbody id="arBody"><tr><td colspan="7" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- ── Overhead inputs ── -->
@@ -495,6 +524,13 @@ window.toggleSection=function(key){
   btn.textContent=open?'▼ Hide':'▶ Show';
 };
 
+window.toggleARDrilldown=function(){
+  const panel=document.getElementById('arDrilldown');
+  const visible=panel.style.display==='none';
+  panel.style.display=visible?'block':'none';
+  if(visible) panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+
 /* ── Margin filter ── */
 window.setMarginFilter=function(f,el){
   marginFilter=f;
@@ -651,15 +687,48 @@ function render(){
   }
 
   /* ── Outstanding AR — invoiced but not fully collected ── */
-  const arJobs=jd.filter(x=>x.j.invoiceDate&&['invoice','soa'].includes(x.j.status));
-  const arTotal=arJobs.reduce((s,x)=>{
-    const collected=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
-    return s+Math.max(0,x.revSGD-collected);
-  },0);
+  const arJobs=jd.filter(x=>x.j.invoiceDate&&['invoice','soa'].includes(x.j.status))
+    .map(x=>{
+      const collected=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+      const outstanding=Math.max(0,x.revSGD-collected);
+      return{...x,collected,outstanding};
+    })
+    .filter(x=>x.outstanding>0)
+    .sort((a,b)=>b.outstanding-a.outstanding);
+  const arTotal=arJobs.reduce((s,x)=>s+x.outstanding,0);
   const arEl=document.getElementById('kAR');
   arEl.textContent='$'+Math.round(arTotal).toLocaleString();
   arEl.className='kpi-val '+(arTotal>0?'neg':'teal');
   document.getElementById('kARSub').textContent=arTotal>0?arJobs.length+' unpaid invoice'+(arJobs.length!==1?'s':''):'All collected ✓';
+  // AR count badge
+  const arCount=document.getElementById('arJobCount');
+  if(arCount) arCount.textContent=arJobs.length+' invoice'+(arJobs.length!==1?'s':'')+' · $'+Math.round(arTotal).toLocaleString()+' SGD';
+  // Render AR table
+  const arBody=document.getElementById('arBody');
+  if(arBody){
+    if(!arJobs.length){
+      arBody.innerHTML='<tr><td colspan="7" class="empty-state">No outstanding invoices.</td></tr>';
+    } else {
+      const today=new Date();
+      arBody.innerHTML=arJobs.map(x=>{
+        const invDate=x.j.invoiceDate||x.j.date||'';
+        const ageDays=invDate?Math.floor((today-new Date(invDate+'T00:00:00'))/864e5):null;
+        const ageLabel=ageDays!=null?ageDays+'d':'—';
+        const ageCls=ageDays==null?'':ageDays>90?'neg':ageDays>60?'':ageDays>30?'':'';
+        const ageColor=ageDays==null?'#aaa':ageDays>90?'#A32D2D':ageDays>60?'#854F0B':ageDays>30?'#185FA5':'#888';
+        const fmtDate=ds=>ds?new Date(ds+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}):'—';
+        return `<tr>
+          <td style="font-family:monospace;font-size:11px;color:#888">${x.j.ref||'—'}</td>
+          <td style="font-weight:600;font-size:12px">${(x.j.customerName||'—').substring(0,24)}</td>
+          <td class="nr">$${Math.round(x.revSGD).toLocaleString()}</td>
+          <td class="nr" style="color:#1a6641">${x.collected>0?'$'+Math.round(x.collected).toLocaleString():'—'}</td>
+          <td class="nr"><span class="pill r">$${Math.round(x.outstanding).toLocaleString()}</span></td>
+          <td style="font-size:11px;color:#888">${fmtDate(invDate)}</td>
+          <td style="font-weight:700;color:${ageColor};font-size:11px">${ageLabel}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
 
   /* KPIs */
   const tRev=jd.reduce((s,x)=>s+x.revSGD,0);
