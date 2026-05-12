@@ -3062,8 +3062,8 @@ window.doPrintInv=function(){
   };
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
-  // ── Save draft so fields persist next time ──
-  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro,invDate:invDate}});}catch(e){}
+  // ── Save draft + update invoiceDate so SOA always reflects the printed date ──
+  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invoiceDate:invDate,invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro,invDate:invDate}});}catch(e){}
   window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms,billTo,invDate);
 };
 
