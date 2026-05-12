@@ -225,7 +225,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
         <span class="leg-item"><span class="leg-sq" style="background:#185FA5"></span>Revenue (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#FAC775;border:1px dashed #854F0B"></span>Cost (SGD)</span>
         <span class="leg-item"><span class="leg-sq" style="background:#1a6641"></span>Gross profit</span>
-        <span class="leg-item"><span class="leg-sq" style="background:#0E7490;opacity:0.7"></span>Cash collected</span>
+        <span class="leg-item"><span class="leg-sq" style="background:#0E7490;opacity:0.7"></span>Cash collected (by payment date)</span>
         <span class="leg-item" id="ohLegItem" style="display:none"><span class="leg-sq" style="background:#8B1A8B;opacity:0.5"></span>Monthly overhead</span>
       </div>
       <div style="position:relative;height:240px"><canvas id="trendChart" role="img" aria-label="Monthly invoiced revenue, cost and gross profit">No data yet.</canvas></div>
@@ -311,7 +311,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
   </div>
 
   <div class="note">
-    <strong>Notes:</strong> Only confirmed jobs (Customer PO and beyond) are included — quotes are excluded as unconfirmed revenue. <strong>Monthly chart uses invoice date only</strong> — jobs without an invoice date are excluded from the trend chart but included in all KPI totals. Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded.
+    <strong>Notes:</strong> Only confirmed jobs (Customer PO and beyond) are included — quotes are excluded as unconfirmed revenue. <strong>Monthly chart:</strong> Revenue, cost and gross profit use invoice date. <strong>Cash collected uses each payment's actual date</strong> — a $10k April invoice paid $4k in May and $6k in June shows in May and June respectively. Revenue converted to SGD using live forex rates (frankfurter.app) with fallbacks (USD 1.35, EUR 1.46, JPY 0.0092, GBP 1.72, AUD 0.87). Gross profit = Revenue − line item costs (after vendor discounts) − worker OT (from timesheet) − overseas allowances − manual claims. Excludes company overhead, tax and finance charges. Archived jobs are excluded.
   </div>
 </div>
 
@@ -794,19 +794,36 @@ function render(){
     band.style.display='none';
   }
 
-  /* Monthly trend — invoiced jobs only, keyed by invoiceDate */
+  /* Monthly trend — invoiced jobs only, keyed by invoiceDate for revenue/cost/profit,
+     but cash collected is keyed by each payment's actual date for true cash flow view */
   const mMap={};
+  function ensureMonth(ym){
+    if(!mMap[ym]) mMap[ym]={rev:0,cost:0,profit:0,collected:0};
+  }
   jd.forEach(function(x){
     const ds=x.j.invoiceDate||'';
-    if(!ds) return; // exclude jobs not yet invoiced
+    if(!ds) return;
     const ym=ds.slice(0,7);
-    if(!mMap[ym]) mMap[ym]={rev:0,cost:0,profit:0,collected:0};
+    ensureMonth(ym);
     mMap[ym].rev+=x.revSGD;
     mMap[ym].cost+=x.totalCost;
     mMap[ym].profit+=x.profit;
-    // Cash collected: payment received for this invoice cohort
-    const paid=getPayTotal(x.j)*fxRate(x.j.currency||'SGD');
-    mMap[ym].collected+=Math.min(paid,x.revSGD); // cap at invoice value
+    // Cash collected — attribute each payment to its actual payment date
+    const hist=x.j.paymentHistory;
+    if(hist&&typeof hist==='object'){
+      const rate=fxRate(x.j.currency||'SGD');
+      Object.values(hist).forEach(function(p){
+        const pym=(p.date||'').slice(0,7);
+        if(!pym) return;
+        ensureMonth(pym);
+        const amt=(parseFloat(p.amount)||0)*rate;
+        mMap[pym].collected+=amt;
+      });
+    } else {
+      // No payment history entries — fall back to paymentReceived on invoice month
+      const paid=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+      if(paid>0) mMap[ym].collected+=Math.min(paid,x.revSGD);
+    }
   });
   const mKeys=Object.keys(mMap).sort();
   const mLabels=mKeys.map(ym=>new Date(ym+'-01').toLocaleDateString('en-SG',{month:'short',year:'2-digit'}));
