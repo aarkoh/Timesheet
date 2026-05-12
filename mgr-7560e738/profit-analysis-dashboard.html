@@ -516,6 +516,17 @@ const SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vndr PO',do_wcc:'DO/WCC
 let marginFilter='all';
 let _lastJd=[];
 
+/* ── Payment total helper ──
+   Firebase stores JS arrays as keyed objects {"0":{...},"1":{...}}.
+   Read from paymentHistory first (source of truth), fall back to paymentReceived sum. */
+function getPayTotal(j){
+  const hist=j.paymentHistory;
+  if(hist&&typeof hist==='object'){
+    return Object.values(hist).reduce(function(s,p){return s+(parseFloat(p.amount)||0);},0);
+  }
+  return parseFloat(j.paymentReceived)||0;
+}
+
 /* ── Section toggles ── */
 window.toggleSection=function(key){
   const body=document.getElementById(key+'SectionBody');
@@ -689,7 +700,7 @@ function render(){
   /* ── Outstanding AR — invoiced but not fully collected ── */
   const arJobs=jd.filter(x=>x.j.invoiceDate&&['invoice','soa'].includes(x.j.status))
     .map(x=>{
-      const collected=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+      const collected=getPayTotal(x.j)*fxRate(x.j.currency||'SGD');
       const outstanding=Math.max(0,x.revSGD-collected);
       return{...x,collected,outstanding};
     })
@@ -794,7 +805,7 @@ function render(){
     mMap[ym].cost+=x.totalCost;
     mMap[ym].profit+=x.profit;
     // Cash collected: payment received for this invoice cohort
-    const paid=(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+    const paid=getPayTotal(x.j)*fxRate(x.j.currency||'SGD');
     mMap[ym].collected+=Math.min(paid,x.revSGD); // cap at invoice value
   });
   const mKeys=Object.keys(mMap).sort();
