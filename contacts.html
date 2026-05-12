@@ -113,6 +113,22 @@ button:active{transform:scale(0.97)}
 .pname{font-weight:600}
 .prole{font-size:11px;color:#888}
 .pcontact{font-size:12px;color:#555;margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+/* Tags */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px 8px;border:1px solid #ddd;border-radius:8px;background:#f9f9f7;cursor:text;min-height:40px}
+.tag-input-wrap:focus-within{border-color:#185FA5;background:#fff}
+.tag-pill{display:inline-flex;align-items:center;gap:4px;background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4;border-radius:20px;font-size:11px;font-weight:500;padding:2px 8px;white-space:nowrap}
+.tag-pill .tag-x{background:none;border:none;color:#185FA5;cursor:pointer;padding:0;font-size:13px;line-height:1;opacity:0.7}
+.tag-pill .tag-x:hover{opacity:1}
+.tag-inp{border:none;outline:none;background:transparent;font-size:13px;font-family:inherit;min-width:120px;flex:1;padding:2px 4px}
+.tag-suggest{position:absolute;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:300;max-height:160px;overflow-y:auto;margin-top:2px;min-width:180px}
+.tag-suggest-item{padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f5f5f3}
+.tag-suggest-item:last-child{border:none}
+.tag-suggest-item:hover{background:#f0f7ff;color:#185FA5}
+.tag-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;padding:8px 10px;background:#fff;border:1px solid #e0ddd6;border-radius:10px;align-items:center}
+.tag-filter-lbl{font-size:11px;color:#aaa;font-weight:500;white-space:nowrap}
+.chip.tag-chip{border-color:#B5D4F4;color:#185FA5;background:#E6F1FB}
+.chip.tag-chip.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.cbadge.tag{background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4}
 </style>
 </head>
 <body>
@@ -138,6 +154,9 @@ button:active{transform:scale(0.97)}
       <div class="chip active" onclick="setFilter('all',this)">All</div>
       <div class="chip" onclick="setFilter('customer',this)">Customers</div>
       <div class="chip" onclick="setFilter('vendor',this)">Vendors</div>
+    </div>
+    <div class="tag-filter-row" id="tagFilterRow" style="display:none">
+      <span class="tag-filter-lbl">🏷 Tag:</span>
     </div>
     <div class="contact-list" id="contactList"></div>
   </div>
@@ -186,6 +205,14 @@ button:active{transform:scale(0.97)}
       </div>
     </div>
     <div class="field"><label>Notes</label><textarea id="f_notes" rows="2" placeholder="Any additional notes…"></textarea></div>
+    <div class="field" style="position:relative">
+      <label>Tags <span style="font-size:11px;font-weight:400;color:#aaa">— brands, categories, specialties (Enter or comma to add)</span></label>
+      <div class="tag-input-wrap" id="tagInputWrap" onclick="document.getElementById('tagInp').focus()">
+        <span id="tagPills"></span>
+        <input type="text" id="tagInp" class="tag-inp" placeholder="e.g. Yokogawa, BWTS, spare parts…" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="tag-suggest" id="tagSuggest" style="display:none"></div>
+    </div>
     <div class="field">
       <label>Contact persons</label>
       <div class="person-list" id="personList"></div>
@@ -212,10 +239,74 @@ const fbApp=initializeApp(firebaseConfig);
 const db=getDatabase(fbApp);
 const auth=getAuth(fbApp);
 
-let contacts={}, currentContactId=null, editContactId=null, editJobId=null, filterType='all';
-let allJobs={}; // auto-populated from job register
+let contacts={}, currentContactId=null, editContactId=null, editJobId=null, filterType='all', filterTag=null;
+let allJobs={};
+let currentTags=[];
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── Tag input helpers ─────────────────────────────────────────
+function renderTagPills(){
+  const pills=document.getElementById('tagPills');
+  if(!pills)return;
+  pills.innerHTML=currentTags.map((t,i)=>
+    `<span class="tag-pill">${t}<button type="button" class="tag-x" onclick="removeTag(${i})">×</button></span>`
+  ).join('');
+}
+window.removeTag=function(i){currentTags.splice(i,1);renderTagPills();};
+function commitTagInput(){
+  const inp=document.getElementById('tagInp');
+  if(!inp)return;
+  const val=inp.value.replace(/,/g,'').trim().toLowerCase();
+  if(val&&!currentTags.includes(val)){currentTags.push(val);renderTagPills();}
+  inp.value='';
+  hideSuggest();
+}
+function allExistingTags(){
+  return [...new Set(Object.values(contacts).flatMap(c=>c.tags||[]))].sort();
+}
+function showSuggest(q){
+  const box=document.getElementById('tagSuggest');
+  if(!box)return;
+  const matches=allExistingTags().filter(t=>t.includes(q.toLowerCase())&&!currentTags.includes(t));
+  if(!q||!matches.length){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML=matches.slice(0,8).map(t=>`<div class="tag-suggest-item" onmousedown="pickSuggest('${t}')">${t}</div>`).join('');
+}
+function hideSuggest(){const b=document.getElementById('tagSuggest');if(b)b.style.display='none';}
+window.pickSuggest=function(t){
+  if(!currentTags.includes(t))currentTags.push(t);
+  renderTagPills();
+  const inp=document.getElementById('tagInp');if(inp){inp.value='';inp.focus();}
+  hideSuggest();
+};
+// Wire tag input events after DOM ready
+document.addEventListener('DOMContentLoaded',function(){
+  const inp=document.getElementById('tagInp');
+  if(!inp)return;
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===','){e.preventDefault();commitTagInput();}
+    else if(e.key==='Backspace'&&!inp.value&&currentTags.length){currentTags.pop();renderTagPills();}
+  });
+  inp.addEventListener('input',function(){showSuggest(inp.value.trim());});
+  inp.addEventListener('blur',function(){setTimeout(hideSuggest,150);});
+});
+
+// ── Tag filter chips ──────────────────────────────────────────
+function renderTagFilterRow(){
+  const row=document.getElementById('tagFilterRow');
+  if(!row)return;
+  const tags=allExistingTags();
+  if(!tags.length){row.style.display='none';return;}
+  row.style.display='flex';
+  row.innerHTML='<span class="tag-filter-lbl">🏷 Tag:</span>'
+    +tags.map(t=>`<div class="chip tag-chip${filterTag===t?' active':''}" onclick="setTagFilter('${t}',this)">${t}</div>`).join('');
+}
+window.setTagFilter=function(tag,el){
+  filterTag=filterTag===tag?null:tag;
+  renderTagFilterRow();
+  renderList();
+};
 
 // ── Tabs ──────────────────────────────────────────────────────
 window.switchTab=function(tab,el){
@@ -238,9 +329,14 @@ window.renderList=function renderList(){
   const q=(document.getElementById('searchInput').value||'').toLowerCase();
   const list=Object.entries(contacts).filter(([,c])=>{
     if(filterType!=='all'&&!(c.types||[]).includes(filterType)) return false;
-    if(q&&!c.name.toLowerCase().includes(q)&&!(c.company||'').toLowerCase().includes(q)&&!(c.phone||'').includes(q)) return false;
+    if(filterTag&&!(c.tags||[]).includes(filterTag)) return false;
+    if(q&&!( (c.name||'').toLowerCase().includes(q)
+          ||(c.company||'').toLowerCase().includes(q)
+          ||(c.phone||'').includes(q)
+          ||(c.tags||[]).some(t=>t.includes(q)) )) return false;
     return true;
   });
+  renderTagFilterRow();
   const el=document.getElementById('contactList');
   if(!list.length){el.innerHTML='<div class="empty-state">No contacts found.<br>Tap + Add contact to get started.</div>';return;}
   el.innerHTML=list.sort((a,b)=>a[1].name.localeCompare(b[1].name)).map(([id,c])=>{
@@ -254,6 +350,7 @@ window.renderList=function renderList(){
     const jobCount=Object.values(allJobs).filter(j=>!j.archived&&(j.customerName||'').toLowerCase().trim()===cNameL).length;
     const isVendorContact=(c.types||[]).includes('vendor');
     const vendorJobCount=isVendorContact?Object.values(allJobs).filter(j=>!j.archived&&(j.lineItems||[]).some(function(it){return it.vendorId===id||(it.children||[]).some(function(ch){return ch.vendorId===id;});})).length:0;
+    const tagPills=(c.tags||[]).map(t=>`<span class="cbadge tag">${t}</span>`).join('');
     return `<div class="ccard" onclick="openDetail('${id}')">
       <div class="ccard-top">
         <div class="${avatarCls}">${initials}</div>
@@ -265,6 +362,7 @@ window.renderList=function renderList(){
             ${c.gst?'<span class="cbadge gst">GST 9%</span>':''}
             ${c.currency&&c.currency!=='SGD'?`<span class="cbadge terms">${c.currency}</span>`:''}
             ${jobCount?`<span class="cbadge terms">📋 ${jobCount} job${jobCount>1?'s':''}</span>`:''}
+            ${tagPills}
           </div>
         </div>
       </div>
@@ -356,11 +454,11 @@ window.openDetail=function(id){
       <h3>Company info</h3>
       <div class="detail-row"><span class="detail-label">Type</span><span class="detail-val"><span class="cbadge ${badgeType}">${badgeLabel}</span></span></div>
       ${c.company?`<div class="detail-row"><span class="detail-label">Company</span><span class="detail-val">${c.company}</span></div>`:''}
-
       ${c.address?`<div class="detail-row"><span class="detail-label">Address</span><span class="detail-val">${c.address}</span></div>`:''}
       <div class="detail-row"><span class="detail-label">Payment terms</span><span class="detail-val">${c.paymentTerms||'—'}</span></div>
       <div class="detail-row"><span class="detail-label">GST 9%</span><span class="detail-val">${c.gst?'✓ Yes':'No'}</span></div>
       <div class="detail-row"><span class="detail-label">Currency</span><span class="detail-val">${c.currency||'SGD'}</span></div>
+      ${(c.tags||[]).length?`<div class="detail-row"><span class="detail-label">Tags</span><span class="detail-val" style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${(c.tags||[]).map(t=>`<span class="cbadge tag">${t}</span>`).join('')}</span></div>`:''}
       ${c.notes?`<div class="detail-row"><span class="detail-label">Notes</span><span class="detail-val" style="max-width:60%;text-align:right">${c.notes}</span></div>`:''}
     </div>
 
@@ -410,6 +508,7 @@ window.openAddContact=function(){
   document.getElementById('opt-gst').classList.remove('checked');
   document.querySelectorAll('#typeGroup .check-opt').forEach(o=>{o.classList.remove('checked');o.querySelector('input').checked=false;});
   document.querySelectorAll('#termsGroup .check-opt').forEach(o=>{o.classList.remove('checked');o.querySelector('input').checked=false;});
+  currentTags=[];renderTagPills();
   clearPersonRows();
   document.getElementById('contactModal').classList.add('show');
   setTimeout(()=>document.getElementById('f_company').focus(),80);
@@ -448,6 +547,8 @@ window.openEditContact=function(id){
   // Load existing persons
   clearPersonRows();
   (c.persons||[]).forEach(p=>addPersonRow(p.name||'',p.role||'',p.phone||'',p.email||''));
+  // Load tags
+  currentTags=[...(c.tags||[])];renderTagPills();
   document.getElementById('contactModal').classList.add('show');
 };
 window.closeContactModal=function(){
@@ -467,6 +568,7 @@ window.updateCurrOpt=function(inp){document.querySelectorAll('#currGroup .check-
 
 // ── Contact Persons ───────────────────────────────────────────
 window.saveContact=async function(){
+  commitTagInput(); // commit any partially typed tag
   const name=document.getElementById('f_company').value.trim()||document.getElementById('f_company').value.trim();
   if(!name){toast('Company name is required');return;}
   const types=[...(document.querySelectorAll('#typeGroup input:checked'))].map(i=>i.value);
@@ -481,6 +583,7 @@ window.saveContact=async function(){
     types,paymentTerms:termsEl?termsEl.value:'',
     gst:document.getElementById('f_gst').checked,
     currency:(document.querySelector('#currGroup input:checked')||{value:'SGD'}).value,
+    tags:currentTags.filter(Boolean),
     persons:getPersonRows(),
     updatedAt:new Date().toISOString()
   };
