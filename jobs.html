@@ -108,7 +108,30 @@ button:hover{background:#f0f0ee}
 .cipl-pack-tbl td:nth-child(2){padding-left:5px;font-size:12px;color:#333}
 .cipl-pack-tbl input{width:100%;padding:4px 5px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit;text-align:center;background:#fff}
 .cipl-pack-tbl input:focus{outline:none;border-color:#185FA5}
-.cipl-mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}</style>
+.cipl-mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:1px solid #e0ddd6}
+/* Line Item Search Modal */
+.lisrch-bg{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:flex-start;justify-content:center;z-index:120;padding:1rem;overflow-y:auto}
+.lisrch-bg.show{display:flex}
+.lisrch-modal{background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:820px;border:1px solid #e0ddd6;margin:auto}
+.lisrch-modal h2{font-size:16px;font-weight:600;margin-bottom:1rem}
+.lisrch-inp{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;margin-bottom:1rem;box-sizing:border-box}
+.lisrch-inp:focus{outline:none;border-color:#185FA5}
+.lisrch-results{max-height:58vh;overflow-y:auto}
+.lisrch-empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.lisrch-group{margin-bottom:1.25rem;border:1px solid #e0ddd6;border-radius:10px;overflow:hidden}
+.lisrch-job-hdr{background:#f9f9f7;padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lisrch-job-ref{font-size:14px;font-weight:700;color:#1a1a1a}
+.lisrch-job-cust{font-size:12px;color:#555;flex:1}
+.lisrch-job-date{font-size:11px;color:#aaa}
+.lisrch-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid #f0ede6;flex-wrap:wrap}
+.lisrch-item:hover{background:#f5f9ff}
+.lisrch-desc{font-size:13px;color:#1a1a1a;flex:1;min-width:160px}
+.lisrch-meta{font-size:12px;color:#888;white-space:nowrap}
+.lisrch-price{font-size:13px;font-weight:600;color:#185FA5;white-space:nowrap;min-width:80px;text-align:right}
+.lisrch-sub{padding-left:20px;background:#f4f8fe}
+.lisrch-sub .lisrch-desc{font-size:12px;color:#555}
+.lisrch-copy-all{font-size:11px;padding:4px 10px;border-color:#1a6641;color:#1a6641;background:#EAF3DE;font-weight:600}
+.lisrch-copy-one{font-size:11px;padding:4px 10px;border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600}</style>
 </head>
 <body>
 <div class="ls" id="ls"><div class="sp"></div><p>Loading jobs&hellip;</p></div>
@@ -126,6 +149,7 @@ button:hover{background:#f0f0ee}
     <div class="toolbar">
       <input type="text" id="jobSearch" placeholder="Search ref, customer, vessel&hellip;" autocomplete="off">
       <button class="bp" onclick="openNewJob()">+ New Job</button>
+      <button onclick="window.openLISearch()" style="border-color:#0E7490;color:#0E7490;background:#CFFAFE;font-weight:600">&#128269; Search Items</button>
       <button onclick="openSOA()" style="border-color:#185FA5;color:#185FA5;background:#E6F1FB;font-weight:600">&#128196; SOA</button>
     </div>
     <div class="chips">
@@ -145,6 +169,45 @@ button:hover{background:#f0f0ee}
 </div>
 
 
+
+<!-- LINE ITEM SEARCH MODAL -->
+<div class="lisrch-bg" id="liSearchBg">
+  <div class="lisrch-modal">
+
+    <!-- Panel 1: Search -->
+    <div id="liSrchPanel">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <h2 style="margin:0;flex:1">&#128269; Search Past Line Items</h2>
+        <button onclick="window.closeLISearch()" style="font-size:13px;padding:5px 12px">Close</button>
+      </div>
+      <input class="lisrch-inp" id="liSrchInp" placeholder="Search description, e.g. BWTS, overhaul, gasket…" autocomplete="off">
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px">
+        Search across all past job line items for reference pricing. Click <strong style="color:#185FA5">Import Item</strong> to add one item, or <strong style="color:#1a6641">Import All</strong> to add all matched items from that job.
+      </div>
+      <div class="lisrch-results" id="liSrchResults">
+        <div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Job Picker -->
+    <div id="liJobPickerPanel" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <button onclick="window.liPickerBack()" style="font-size:12px;padding:5px 10px">&larr; Back</button>
+        <h2 style="margin:0;flex:1">&#128279; Import to which job?</h2>
+        <button onclick="window.closeLISearch()" style="font-size:13px;padding:5px 12px">Close</button>
+      </div>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;padding:8px 12px;background:#f9f9f7;border-radius:8px;border:1px solid #e0ddd6">
+        Importing: <strong id="liPickerSummary"></strong>
+      </div>
+      <button onclick="window.liPickerNewJob()" style="width:100%;padding:10px;margin-bottom:10px;border:2px dashed #185FA5;color:#185FA5;background:#E6F1FB;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        + New Job
+      </button>
+      <input class="lisrch-inp" id="liJobPickerInp" placeholder="Search existing jobs by ref or customer…" autocomplete="off" style="margin-bottom:8px">
+      <div class="lisrch-results" id="liJobPickerList"></div>
+    </div>
+
+  </div>
+</div>
 
 <!-- MODAL -->
 <div class="mbg" id="jobModal">
@@ -1090,6 +1153,259 @@ onAuthStateChanged(auth,function(user){
 var se=document.getElementById("jobSearch");
 ["input","keyup","change"].forEach(function(ev){se.addEventListener(ev,function(){sQ=se.value;renderList();});});
 document.addEventListener("keydown",function(e){if(e.key==="Escape"&&document.getElementById("jobModal").classList.contains("show"))window.closeModal();});
+
+// ─── LINE ITEM SEARCH ────────────────────────────────────────────────────────
+
+// Pending import payload: {items:[{desc,qty,unit,unitPrice,costPrice,costCur,children}], summary:string}
+var _liPending = null;
+
+window.openLISearch = function() {
+  _liPending = null;
+  document.getElementById("liSearchBg").classList.add("show");
+  document.getElementById("liSrchPanel").style.display = "";
+  document.getElementById("liJobPickerPanel").style.display = "none";
+  var inp = document.getElementById("liSrchInp");
+  inp.value = "";
+  document.getElementById("liSrchResults").innerHTML = '<div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>';
+  setTimeout(function() { inp.focus(); }, 80);
+};
+
+window.closeLISearch = function() {
+  document.getElementById("liSearchBg").classList.remove("show");
+  _liPending = null;
+};
+
+window.liPickerBack = function() {
+  _liPending = null;
+  document.getElementById("liJobPickerPanel").style.display = "none";
+  document.getElementById("liSrchPanel").style.display = "";
+  setTimeout(function() { document.getElementById("liSrchInp").focus(); }, 60);
+};
+
+function escH(s) {
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ── Step 1: search & render results ──────────────────────────────────────────
+
+function liSearchRender(q) {
+  var container = document.getElementById("liSrchResults");
+  if (!q) {
+    container.innerHTML = '<div class="lisrch-empty">Type a keyword to search line items across all jobs.</div>';
+    return;
+  }
+  var ql = q.toLowerCase();
+  var grouped = {};
+  Object.entries(jobs).forEach(function(e) {
+    var jobId = e[0], j = e[1];
+    if (j.archived) return;
+    (j.lineItems || []).forEach(function(it, pi) {
+      if ((it.desc || "").toLowerCase().includes(ql)) {
+        if (!grouped[jobId]) grouped[jobId] = { job: j, matches: [] };
+        grouped[jobId].matches.push({ item: it, isChild: false, parentIdx: pi, childIdx: -1 });
+      }
+      (it.children || []).forEach(function(ch, ci) {
+        if ((ch.desc || "").toLowerCase().includes(ql)) {
+          if (!grouped[jobId]) grouped[jobId] = { job: j, matches: [] };
+          grouped[jobId].matches.push({ item: ch, isChild: true, parentIdx: pi, childIdx: ci });
+        }
+      });
+    });
+  });
+
+  var keys = Object.keys(grouped);
+  if (!keys.length) {
+    container.innerHTML = '<div class="lisrch-empty">No line items found matching <strong>' + escH(q) + '</strong>.</div>';
+    return;
+  }
+  keys.sort(function(a, b) {
+    var jA = grouped[a].job, jB = grouped[b].job;
+    return ((jB.date || jB.createdAt || "")).localeCompare((jA.date || jA.createdAt || ""));
+  });
+
+  container.innerHTML = keys.map(function(jobId) {
+    var g = grouped[jobId], j = g.job;
+    var cur = j.currency || "SGD";
+    var displayDate = (j.date || j.createdAt || "").slice(0, 10);
+    var dateStr = displayDate ? fmtD(displayDate) : "—";
+    var matchedParentIdxs = [];
+    g.matches.forEach(function(r) { if (!matchedParentIdxs.includes(r.parentIdx)) matchedParentIdxs.push(r.parentIdx); });
+
+    var custInfo = escH(j.customerName || "No customer");
+    if (j.vessel) custInfo += ' <span style="color:#aaa">· ' + escH(j.vessel) + '</span>';
+    if (j.equip)  custInfo += ' <span style="color:#aaa">· ' + escH(j.equip)  + '</span>';
+
+    var html = '<div class="lisrch-group">'
+      + '<div class="lisrch-job-hdr">'
+      + '<span class="lisrch-job-ref">' + escH(j.ref || "—") + '</span>'
+      + '<span class="lisrch-job-cust">' + custInfo + '</span>'
+      + '<span class="lisrch-job-date">' + dateStr + '</span>'
+      + '<button class="lisrch-copy-all" data-jid="' + jobId + '" data-pidxs="' + matchedParentIdxs.join(",") + '" data-mode="all" onclick="window.liTriggerImport(this.dataset.jid,this.dataset.pidxs,this.dataset.mode)">'
+      + 'Import All (' + matchedParentIdxs.length + ')</button>'
+      + '</div>';
+
+    g.matches.forEach(function(r) {
+      var it = r.item;
+      var subCls = r.isChild ? " lisrch-sub" : "";
+      var label = r.isChild ? ((r.parentIdx + 1) + "." + (r.childIdx + 1) + " ") : ((r.parentIdx + 1) + ". ");
+      var priceStr = parseFloat(it.unitPrice) > 0 ? (cur + " " + fmt(it.unitPrice)) : "—";
+      var metaStr = it.qty ? (it.qty + (it.unit ? " " + it.unit : "")) : "";
+      html += '<div class="lisrch-item' + subCls + '">'
+        + '<span class="lisrch-desc"><span style="color:#aaa;font-size:11px">' + label + '</span>' + escH(it.desc || "—") + '</span>'
+        + '<span class="lisrch-meta">' + escH(metaStr) + '</span>'
+        + '<span class="lisrch-price">' + priceStr + '</span>'
+        + '<button class="lisrch-copy-one"'
+        + ' data-jid="' + jobId + '"'
+        + ' data-pidx="' + r.parentIdx + '"'
+        + ' data-cidx="' + r.childIdx + '"'
+        + ' data-child="' + (r.isChild ? 1 : 0) + '"'
+        + ' data-mode="one" onclick="window.liTriggerImport(this.dataset.jid,this.dataset.pidx,this.dataset.mode,+this.dataset.cidx,+this.dataset.child)">'
+        + 'Import Item</button>'
+        + '</div>';
+    });
+
+    return html + '</div>';
+  }).join("");
+}
+
+// ── Step 2: pick a target job ─────────────────────────────────────────────────
+
+// Called when user clicks Import Item or Import All
+window.liTriggerImport = function(srcJobId, pidxOrIdxs, mode, childIdx, isChild) {
+  var j = jobs[srcJobId]; if (!j) return;
+  var items = [];
+
+  if (mode === 'one') {
+    var it = isChild
+      ? ((j.lineItems || [])[+pidxOrIdxs] || {children:[]}).children[childIdx]
+      : (j.lineItems || [])[+pidxOrIdxs];
+    if (!it) { toast("Item not found"); return; }
+    items = [{ desc: it.desc, qty: it.qty, unit: it.unit, unitPrice: it.unitPrice, costPrice: it.costPrice, costCur: it.costCur, children: [] }];
+  } else {
+    var idxs = String(pidxOrIdxs).split(",").map(Number).filter(function(n) { return !isNaN(n); });
+    items = (j.lineItems || []).filter(function(_, i) { return idxs.includes(i); }).map(function(it) {
+      return { desc: it.desc, qty: it.qty, unit: it.unit, unitPrice: it.unitPrice, costPrice: it.costPrice, costCur: it.costCur, children: it.children || [] };
+    });
+  }
+
+  if (!items.length) { toast("Nothing to import"); return; }
+
+  _liPending = {
+    items: items,
+    summary: items.length === 1
+      ? ('"' + (items[0].desc || "item").slice(0, 50) + '"')
+      : (items.length + ' item(s) from job ' + escH(j.ref || "—"))
+  };
+
+  // Show the job picker panel
+  document.getElementById("liSrchPanel").style.display = "none";
+  document.getElementById("liJobPickerPanel").style.display = "";
+  document.getElementById("liPickerSummary").textContent = _liPending.summary.replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  liJobPickerRender("");
+  setTimeout(function() { document.getElementById("liJobPickerInp").focus(); }, 60);
+};
+
+function liJobPickerRender(q) {
+  var container = document.getElementById("liJobPickerList");
+  var ql = (q || "").toLowerCase();
+  var list = Object.entries(jobs).filter(function(e) {
+    var j = e[1];
+    if (j.archived) return false;
+    if (!ql) return true;
+    return [j.ref, j.customerName, j.vessel, j.equip].filter(Boolean).some(function(x) {
+      return x.toLowerCase().includes(ql);
+    });
+  }).sort(function(a, b) {
+    return ((b[1].updatedAt || b[1].createdAt || "")).localeCompare((a[1].updatedAt || a[1].createdAt || ""));
+  }).slice(0, 25);
+
+  if (!list.length) {
+    container.innerHTML = '<div class="lisrch-empty">No matching jobs found.</div>';
+    return;
+  }
+  container.innerHTML = list.map(function(e) {
+    var id = e[0], j = e[1];
+    var jst = j.status || "quote";
+    var bcMap = {quote:"bq",customer_po:"bcp",vendor_po:"bvp",do_wcc:"bdw",invoice:"bi",soa:"bs",closed:"bc"};
+    var slMap = {quote:"Quote",customer_po:"Customer PO",vendor_po:"Vendor PO",do_wcc:"DO/WCC",invoice:"Invoice",soa:"SOA",closed:"Closed"};
+    var badge = '<span class="badge ' + (bcMap[jst]||"bq") + '" style="font-size:10px">' + (slMap[jst]||jst) + '</span>';
+    var sub = j.vessel ? (' <span style="color:#aaa;font-size:11px">· ' + escH(j.vessel) + '</span>') : '';
+    return '<div class="lisrch-item" style="cursor:pointer" data-id="' + id + '" onclick="window.liPickerSelect(this.dataset.id)">'
+      + '<span class="lisrch-desc" style="flex:1">'
+      + '<strong>' + escH(j.ref || "—") + '</strong>'
+      + ' <span style="color:#555;font-size:12px">' + escH(j.customerName || "") + '</span>' + sub
+      + '</span>'
+      + badge
+      + '<button class="lisrch-copy-one" style="pointer-events:none">Import here</button>'
+      + '</div>';
+  }).join("");
+}
+
+window.liPickerNewJob = function() {
+  if (!_liPending) return;
+  var payload = _liPending;
+  window.closeLISearch();
+  window.openNewJob();
+  setTimeout(function() {
+    // Remove blank starter row
+    var body = document.getElementById("liBody");
+    var rows = Array.from(body.querySelectorAll("tr"));
+    if (rows.length === 1) {
+      var firstN = rows[0].id.replace("li_", "");
+      var firstDesc = (document.getElementById("ld_" + firstN) || {}).value || "";
+      if (!firstDesc) { window.removeLI(firstN); liCount = 0; }
+    }
+    liInjectItems(payload.items);
+    toast(payload.items.length + " item(s) imported ✓");
+  }, 80);
+};
+
+window.liPickerSelect = function(targetJobId) {
+  if (!_liPending) return;
+  var payload = _liPending;
+  window.closeLISearch();
+  window.openEditJob(targetJobId);
+  setTimeout(function() {
+    liInjectItems(payload.items);
+    toast(payload.items.length + " item(s) added to job ✓");
+  }, 100);
+};
+
+function liInjectItems(items) {
+  items.forEach(function(it) {
+    window.addLI(it.desc, it.qty, it.unit, it.unitPrice, "", it.costPrice || "", it.costCur || "SGD");
+    var pN = liCount;
+    (it.children || []).forEach(function(c) {
+      window.addSubLI(pN, c.desc, c.qty, c.unit, c.unitPrice, "", c.costPrice || "", c.costCur || "SGD");
+    });
+  });
+}
+
+// ── Wire up inputs ────────────────────────────────────────────────────────────
+
+(function() {
+  var inp = document.getElementById("liSrchInp");
+  var pickInp = document.getElementById("liJobPickerInp");
+  if (inp) {
+    var t;
+    inp.addEventListener("input", function() {
+      clearTimeout(t);
+      t = setTimeout(function() { liSearchRender(inp.value.trim()); }, 250);
+    });
+  }
+  if (pickInp) {
+    var t2;
+    pickInp.addEventListener("input", function() {
+      clearTimeout(t2);
+      t2 = setTimeout(function() { liJobPickerRender(pickInp.value.trim()); }, 200);
+    });
+  }
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && document.getElementById("liSearchBg").classList.contains("show"))
+      window.closeLISearch();
+  });
+})();
+
 </script>
 <script>
 function amtWords(amount,cur){
@@ -2958,6 +3274,63 @@ window.printFeedback=function(id){
         <button id="gcTypeMSC"  onclick="window.gcSetType('MSC')"  style="flex:1;min-width:100px;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">MSC<br><span style="font-size:10px;font-weight:400">MSC Vessel Gas Detection</span></button>
       </div>
       <!-- Header fields -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">VESSEL NAME</label><input id="gc_vessel" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">MODEL</label><input id="gc_model" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">REF NO (Job No)</label><input id="gc_ref" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">LOCATION</label><input id="gc_location" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">CALIBRATION DATE</label><input id="gc_caldate" type="date" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">EXPIRY DATE</label><input id="gc_expiry" type="date" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+        <div style="grid-column:1/-1"><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">REPRESENTATIVE</label><input id="gc_rep" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
+      </div>
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px;color:#1e3a5f">Sensor Readings</div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#f0f4f8">
+              <th style="width:36px;padding:7px 6px;border:1px solid #ddd;text-align:center">No.</th>
+              <th style="min-width:220px;padding:7px 8px;border:1px solid #ddd;text-align:left">Sensor</th>
+              <th style="width:70px;padding:7px 6px;border:1px solid #ddd;text-align:center">Zero</th>
+              <th style="width:110px;padding:7px 6px;border:1px solid #ddd;text-align:center">Span</th>
+              <th style="width:90px;padding:7px 6px;border:1px solid #ddd;text-align:center">Test Result</th>
+              <th style="width:90px;padding:7px 6px;border:1px solid #ddd;text-align:center">Remarks</th>
+              <th style="width:30px;padding:7px 6px;border:1px solid #ddd"></th>
+            </tr>
+          </thead>
+          <tbody id="gcBody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
+        <button onclick="window.gcAddRow()" style="padding:7px 14px;background:#f0f4f8;border:1px solid #c5d2e0;border-radius:6px;font-size:13px;cursor:pointer;font-family:inherit;color:#1e3a5f;font-weight:600">+ Add Row</button>
+        <span style="font-size:12px;color:#888">Starts with 5 rows; add as needed</span>
+      </div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;border-radius:0 0 12px 12px">
+      <button onclick="document.getElementById('gcOverlay').style.display='none'" style="padding:8px 18px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit;font-size:13px;cursor:pointer">Cancel</button>
+      <button onclick="window.printGasCert()" style="padding:8px 20px;border:none;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;cursor:pointer;font-weight:600">&#128424; Print Certificate</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+/* GAS CALIBRATION CERT MODAL */
+<div id="gcOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9000;overflow-y:auto;padding:20px">
+  <div style="background:#fff;border-radius:12px;max-width:920px;margin:auto;padding:0;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.25)">
+    <div style="background:#1e3a5f;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-weight:700;font-size:15px" id="gcModalTitle">&#9881; Gas Calibration Certificate</span>
+      <button onclick="document.getElementById('gcOverlay').style.display='none'" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="padding:16px 20px 10px">
+      /* Type selector */
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <button id="gcTypeFGDS" onclick="window.gcSetType('FGDS')" style="flex:1;min-width:100px;padding:9px;border:2px solid #1e3a5f;border-radius:7px;background:#1e3a5f;color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">FGDS<br><span style="font-size:10px;font-weight:400">Fixed Gas Detection System</span></button>
+        <button id="gcTypeVECS" onclick="window.gcSetType('VECS')" style="flex:1;min-width:100px;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">VECS<br><span style="font-size:10px;font-weight:400">Vapour Emission Control System</span></button>
+        <button id="gcTypeMSC"  onclick="window.gcSetType('MSC')"  style="flex:1;min-width:100px;padding:9px;border:2px solid #ddd;border-radius:7px;background:#f9fafb;color:#555;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">MSC<br><span style="font-size:10px;font-weight:400">MSC Vessel Gas Detection</span></button>
+      </div>
+      /* Header fields */
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
         <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">VESSEL NAME</label><input id="gc_vessel" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
         <div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:3px">MODEL</label><input id="gc_model" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-family:inherit;box-sizing:border-box"></div>
