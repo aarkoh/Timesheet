@@ -2087,8 +2087,8 @@ window.printSOA = function() {
   var custAddr=(contacts[custId]||{}).address||'';
   var from=document.getElementById('soa_from').value;
   var to=document.getElementById('soa_to').value;
-  var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   function fmtD(d){if(!d)return'--';try{return new Date(d.slice(0,10)+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;}}
+  var todayFmt=to?fmtD(to):new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   var fromFmt=from?fmtD(from):'--', toFmt=to?fmtD(to):'--';
   var age0=0,age30=0,age60=0,age90=0,totalInv=0,totalRcvd=0;
   var SL={quote:'Quote',customer_po:'Cust PO',vendor_po:'Vendor PO',do_wcc:'DO/WCC',invoice:'Invoice',soa:'SOA',closed:'Closed'};
@@ -2244,13 +2244,17 @@ window.printSOA = function() {
 <div class="mbg" id="invModal">
   <div class="modal">
     <h2>&#129534; Invoice &mdash; <span id="inv_ref_title"></span></h2>
-    <div style="display:flex;gap:20px;margin-bottom:12px">
+    <div style="display:flex;gap:20px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
         <input type="radio" name="inv_type" id="inv_type_tax" value="TAX" checked style="width:15px;height:15px"> Tax Invoice
       </label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
         <input type="radio" name="inv_type" id="inv_type_pro" value="PROFORMA" style="width:15px;height:15px"> Proforma Invoice
       </label>
+    </div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Invoice Date</div>
+      <input type="date" id="inv_date" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;width:100%">
     </div>
     <div id="inv_pct_row" style="display:none;margin-bottom:12px;display:none">
       <div style="font-size:12px;color:#888;margin-bottom:6px;font-weight:500">Percentage</div>
@@ -2975,6 +2979,9 @@ window.openPrintInv=function(id){
   _invPct=1;
   document.querySelectorAll('.inv-pct').forEach(function(b){b.classList.remove('on');});
   var half=document.querySelector('.inv-pct:nth-child(2)');if(half)half.classList.add('on');
+  // Default date: existing invoiceDate on the job, or today
+  var today=new Date().toISOString().slice(0,10);
+  document.getElementById('inv_date').value=j.invoiceDate||today;
   var list=document.getElementById('inv_item_list');
   var invRows=[];
   (j.lineItems||[]).forEach(function(it,i){
@@ -3015,6 +3022,7 @@ window.openPrintInv=function(id){
     if(_invD.billAttn!==undefined) document.getElementById('inv_bill_attn').value=_invD.billAttn;
     if(_invD.payTerms){var _ps=document.getElementById('inv_pay_terms');if(_ps.querySelector('option[value="'+_invD.payTerms+'"]'))_ps.value=_invD.payTerms;}
     if(_invD.isPro){document.getElementById('inv_type_pro').checked=true;document.getElementById('inv_pct_row').style.display='block';}
+    if(_invD.invDate) document.getElementById('inv_date').value=_invD.invDate;
   }
   document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
   document.getElementById('invModal').classList.add('show');
@@ -3039,6 +3047,7 @@ window.doPrintInv=function(){
     selected.push(entry);
   });
   var invPayTerms=document.getElementById('inv_pay_terms').value||'';
+  var invDate=document.getElementById('inv_date').value||new Date().toISOString().slice(0,10);
   var billTo={
     name:document.getElementById('inv_bill_name').value.trim(),
     addr:document.getElementById('inv_bill_addr').value.trim(),
@@ -3047,11 +3056,11 @@ window.doPrintInv=function(){
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
   // ── Save draft so fields persist next time ──
-  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro}});}catch(e){}
-  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms,billTo);
+  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro,invDate:invDate}});}catch(e){}
+  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms,billTo,invDate);
 };
 
-window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,billTo){
+window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,billTo,invDate){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt,fmtD=window._fmtD,totals=window._totals;
@@ -3059,6 +3068,9 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
   invPct=invPct||1;
   var isPro=(invType||'').includes('PROFORMA');
   var pctLabel=isPro&&invPct<1?'('+Math.round(invPct*100)+'% advance)':'';
+  // Use selected date, fall back to today
+  function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
+  var todayFmt=invDate?fd(invDate):new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   var scaledItems=selectedItems.map(function(it){
     var d=parseFloat(it.custDisc)||0;
     var ch=(it.children||[]).map(function(c){
@@ -3082,8 +3094,6 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
   var cur=j.currency||'SGD';
   var rcvd=parseFloat(j.paymentReceived)||0;
   var bal=t.total-rcvd;
-  var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
-  function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
   function chg(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':a>0?fmt(a):'0.00';}
   var iRows=(function(){
     var rows=[];
