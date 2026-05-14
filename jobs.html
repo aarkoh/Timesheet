@@ -287,7 +287,7 @@ button:hover{background:#f0f0ee}
         <th style="width:54px;color:#185FA5" title="Customer discount % — internal only">Cust% *</th>
         <th style="width:72px;text-align:right;color:#854F0B" title="Internal cost price - not printed">Cost *</th>
         <th style="width:52px;color:#854F0B" title="Cost currency">Cur *</th>
-        <th style="width:68px;text-align:right;color:#1a6641" title="Gross margin % (profit ÷ sell price) - not printed">Margin *</th>
+        <th style="width:68px;text-align:right;color:#1a6641" title="Gross margin % (profit ÷ sell price) - not printed. Hint below shows unit price needed for 35% margin.">Margin *</th>
         <th style="width:96px">Vendor</th>
         <th style="width:28px" title="Add sub-item"></th>
         <th style="width:28px"></th>
@@ -750,7 +750,7 @@ window.addLI=function(desc,qty,unit,price,vendor,cost,costCur){
     +'<td title="Customer discount %"><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="lcd_'+n+'" data-n="'+n+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:5px 3px;border:1px solid #B5D4F4;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#E6F1FB"><span style="background:#E6F1FB;border:1px solid #B5D4F4;border-left:none;border-radius:0 6px 6px 0;padding:5px 3px;font-size:10px;color:#185FA5">%</span></div></td>'
     +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+n+'" data-n="'+n+'" oninput="window.updateMarkup(this.dataset.n)" style="width:68px;text-align:right;padding:5px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
     +'<td><select id="lcc_'+n+'" data-n="'+n+'" onchange="window.updateMarkup(this.dataset.n)" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
-    +'<td><span id="lmk_'+n+'" style="display:block;padding:5px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span></td>'
+    +'<td style="text-align:right"><span id="lmk_'+n+'" style="display:block;padding:5px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span><div id="lmk_h35_'+n+'" style="font-size:10px;color:#854F0B;margin-top:3px;text-align:right;white-space:nowrap"></div></td>'
     +'<td><select id="lv_'+n+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f9f9f7"><option value="">—</option>'+vopts+'</select></td>'
     +'<td style="text-align:center"><button data-n="'+n+'" onclick="window.addSubLI(this.dataset.n)" title="Add sub-item" style="font-size:11px;padding:2px 5px;border-color:#B5D4F4;color:#185FA5;background:#E6F1FB">&#8627;</button></td>'
     +'<td style="text-align:center"><button data-n="'+n+'" onclick="window.removeLI(this.dataset.n)" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>';
@@ -778,7 +778,7 @@ window.addSubLI=function(parentN,desc,qty,unit,price,vendor,cost,costCur){
     +'<td title="Customer discount %"><div style="display:flex;align-items:center"><input type="number" value="" placeholder="0" min="0" max="100" step="0.1" id="lcd_'+id+'" data-n="'+id+'" oninput="window.updateMarkup(this.dataset.n)" style="width:40px;text-align:right;padding:4px 3px;border:1px solid #B5D4F4;border-radius:6px 0 0 6px;font-size:12px;font-family:inherit;background:#E6F1FB"><span style="background:#E6F1FB;border:1px solid #B5D4F4;border-left:none;border-radius:0 6px 6px 0;padding:4px 3px;font-size:10px;color:#185FA5">%</span></div></td>'
     +'<td><input type="number" value="'+(cost||'')+'" placeholder="0.00" min="0" step="0.01" id="lc_'+id+'" data-n="'+id+'" oninput="window.updateMarkup(this.dataset.n)" style="width:68px;text-align:right;padding:4px 6px;border:1px solid #f0c08a;border-radius:6px;font-size:12px;font-family:inherit;background:#FAEEDA"></td>'
     +'<td><select id="lcc_'+id+'" data-n="'+id+'" onchange="window.updateMarkup(this.dataset.n)" style="width:48px;font-size:11px;padding:3px 2px;border:1px solid #f0c08a;border-radius:6px;font-family:inherit;background:#FAEEDA">'+'<option value="SGD"'+(costCur==="SGD"?' selected':'')+'>SGD</option>'+'<option value="USD"'+(costCur==="USD"?' selected':'')+'>USD</option>'+'<option value="EUR"'+(costCur==="EUR"?' selected':'')+'>EUR</option>'+'<option value="JPY"'+(costCur==="JPY"?' selected':'')+'>JPY</option>'+'<option value="SEK"'+(costCur==="SEK"?' selected':'')+'>SEK</option>'+'</select></td>'
-    +'<td><span id="lmk_'+id+'" style="display:block;padding:4px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span></td>'
+    +'<td style="text-align:right"><span id="lmk_'+id+'" style="display:block;padding:4px 6px;background:#f0faf2;border:1px solid #b8e4c5;border-radius:6px;font-size:11px;font-weight:600;color:#1a6641;text-align:right;min-width:60px">—</span><div id="lmk_h35_'+id+'" style="font-size:10px;color:#854F0B;margin-top:3px;text-align:right;white-space:nowrap"></div></td>'
     +'<td><select id="lv_'+id+'" style="width:100%;font-size:11px;padding:3px 4px;border:1px solid #ddd;border-radius:6px;font-family:inherit;background:#f4f8fe"><option value="">—</option>'+vopts+'</select></td>'
     +'<td></td>'
     +'<td style="text-align:center"><button data-n="'+id+'" onclick="window.removeSubLI(this.dataset.n)" style="font-size:12px;padding:2px 6px;border-color:#ddd;color:#aaa">✕</button></td>';
@@ -873,7 +873,7 @@ window.updateMarkup=function(n){
   var cur=(document.getElementById('lcc_'+n)||{value:'SGD'}).value||'SGD';
   var mkEl=document.getElementById('lmk_'+n);
   if(!mkEl)return;
-  if(!effPrice||!rawCost){mkEl.textContent='—';mkEl.style.color='#1a6641';return;}
+  if(!effPrice||!rawCost){mkEl.textContent='—';mkEl.style.color='#1a6641';var h35c=document.getElementById('lmk_h35_'+n);if(h35c)h35c.textContent='';return;}
   window.getFxRates(function(fx){
     var fxRate=fx[cur];
     // fxRate should never be missing since _fxCache is seeded with approximates
@@ -890,6 +890,14 @@ window.updateMarkup=function(n){
     mkEl.style.color=markup>=0?'#1a6641':'#A32D2D';
     mkEl.style.borderColor=markup>=0?'#b8e4c5':'#f5b8b8';
     mkEl.style.background=markup>=0?'#f0faf2':'#fff0f0';
+    // 35% margin target hint
+    var h35=document.getElementById('lmk_h35_'+n);
+    if(h35){
+      var jobCur=(document.getElementById('j_cur')||{value:'SGD'}).value||'SGD';
+      var jobFx=fx[jobCur]||1;
+      var price35=costSGD/0.65/jobFx;
+      h35.textContent='35%: '+jobCur+' '+price35.toFixed(2);
+    }
     if(cur!=='SGD'){
       var fxTip='Cost: '+cur+' '+rawCost.toFixed(2);
       if(vendorDisc>0)fxTip+=' −'+vendorDisc+'% = '+cur+' '+c.toFixed(2);
