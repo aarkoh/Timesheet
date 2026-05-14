@@ -259,13 +259,10 @@ function totals(j){
     if(ch.length){return s+ch.reduce(function(cs,c){return cs+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0);}
     return s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
   },0);
-  var ca=j.courier==='amt'?parseFloat(j.courierAmt)||0:0;
-  var pa=j.packing==='amt'?parseFloat(j.packingAmt)||0:0;
-  var fa=j.freight==='amt'?parseFloat(j.freightAmt)||0:0;
-  var sub=iSub+ca+pa+fa;
-  var gst=j.gst==='9'?sub*0.09:0;
+  var sub=iSub;
+  var gst=j.gst===true?sub*0.09:0;
   var bf=parseFloat(j.bankFee)||0;
-  return{sub,gst,bf,total:sub+gst+bf,ca,pa,fa};
+  return{sub,gst,bf,total:sub+gst+bf,ca:0,pa:0,fa:0};
 }
 function chgL(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':fmt(a);}
 
@@ -519,9 +516,6 @@ function buildDetail(id){
       +'</table></div>'
       +'<div style="display:flex;justify-content:flex-end;margin-top:1rem">'
         +'<div style="min-width:280px">'
-          +(t.ca>0||j.courier==='TBA'?'<div class="trow"><span>Local Courier</span><span>'+chgL(j.courier,t.ca)+'</span></div>':'')
-          +(t.pa>0||j.packing==='TBA'?'<div class="trow"><span>Packing</span><span>'+chgL(j.packing,t.pa)+'</span></div>':'')
-          +(t.fa>0||j.freight==='TBA'?'<div class="trow"><span>Freight</span><span>'+chgL(j.freight,t.fa)+'</span></div>':'')
           +(t.gst>0?'<div class="trow"><span>Sub Total</span><span>'+fmt(t.sub)+'</span></div><div class="trow"><span>GST (9%)</span><span>'+fmt(t.gst)+'</span></div>':'')
           +(t.bf>0?'<div class="trow"><span>Bank Fee</span><span>'+fmt(t.bf)+'</span></div>':'')
           +'<div class="trow" style="font-size:16px;font-weight:700;padding-top:8px"><span>TOTAL '+cur+'</span><span>'+fmt(t.total)+'</span></div>'
@@ -1088,7 +1082,7 @@ function printInvData(id, selectedItems, invType, invPct, billTo, payTermsOverri
     var ch=(it.children||[]).map(function(c){return Object.assign({},c,{unitPrice:(parseFloat(c.unitPrice)||0)*invPct});});
     return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct,children:ch.length?ch:undefined});
   });
-  var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
+  var jForTotals=Object.assign({},j,{lineItems:scaledItems,bankFee:(parseFloat(j.bankFee)||0)*invPct});
   var t=totals(jForTotals);
   var tOrig=totals(Object.assign({},j,{lineItems:selectedItems}));
   var cur = j.currency||'SGD';
@@ -1211,9 +1205,6 @@ function printInvData(id, selectedItems, invType, invPct, billTo, payTermsOverri
     +'<tbody>'+iRows+'</tbody></table>'
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:5px">'
       +'<div style="min-width:260px">'
-        +'<div class="tr2"><span>Local Courier</span><span>'+chg(j.courier,t.ca)+'</span></div>'
-        +'<div class="tr2"><span>Packing</span><span>'+chg(j.packing,t.pa)+'</span></div>'
-        +'<div class="tr2"><span>Freight</span><span>'+chg(j.freight,t.fa)+'</span></div>'
         +'<div class="tr2" style="border-top:1px solid #000;padding-top:2px;margin-top:2px"><span>SUB TOTAL</span><span>'+fmt(t.sub)+'</span></div>'
         +gstRow
         +'<div class="tr2"><span>BANK FEE</span><span>'+fmt(t.bf)+'</span></div>'
@@ -1325,9 +1316,6 @@ window.openCNModal = function(id) {
   });
 
   // Charges
-  if (t.ca > 0) addCNRow('Local Courier', 1, t.ca, 'courier');
-  if (t.pa > 0) addCNRow('Packing', 1, t.pa, 'packing');
-  if (t.fa > 0) addCNRow('Freight', 1, t.fa, 'freight');
   if (t.bf > 0) addCNRow('Bank Fee', 1, t.bf, 'bankfee');
 
   window._cnGST = gst;
