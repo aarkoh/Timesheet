@@ -266,6 +266,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
     </div>
   </div>
 
+  <!-- ── Monthly Revenue Drilldown ── -->
+  <div style="font-size:11px;font-weight:600;color:#888;margin:1.5rem 0 0.6rem;letter-spacing:0.08em">📅 REVENUE DRILLDOWN — JOBS BY MONTH <span style="font-weight:400;color:#bbb;letter-spacing:0">(click a chart bar to jump to that month)</span></div>
+  <div id="monthlyDrilldown"></div>
+
   <!-- ── WIP schedule (statutory mode only) ── -->
   <div class="wip-panel" id="wipPanel" style="display:none;margin-top:1.25rem">
     <div class="wip-hdr" onclick="toggleSection('wip')">
@@ -635,6 +639,14 @@ function getPayTotal(j){
 }
 
 /* ── Section toggles ── */
+window.toggleMonthDrill=function(ym){
+  var body=document.getElementById('mdrBody-'+ym);
+  var btn=document.getElementById('mdrBtn-'+ym);
+  if(!body)return;
+  var open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  if(btn)btn.textContent=open?'▼ Hide':'▶ Show';
+};
 window.toggleSection=function(key){
   const body=document.getElementById(key+'SectionBody');
   const btn=document.getElementById(key+'ToggleBtn');
@@ -962,6 +974,91 @@ function render(){
   if(tCI) tCI.destroy();
   document.getElementById('ohLegItem').style.display=ohMonthly>0?'flex':'none';
   document.getElementById('netLegItem').style.display=ohMonthly>0?'flex':'none';
+
+  /* ── Monthly job drilldown ── */
+  (function(){
+    var container=document.getElementById('monthlyDrilldown');
+    if(!container)return;
+    // Group jd by invoice month
+    var byMonth={};
+    jd.forEach(function(x){
+      var ds=x.j.invoiceDate||x.j.date||'';
+      if(!ds)return;
+      var ym=ds.slice(0,7);
+      if(!byMonth[ym])byMonth[ym]=[];
+      byMonth[ym].push(x);
+    });
+    var months=Object.keys(byMonth).sort().reverse();
+    if(!months.length){container.innerHTML='';return;}
+    var fmtD=function(ds){return ds?new Date(ds+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short'}):'—';};
+    container.innerHTML=months.map(function(ym,idx){
+      var jobs=byMonth[ym].slice().sort(function(a,b){return b.revSGD-a.revSGD;});
+      var mLabel=new Date(ym+'-01').toLocaleDateString('en-SG',{month:'long',year:'numeric'});
+      var mRev=jobs.reduce(function(s,x){return s+x.revSGD;},0);
+      var mCost=jobs.reduce(function(s,x){return s+x.totalCost;},0);
+      var mProfit=mRev-mCost;
+      var mMargin=mRev>0?mProfit/mRev*100:0;
+      var mCollected=jobs.reduce(function(s,x){
+        var hist=x.j.paymentHistory;
+        if(hist&&typeof hist==='object'){
+          var r=fxRate(x.j.currency||'SGD');
+          return s+Object.values(hist).reduce(function(ss,p){return ss+(parseFloat(p.amount)||0)*r;},0);
+        }
+        return s+(parseFloat(x.j.paymentReceived)||0)*fxRate(x.j.currency||'SGD');
+      },0);
+      var mOutstanding=Math.max(0,mRev-mCollected);
+      var mc=function(m){return m>=30?'#1a6641':m>=15?'#854F0B':'#A32D2D';};
+      var rows=jobs.map(function(x){
+        var j=x.j;
+        var paid=getPayTotal(j)*fxRate(j.currency||'SGD');
+        var outstanding=Math.max(0,x.revSGD-paid);
+        var ps=outstanding<=0.5?'paid':paid>0?'partial':'outstanding';
+        var pl={paid:'Paid',partial:'Partial',outstanding:'Outstanding'}[ps];
+        var pc={paid:'g',partial:'a',outstanding:'r'}[ps];
+        var jobType=j.status?({quote:'Quote',customer_po:'Customer PO',vendor_po:'Vendor PO',do_wcc:'DO/WCC',invoice:'Invoice',closed:'Closed'}[j.status]||j.status):'';
+        return '<tr style="border-top:1px solid #f0ede6">'
+          +'<td style="padding:7px 8px;font-family:monospace;font-size:11px;color:#888;white-space:nowrap">'+(j.ref||'—')+'</td>'
+          +'<td style="padding:7px 8px"><div style="font-weight:600;font-size:12px">'+(j.customerName||'—').substring(0,24)+'</div>'+(j.vessel||j.equip?'<div style="font-size:10px;color:#888">'+(j.vessel||j.equip||'').substring(0,20)+'</div>':'')+'</td>'
+          +'<td style="padding:7px 8px;font-size:11px;color:#888">'+fmtD(j.invoiceDate||j.date||'')+'</td>'
+          +'<td style="padding:7px 8px;text-align:right;font-size:12px"><span style="font-size:9px;color:#aaa">'+(j.currency!=='SGD'?j.currency+' → ':'')+'</span>$'+Math.round(x.revSGD).toLocaleString()+'</td>'
+          +'<td style="padding:7px 8px;text-align:right;font-size:12px;color:#888">$'+Math.round(x.totalCost).toLocaleString()+'</td>'
+          +'<td style="padding:7px 8px;text-align:right"><span class="pill '+(x.profit>=0?'g':'r')+'">'+(x.profit<0?'−':'')+'$'+Math.abs(Math.round(x.profit)).toLocaleString()+'</span></td>'
+          +'<td style="padding:7px 8px;text-align:right;font-weight:700;font-size:12px;color:'+mc(x.margin)+'">'+x.margin.toFixed(1)+'%</td>'
+          +'<td style="padding:7px 8px;text-align:right"><span class="pill '+pc+'">'+pl+'</span></td>'
+          +'</tr>';
+      }).join('');
+      var isOpen=idx===0;
+      return '<div class="wip-panel" id="mdr-'+ym+'" style="margin-bottom:0.75rem">'
+        +'<div class="wip-hdr" onclick="window.toggleMonthDrill(\''+ym+'\')" style="cursor:pointer">'
+        +'<span class="sec-hdr-title" style="color:#185FA5">'+mLabel+'</span>'
+        +'<span class="job-count-badge">'+jobs.length+' job'+(jobs.length!==1?'s':'')+' &nbsp;·&nbsp; $'+Math.round(mRev).toLocaleString()+' rev &nbsp;·&nbsp; <span style="color:'+mc(mMargin)+'">'+mMargin.toFixed(1)+'%</span> &nbsp;·&nbsp; <span style="color:'+(mOutstanding>0?'#A32D2D':'#1a6641')+'">'+(mOutstanding>0?'$'+Math.round(mOutstanding).toLocaleString()+' outstanding':'All paid')+'</span></span>'
+        +'<button class="sec-toggle" id="mdrBtn-'+ym+'" onclick="event.stopPropagation();window.toggleMonthDrill(\''+ym+'\')" style="border-color:#185FA5;color:#185FA5">'+(isOpen?'▼ Hide':'▶ Show')+'</button>'
+        +'</div>'
+        +'<div id="mdrBody-'+ym+'" style="display:'+(isOpen?'block':'none')+';overflow-x:auto">'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<thead><tr style="background:#f5f8ff">'
+        +'<th style="padding:6px 8px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Ref</th>'
+        +'<th style="padding:6px 8px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Customer / Vessel</th>'
+        +'<th style="padding:6px 8px;text-align:left;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Inv Date</th>'
+        +'<th style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Revenue (SGD)</th>'
+        +'<th style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Cost (SGD)</th>'
+        +'<th style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Gross Profit</th>'
+        +'<th style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Margin</th>'
+        +'<th style="padding:6px 8px;text-align:right;font-weight:600;font-size:11px;color:#888;border-bottom:1px solid #e0ddd6">Payment</th>'
+        +'</tr></thead>'
+        +'<tbody>'+rows+'</tbody>'
+        +'<tfoot><tr style="background:#EAF3FF;font-weight:700;border-top:2px solid #185FA5">'
+        +'<td colspan="3" style="padding:7px 8px;font-size:12px;color:#185FA5;font-weight:700">Month Total</td>'
+        +'<td style="padding:7px 8px;text-align:right;color:#185FA5">$'+Math.round(mRev).toLocaleString()+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;color:#888">$'+Math.round(mCost).toLocaleString()+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;color:'+(mProfit>=0?'#1a6641':'#A32D2D')+'">'+(mProfit<0?'−':'')+'$'+Math.abs(Math.round(mProfit)).toLocaleString()+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;color:'+mc(mMargin)+'">'+mMargin.toFixed(1)+'%</td>'
+        +'<td style="padding:7px 8px;text-align:right;font-size:11px;color:'+(mOutstanding>0?'#A32D2D':'#1a6641')+'">'+(mOutstanding>0?'$'+Math.round(mOutstanding).toLocaleString()+' o/s':'✓ Cleared')+'</td>'
+        +'</tr></tfoot>'
+        +'</table></div></div>';
+    }).join('');
+    window._mdrMonths=months;
+  })();
   var datasets=[
     {label:'Revenue',data:mKeys.map(function(m){return Math.round(mMap[m].rev);}),backgroundColor:'rgba(24,95,165,0.15)',borderColor:'#185FA5',borderWidth:1.5,order:2},
     {label:'Cost',data:mKeys.map(function(m){return Math.round(mMap[m].cost);}),backgroundColor:'rgba(239,159,39,0.12)',borderColor:'#EF9F27',borderWidth:1,order:3},
@@ -977,6 +1074,17 @@ function render(){
     data:{labels:mLabels,datasets:datasets},
     options:{
       responsive:true,maintainAspectRatio:false,
+      onClick:function(evt,elements){
+        if(!elements.length)return;
+        var ym=mKeys[elements[0].index];
+        var sec=document.getElementById('mdr-'+ym);
+        if(!sec)return;
+        sec.scrollIntoView({behavior:'smooth',block:'start'});
+        var body=document.getElementById('mdrBody-'+ym);
+        var btn=document.getElementById('mdrBtn-'+ym);
+        if(body)body.style.display='block';
+        if(btn)btn.textContent='▼ Hide';
+      },
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var v=ctx.parsed.y;return ctx.dataset.label+': '+(v<0?'−':'')+'$'+Math.abs(Math.round(v)).toLocaleString();}}}},
       scales:{
         x:{grid:{display:false},ticks:{font:{size:11},autoSkip:false,maxRotation:45}},
