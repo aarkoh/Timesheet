@@ -2311,13 +2311,19 @@ window.printSOA = function() {
         <button class="inv-pct" onclick="window.setInvPct(1,this)">100%</button>
       </div>
     </div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Payment Terms</div>
+    <div style="margin-bottom:12px;display:flex;gap:14px;align-items:flex-end">
+      <div style="flex:1">
+        <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Invoice Date</div>
+        <input type="date" id="inv_date" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;width:100%">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Payment Terms</div>
       <select id="inv_pay_terms" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;width:100%">
         <option value="Advance">Advance</option>
         <option value="7 Days Nett">7 Days Nett</option>
         <option value="30 Days Nett">30 Days Nett</option>
       </select>
+      </div>
     </div>
     <div style="border:1px solid #e0ddd6;border-radius:8px;padding:10px 12px;margin-bottom:12px;background:#f9f9f7">
       <div style="font-size:12px;font-weight:600;color:#444;margin-bottom:8px">&#128236; Invoice Address <span style="font-size:11px;font-weight:400;color:#888">— editable per invoice</span></div>
@@ -3058,6 +3064,9 @@ window.openPrintInv=function(id){
   document.getElementById('inv_bill_name').value=j.customerName||'';
   document.getElementById('inv_bill_addr').value=_custContact.address||'';
   document.getElementById('inv_bill_attn').value=j.attn||'';
+  // ── Pre-fill invoice date ──
+  var _todayISO=new Date().toISOString().slice(0,10);
+  document.getElementById('inv_date').value=j.invoiceDate||_todayISO;
   // ── Restore saved draft (overrides defaults above) ──
   var _invD=j.invDraft||null;
   if(_invD){
@@ -3065,6 +3074,7 @@ window.openPrintInv=function(id){
     if(_invD.billAddr!==undefined) document.getElementById('inv_bill_addr').value=_invD.billAddr;
     if(_invD.billAttn!==undefined) document.getElementById('inv_bill_attn').value=_invD.billAttn;
     if(_invD.payTerms){var _ps=document.getElementById('inv_pay_terms');if(_ps.querySelector('option[value="'+_invD.payTerms+'"]'))_ps.value=_invD.payTerms;}
+    if(_invD.invDate) document.getElementById('inv_date').value=_invD.invDate;
     if(_invD.isPro){document.getElementById('inv_type_pro').checked=true;document.getElementById('inv_pct_row').style.display='block';}
   }
   document.querySelector('#invModal .mfoot button:last-child').dataset.jid=id;
@@ -3090,6 +3100,7 @@ window.doPrintInv=function(){
     selected.push(entry);
   });
   var invPayTerms=document.getElementById('inv_pay_terms').value||'';
+  var invDateVal=document.getElementById('inv_date').value||new Date().toISOString().slice(0,10);
   var billTo={
     name:document.getElementById('inv_bill_name').value.trim(),
     addr:document.getElementById('inv_bill_addr').value.trim(),
@@ -3097,12 +3108,12 @@ window.doPrintInv=function(){
   };
   document.getElementById('invModal').classList.remove('show');
   if(!selected.length){window.toast('Select at least one line item');return;}
-  // ── Save draft so fields persist next time ──
-  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro}});}catch(e){}
-  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms,billTo);
+  // ── Save draft so fields persist next time; also save invoiceDate for P&L ──
+  try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{invDraft:{billName:billTo.name,billAddr:billTo.addr,billAttn:billTo.attn,payTerms:invPayTerms,isPro:isPro,invDate:invDateVal},invoiceDate:invDateVal});}catch(e){}
+  window.printInvData(id,selected,isPro?'PROFORMA INVOICE':'TAX INVOICE',_invPct,invPayTerms,billTo,invDateVal);
 };
 
-window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,billTo){
+window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,billTo,invDateOverride){
   var jobs=window._jobs||{};
   var j=jobs[id]||{};
   var fmt=window._fmt,fmtD=window._fmtD,totals=window._totals;
@@ -3133,7 +3144,8 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
   var cur=j.currency||'SGD';
   var rcvd=parseFloat(j.paymentReceived)||0;
   var bal=t.total-rcvd;
-  var todayFmt=new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+  var _invDateISO=invDateOverride||j.invoiceDate||new Date().toISOString().slice(0,10);
+  var todayFmt=new Date(_invDateISO+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
   function fd(d){if(!d)return'';return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});}
   function chg(v,a){return v==='TBA'?'TBA':v==='nil'?'Nil':a>0?fmt(a):'0.00';}
   var iRows=(function(){
