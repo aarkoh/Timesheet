@@ -1027,24 +1027,13 @@ var _attnContacts=[]; // contacts for currently selected customer
 window.populateAttnDrop = function(custId){
   var allC=window._contacts||{};
   var custC=allC[custId]||{};
-  // Customer name: for a customer-type contact, name IS the company name
-  var companyName=(custC.company||custC.name||'').trim().toLowerCase();
-  // Gather contact persons: linked by customerId field OR company name (partial match)
-  _attnContacts=Object.entries(allC).filter(function(e){
-    var c=e[1];
-    if(e[0]===custId) return false; // skip the company record itself
-    if(c.customerId===custId) return true;
-    if(companyName){
-      var cComp=(c.company||'').trim().toLowerCase();
-      // Accept if either name contains the other (handles abbreviations / slight diffs)
-      if(cComp&&(cComp.includes(companyName)||companyName.includes(cComp))) return true;
-    }
-    return false;
-  }).map(function(e){
-    var c=e[1];
-    var label=[c.name,c.position||c.title].filter(Boolean).join(', ');
-    return label||c.name||'';
-  }).filter(Boolean);
+  // Persons are stored as an array inside the company contact record
+  var persons=custC.persons||[];
+  _attnContacts=persons
+    .filter(function(p){return p.name;})
+    .map(function(p){
+      return p.role ? p.name+' · '+p.role : p.name;
+    });
   window.renderAttnDrop('');
 };
 
