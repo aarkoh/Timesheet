@@ -1337,6 +1337,7 @@ window.openCNModal = function(id) {
 };
 
 window.updateCNTotal = function() {
+  var fmt = window._mgr_fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
   var rows = document.querySelectorAll('#cn_items_body tr');
   var sub = 0;
   rows.forEach(function(row) {
