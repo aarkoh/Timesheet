@@ -512,7 +512,7 @@ function buildDetail(id){
     +'</div>'
 
     /* Invoice */
-    +'<div class="sbox">'+'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">'+'<h3 style="margin:0">Invoice — '+invTypeLabel+'</h3>'+'<button class="btn-red" onclick="openInvModal(\''+id+'\')" style="font-size:12px;padding:5px 14px;background:#A32D2D;color:#fff;border-color:#A32D2D;font-weight:600">&#128424; Print Invoice</button>'+'</div>'
+    +'<div class="sbox">'+'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem">'+'<h3 style="margin:0">Invoice — '+invTypeLabel+'</h3>'+'<div style="display:flex;gap:8px">'+'<button class="btn-red" onclick="openInvModal(\''+id+'\')" style="font-size:12px;padding:5px 14px;background:#A32D2D;color:#fff;border-color:#A32D2D;font-weight:600">&#128424; Print Invoice</button>'+'<button onclick="openCNModal(\''+id+'\')" style="font-size:12px;padding:5px 14px;background:#854F0B;color:#fff;border:1px solid #854F0B;border-radius:8px;font-weight:600;cursor:pointer">&#128424; Credit Note</button>'+'</div>'+'</div>'
       +'<div style="overflow-x:auto"><table class="itable">'
         +'<thead><tr><th style="width:32px">#</th><th>Description</th><th class="nr" style="width:60px">Qty</th><th style="width:60px">Unit</th><th class="nr" style="width:90px">Unit Price</th><th class="nr" style="width:90px">Amount</th></tr></thead>'
         +'<tbody>'+iRows+'</tbody>'
@@ -1262,8 +1262,297 @@ function printInvData(id, selectedItems, invType, invPct, billTo, payTermsOverri
   if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
   w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
 }
+
+/* ── Credit Note ── */
+var _cnJobId = null;
+
+window.openCNModal = function(id) {
+  _cnJobId = id;
+  var jobs = window._mgr_jobs||{};
+  var totals = window._mgr_totals;
+  var fmt = window._mgr_fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
+  var j = jobs[id] || {};
+  var t = totals ? totals(j) : {ca:0,pa:0,fa:0,bf:0};
+  var cur = j.currency || 'SGD';
+
+  document.getElementById('cn_ref_title').textContent = j.ref || '';
+  document.getElementById('cn_date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cn_inv_ref').value = j.ref ? 'INV-'+j.ref : (j.invoiceDate ? 'INV-'+j.ref : '');
+  document.getElementById('cn_reason').value = '';
+  document.getElementById('cn_bill_name').value = (j.invDraft && j.invDraft.billName) || j.customerName || '';
+  document.getElementById('cn_bill_addr').value = (j.invDraft && j.invDraft.billAddr) || '';
+
+  // Restore from saved CN draft
+  if (j.cnDraft) {
+    if (j.cnDraft.billName) document.getElementById('cn_bill_name').value = j.cnDraft.billName;
+    if (j.cnDraft.billAddr) document.getElementById('cn_bill_addr').value = j.cnDraft.billAddr;
+    if (j.cnDraft.reason)   document.getElementById('cn_reason').value   = j.cnDraft.reason;
+    if (j.cnDraft.invRef)   document.getElementById('cn_inv_ref').value  = j.cnDraft.invRef;
+    if (j.cnDraft.date)     document.getElementById('cn_date').value     = j.cnDraft.date;
+  }
+
+  // Build line items
+  var items = j.lineItems || [];
+  var tbody = document.getElementById('cn_items_body');
+  tbody.innerHTML = '';
+  var gst = j.gst === true;
+
+  function addCNRow(desc, qty, price, key) {
+    var n = 'cn_' + key;
+    var row = document.createElement('tr');
+    row.innerHTML =
+      '<td style="padding:5px 8px"><input type="checkbox" id="chk_'+n+'" checked onchange="updateCNTotal()"></td>'
+      +'<td style="padding:5px 8px;font-size:12px">'+desc+'</td>'
+      +'<td style="padding:5px 8px"><input type="number" id="qty_'+n+'" value="'+qty+'" min="0" step="0.01" style="width:50px;text-align:right;padding:4px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit" oninput="updateCNTotal()"></td>'
+      +'<td style="padding:5px 8px"><input type="number" id="up_'+n+'" value="'+price+'" min="0" step="0.01" style="width:85px;text-align:right;padding:4px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit" oninput="updateCNTotal()"></td>'
+      +'<td style="padding:5px 8px;text-align:right;font-size:12px;color:#854F0B;font-weight:600" id="amt_'+n+'">—</td>';
+    tbody.appendChild(row);
+  }
+
+  // Main line items
+  items.forEach(function(it, i) {
+    if (it.children && it.children.length) {
+      // Parent: description only, no price
+      var prow = document.createElement('tr');
+      prow.innerHTML = '<td></td><td colspan="4" style="padding:4px 8px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase">'+it.description+'</td>';
+      tbody.appendChild(prow);
+      it.children.forEach(function(c, ci) {
+        addCNRow(c.description, c.qty || 1, c.unitPrice || 0, i+'_'+ci);
+      });
+    } else {
+      addCNRow(it.description, it.qty || 1, it.unitPrice || 0, i);
+    }
+  });
+
+  // Charges
+  if (t.ca > 0) addCNRow('Local Courier', 1, t.ca, 'courier');
+  if (t.pa > 0) addCNRow('Packing', 1, t.pa, 'packing');
+  if (t.fa > 0) addCNRow('Freight', 1, t.fa, 'freight');
+  if (t.bf > 0) addCNRow('Bank Fee', 1, t.bf, 'bankfee');
+
+  window._cnGST = gst;
+  window._cnCur = cur;
+  updateCNTotal();
+  document.getElementById('cnModal').classList.add('show');
+};
+
+window.updateCNTotal = function() {
+  var rows = document.querySelectorAll('#cn_items_body tr');
+  var sub = 0;
+  rows.forEach(function(row) {
+    var chk = row.querySelector('input[type="checkbox"]');
+    if (!chk || !chk.checked) return;
+    var id = chk.id.replace('chk_cn_','');
+    var qty = parseFloat((document.getElementById('qty_cn_'+id)||{}).value) || 0;
+    var up  = parseFloat((document.getElementById('up_cn_'+id)||{}).value)  || 0;
+    var amt = qty * up;
+    sub += amt;
+    var amtEl = document.getElementById('amt_cn_'+id);
+    if (amtEl) amtEl.textContent = (window._cnCur||'SGD')+' '+fmt(amt);
+  });
+  var gst = window._cnGST ? sub * 0.09 : 0;
+  var total = sub + gst;
+  document.getElementById('cn_total_display').textContent = (window._cnCur||'SGD')+' '+fmt(total)+(window._cnGST?' (incl. GST '+fmt(gst)+')':'');
+};
+
+window.doPrintCN = function() {
+  var id = _cnJobId;
+  var jobs = window._mgr_jobs||{};
+  var j = jobs[id] || {};
+  var _db=window._db,_ref=window._dbRef,_update=window._dbUpdate;
+  var cnDate  = document.getElementById('cn_date').value;
+  var invRef  = document.getElementById('cn_inv_ref').value.trim();
+  var reason  = document.getElementById('cn_reason').value.trim();
+  var billName= document.getElementById('cn_bill_name').value.trim();
+  var billAddr= document.getElementById('cn_bill_addr').value.trim();
+
+  // Collect selected items
+  var items = [];
+  var rows = document.querySelectorAll('#cn_items_body tr');
+  rows.forEach(function(row) {
+    var chk = row.querySelector('input[type="checkbox"]');
+    if (!chk || !chk.checked) return;
+    var idKey = chk.id.replace('chk_cn_','');
+    var descEl = row.querySelector('td:nth-child(2)');
+    var qty = parseFloat((document.getElementById('qty_cn_'+idKey)||{}).value) || 0;
+    var up  = parseFloat((document.getElementById('up_cn_'+idKey)||{}).value)  || 0;
+    if (!qty || !up) return;
+    items.push({ description: descEl ? descEl.textContent : '', qty: qty, unitPrice: up });
+  });
+
+  if (!items.length) { alert('Select at least one line item.'); return; }
+
+  document.getElementById('cnModal').classList.remove('show');
+
+  // Save draft
+  try {
+    if (_db && _ref && _update) {
+      _update(_ref(_db,'jobs/'+id), {
+        cnDraft: { billName:billName, billAddr:billAddr, reason:reason, invRef:invRef, date:cnDate },
+        creditNoteDate: cnDate
+      }).catch(function(){});
+    }
+  } catch(e) {}
+
+  printCNData(id, items, { billName:billName, billAddr:billAddr }, reason, invRef, cnDate);
+};
+
+function printCNData(id, items, billTo, reason, invRef, cnDate) {
+  var jobs = window._mgr_jobs||{};
+  var j = jobs[id] || {};
+  var fmt_ = window._mgr_fmt||function(n){return(parseFloat(n)||0).toFixed(2);};
+  var fmtD_ = window._mgr_fmtD;
+
+  var cur  = j.currency || 'SGD';
+  var gst  = j.gst === true;
+  var cnNo = 'CN-' + (j.ref || id);
+  function fd(d) { if (!d) return ''; try { return new Date(d+'T00:00:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){return d;} }
+  var dateStr = fd(cnDate) || new Date().toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+
+  // Totals
+  var sub = items.reduce(function(s,it){return s+it.qty*it.unitPrice;},0);
+  var gstAmt = gst ? sub*0.09 : 0;
+  var total = sub + gstAmt;
+
+  // Line rows
+  var iRows = items.map(function(it,i){
+    return '<tr>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+(i+1)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+it.description+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right">'+it.qty+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right">'+fmt_(it.unitPrice)+'</td>'
+      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right">'+fmt_(it.qty*it.unitPrice)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var billAddrHtml = (billTo.billAddr||'').split('\n').join('<br>');
+  var base = '<style>*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Courier New,Courier,monospace;font-size:10.5pt;color:#000;background:#fff;padding:12mm 14mm 10mm 14mm}'
+    +'@page{size:A4;margin:0}'
+    +'@media print{body{padding:10mm 14mm}#pb{display:none}}'
+    +'#pb{position:fixed;bottom:20px;right:20px;padding:12px 24px;background:#854F0B;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}'
+    +'</style>';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+cnNo+'</title>'+base+'</head><body>'
+    +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
+    // Header
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr>'
+    +'<td style="vertical-align:top;width:50%">'
+    +(j.company==='LHA'?'<img src="'+LHA+'" style="height:60px;margin-bottom:6px">':
+      j.company==='LMA'?'<img src="'+LMA+'" style="height:60px;margin-bottom:6px">':
+      j.company==='LKR'?'<img src="'+LKR+'" style="height:60px;margin-bottom:6px">':
+      j.company==='LYO'?'<img src="'+LYO+'" style="height:60px;margin-bottom:6px">':
+      '<img src="'+LSTAMP+'" style="height:60px;margin-bottom:6px">')
+    +'</td>'
+    +'<td style="text-align:right;vertical-align:top">'
+    +'<div style="font-size:22px;font-weight:700;color:#854F0B;letter-spacing:1px">CREDIT NOTE</div>'
+    +'<table style="border-collapse:collapse;margin-left:auto"><tr><td style="font-weight:700;padding:1px 6px">Credit Note No.</td><td style="padding:1px 6px">'+cnNo+'</td></tr>'
+    +(invRef?'<tr><td style="font-weight:700;padding:1px 6px">Ref. Invoice No.</td><td style="padding:1px 6px">'+invRef+'</td></tr>':'')
+    +'<tr><td style="font-weight:700;padding:1px 6px">Date</td><td style="padding:1px 6px">'+dateStr+'</td></tr>'
+    +'<tr><td style="font-weight:700;padding:1px 6px">Currency</td><td style="padding:1px 6px">'+cur+'</td></tr>'
+    +'</table></td></tr></table>'
+    // Bill To
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr>'
+    +'<td style="vertical-align:top;width:50%"><div style="font-size:10pt;font-weight:700;margin-bottom:4px">CREDIT NOTE TO:</div>'
+    +'<div style="font-size:10pt">'+(billTo.billName||j.customerName||'—')+'</div>'
+    +(billAddrHtml?'<div style="font-size:9.5pt;color:#333">'+billAddrHtml+'</div>':'')
+    +'</td>'
+    +(j.vessel?'<td style="vertical-align:top"><div style="font-size:10pt;font-weight:700;margin-bottom:4px">VESSEL / EQUIPMENT:</div><div style="font-size:10pt">'+j.vessel+'</div></td>':'<td></td>')
+    +'</tr></table>'
+    // Reason box
+    +(reason?'<div style="background:#FFF8F0;border:1px solid #f0c08a;border-radius:4px;padding:8px 12px;margin-bottom:12px;font-size:9.5pt"><strong>Reason:</strong> '+reason+'</div>':'')
+    // Line items table
+    +'<table style="width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:12px">'
+    +'<thead><tr style="background:#FFF3E0">'
+    +'<th style="padding:6px 6px;text-align:left;border-top:2px solid #854F0B;border-bottom:1px solid #e0ddd6;width:28px">#</th>'
+    +'<th style="padding:6px 6px;text-align:left;border-top:2px solid #854F0B;border-bottom:1px solid #e0ddd6">Description</th>'
+    +'<th style="padding:6px 6px;text-align:right;border-top:2px solid #854F0B;border-bottom:1px solid #e0ddd6;width:50px">Qty</th>'
+    +'<th style="padding:6px 6px;text-align:right;border-top:2px solid #854F0B;border-bottom:1px solid #e0ddd6;width:90px">Unit Price</th>'
+    +'<th style="padding:6px 6px;text-align:right;border-top:2px solid #854F0B;border-bottom:1px solid #e0ddd6;width:90px">Amount</th>'
+    +'</tr></thead>'
+    +'<tbody>'+iRows+'</tbody>'
+    +'</table>'
+    // Totals
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:20px">'
+    +'<div style="min-width:260px">'
+    +(gst?'<div style="display:flex;justify-content:space-between;padding:3px 0"><span>Sub Total</span><span>'+fmt_(sub)+'</span></div>'
+         +'<div style="display:flex;justify-content:space-between;padding:3px 0"><span>GST (9%)</span><span>'+fmt_(gstAmt)+'</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13pt;font-weight:700;border-top:2px solid #854F0B;margin-top:4px">'
+    +'<span>TOTAL CREDIT '+cur+'</span><span style="color:#854F0B">'+fmt_(total)+'</span></div>'
+    +'</div></div>'
+    // Footer note
+    +'<div style="font-size:9pt;color:#555;border-top:1px solid #e0ddd6;padding-top:10px">'
+    +'This credit note reduces the outstanding balance on the referenced invoice. Please retain for your records. '
+    +(gst?'This credit note is issued in accordance with GST requirements (IRAS). The GST amount shown will be adjusted accordingly.':'')
+    +'</div>'
+    +'</body></html>';
+
+  var cbBtn='<button id="cb" onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999">&#8592; Back</button><style>@media print{#cb{display:none}}</style>';
+  html = html.replace('<body>','<body>'+cbBtn);
+  var blob = new Blob([html],{type:'text/html'});
+  var url = URL.createObjectURL(blob);
+  var w = window.open(url,'_blank');
+  if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
+  w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
+  // Copy CN number to clipboard
+  try{navigator.clipboard.writeText(cnNo).then(function(){if(window._mgr_toast)window._mgr_toast('📋 '+cnNo+' copied');}).catch(function(){});}catch(e){}
+}
 </script>
 
+
+<!-- Credit Note Modal -->
+<div class="mbg" id="cnModal">
+  <div class="modal" style="max-width:680px">
+    <h2>&#128424; Print Credit Note — <span id="cn_ref_title"></span></h2>
+    <div style="background:#FFF8F0;border:1px solid #f0c08a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#854F0B">
+      <strong>Credit Note</strong> — references the original tax invoice. Under IRAS rules, a credit note must quote the original invoice number. The CN number mirrors the job ref prefixed with <strong>CN-</strong>.
+    </div>
+
+    <div style="display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Credit Note Date</div>
+        <input type="date" id="cn_date" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;width:100%">
+      </div>
+      <div style="flex:1;min-width:140px">
+        <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Reference Invoice No.</div>
+        <input type="text" id="cn_inv_ref" placeholder="e.g. INV-2506018" style="font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;width:100%">
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Reason for Credit Note</div>
+      <textarea id="cn_reason" rows="2" placeholder="e.g. Price adjustment — overcharged on labour. Re: Invoice #2506018 dated 23 Mar 2026." style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical"></textarea>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:500">Bill To</div>
+      <input type="text" id="cn_bill_name" placeholder="Company name" style="width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;margin-bottom:6px">
+      <textarea id="cn_bill_addr" rows="2" placeholder="Address" style="width:100%;font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;resize:vertical"></textarea>
+    </div>
+
+    <div style="font-size:12px;color:#888;margin-bottom:8px;font-weight:500">Select line items to credit (edit qty/price as needed)</div>
+    <div style="overflow-x:auto;margin-bottom:12px">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead><tr style="background:#f9f9f7">
+          <th style="padding:6px 8px;text-align:left;font-weight:600;border-bottom:1px solid #e0ddd6;width:28px"></th>
+          <th style="padding:6px 8px;text-align:left;font-weight:600;border-bottom:1px solid #e0ddd6">Description</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;border-bottom:1px solid #e0ddd6;width:55px">Qty</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;border-bottom:1px solid #e0ddd6;width:90px">Unit Price</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;border-bottom:1px solid #e0ddd6;width:90px">Credit Amt</th>
+        </tr></thead>
+        <tbody id="cn_items_body"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:700;color:#854F0B">Total Credit: <span id="cn_total_display">—</span></div>
+    </div>
+
+    <div class="mfoot">
+      <button onclick="document.getElementById('cnModal').classList.remove('show')">Cancel</button>
+      <button onclick="doPrintCN()" style="background:#854F0B;color:#fff;border-color:#854F0B;font-weight:600">&#128424; Print Credit Note</button>
+    </div>
+  </div>
+</div>
 
 <!-- SOA MODAL -->
 <div class="mbg" id="soaModal">
