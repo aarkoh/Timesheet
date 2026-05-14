@@ -365,13 +365,10 @@ function totals(j){
     if(ch.length){return s+ch.reduce(function(cs,c){return cs+(parseFloat(c.qty)||0)*(parseFloat(c.unitPrice)||0);},0);}
     return s+(parseFloat(it.qty)||0)*(parseFloat(it.unitPrice)||0);
   },0);
-  var ca=j.courier==="amt"?parseFloat(j.courierAmt)||0:0;
-  var pa=j.packing==="amt"?parseFloat(j.packingAmt)||0:0;
-  var fa=j.freight==="amt"?parseFloat(j.freightAmt)||0:0;
-  var sub=iSub+ca+pa+fa;
+  var sub=iSub;
   var gst=j.gst==="9"?sub*0.09:0;
   var bf=parseFloat(j.bankFee)||0;
-  return{sub:sub,gst:gst,bf:bf,total:sub+gst+bf,ca:ca,pa:pa,fa:fa};
+  return{sub:sub,gst:gst,bf:bf,total:sub+gst+bf,ca:0,pa:0,fa:0};
 }
 
 // Expose to window for printQuo
@@ -3120,7 +3117,7 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
     });
     return Object.assign({},it,{unitPrice:(parseFloat(it.unitPrice)||0)*invPct,children:ch.length?ch:undefined});
   });
-  var jForTotals=Object.assign({},j,{lineItems:scaledItems,courierAmt:(parseFloat(j.courierAmt)||0)*invPct,packingAmt:(parseFloat(j.packingAmt)||0)*invPct,freightAmt:(parseFloat(j.freightAmt)||0)*invPct,bankFee:(parseFloat(j.bankFee)||0)*invPct});
+  var jForTotals=Object.assign({},j,{lineItems:scaledItems,bankFee:(parseFloat(j.bankFee)||0)*invPct});
   var t=totals(jForTotals);
   var tFull=totals(Object.assign({},j,{lineItems:scaledFull,bankFee:(parseFloat(j.bankFee)||0)*invPct}));
   var discAmt=Math.max(0,tFull.sub-t.sub);
