@@ -236,7 +236,15 @@ button:hover{background:#f0f0ee}
     <input type="hidden" id="j_cs_id">
   </div>
   <div class="fr2">
-    <div class="fi"><label>Attn</label><input type="text" id="j_attn" placeholder="Contact person name &amp; title"></div>
+    <div class="fi"><label>Attn</label>
+      <div style="position:relative">
+        <input type="text" id="j_attn" placeholder="Contact person name &amp; title" autocomplete="off"
+          oninput="filterAttnDrop(this.value)"
+          onfocus="if(document.getElementById('j_attn_drop').innerHTML)document.getElementById('j_attn_drop').style.display='block'"
+          onblur="setTimeout(function(){document.getElementById('j_attn_drop').style.display='none';},180)">
+        <div id="j_attn_drop" class="sdrop" style="display:none"></div>
+      </div>
+    </div>
     <div class="fi"><label>Your Ref</label><input type="text" id="j_yref" placeholder="Customer's reference"></div>
   </div>
   <div class="fr2">
@@ -1011,7 +1019,51 @@ function refreshLIVendors(){
     sel.innerHTML=opts;
   });
 }
-window.clrCust=function(){document.getElementById("j_cs_id").value="";document.getElementById("j_cs_sel").style.display="none";document.getElementById("j_cs").style.display="";document.getElementById("j_cs").value="";};
+window.clrCust=function(){document.getElementById("j_cs_id").value="";document.getElementById("j_cs_sel").style.display="none";document.getElementById("j_cs").style.display="";document.getElementById("j_cs").value="";var d=document.getElementById("j_attn_drop");if(d){d.innerHTML="";d.style.display="none";}};
+
+/* ── Attn contact picker ── */
+var _attnContacts=[]; // contacts for currently selected customer
+
+function populateAttnDrop(custId){
+  var allC=window._contacts||{};
+  var custC=allC[custId]||{};
+  var companyName=(custC.company||custC.name||'').trim().toLowerCase();
+  // Gather contact persons: linked by customerId field OR same company name
+  _attnContacts=Object.entries(allC).filter(function(e){
+    var c=e[1];
+    if(e[0]===custId) return false; // skip the company record itself
+    if(c.customerId===custId) return true;
+    if(companyName&&(c.company||'').trim().toLowerCase()===companyName) return true;
+    return false;
+  }).map(function(e){
+    var c=e[1];
+    var label=[c.name,c.position||c.title].filter(Boolean).join(', ');
+    return label||c.name||'';
+  }).filter(Boolean);
+  renderAttnDrop('');
+}
+
+window.filterAttnDrop=function(q){renderAttnDrop(q);};
+
+function renderAttnDrop(q){
+  var drop=document.getElementById('j_attn_drop');
+  if(!drop) return;
+  var filtered=_attnContacts.filter(function(lbl){
+    return !q||lbl.toLowerCase().includes(q.toLowerCase());
+  });
+  if(!filtered.length){drop.innerHTML='';drop.style.display='none';return;}
+  drop.innerHTML=filtered.map(function(lbl){
+    return '<div class="sdrop-item" onmousedown="pickAttn(\''+lbl.replace(/'/g,"\\'")+'\')" style="padding:8px 12px;cursor:pointer;font-size:13px">'+lbl+'</div>';
+  }).join('');
+  drop.style.display='block';
+}
+
+window.pickAttn=function(lbl){
+  var el=document.getElementById('j_attn');
+  if(el) el.value=lbl;
+  var drop=document.getElementById('j_attn_drop');
+  if(drop){drop.style.display='none';}
+};
 
 function resetModal(){
   selVendors=[];liCount=0;subCounts={};
@@ -1058,7 +1110,7 @@ window.openEditJob=function(id){
   document.getElementById("j_cur").value=j.currency||"SGD";
   document.getElementById("j_gst").value=j.gst||"no";
   document.getElementById("j_pay").value=j.payTerms||"30 Days Nett";
-  if(j.customerId&&j.customerName){document.getElementById("j_cs_id").value=j.customerId;document.getElementById("j_cs_nm").textContent=j.customerName;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";}
+  if(j.customerId&&j.customerName){document.getElementById("j_cs_id").value=j.customerId;document.getElementById("j_cs_nm").textContent=j.customerName;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";populateAttnDrop(j.customerId);}
   (j.lineItems||[]).forEach(function(it){
     window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"",it.costCur||"SGD");
   if(it.custDisc){(function(idx,d){setTimeout(function(){var el=document.getElementById("lcd_"+idx);if(el){el.value=d;window.updateMarkup(idx);}},120);})(liCount,it.custDisc);}
@@ -1118,7 +1170,7 @@ onAuthStateChanged(auth,function(user){
   onValue(ref(db,"contacts"),function(snap){
     contacts=snap.val()||{};
     exposeGlobals(); // keep window._contacts in sync
-    setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";var ct=(contacts||{})[id];if(ct&&ct.paymentTerms){var pt=ct.paymentTerms;var payEl=document.getElementById("j_pay");var mapped=pt==="Advance"?"Advance":pt==="7 Days"?"7 Days Nett":pt==="30 Days"?"30 Days Nett":pt;if(payEl.querySelector('option[value="'+mapped+'"]'))payEl.value=mapped;}});
+    setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";var ct=(contacts||{})[id];if(ct&&ct.paymentTerms){var pt=ct.paymentTerms;var payEl=document.getElementById("j_pay");var mapped=pt==="Advance"?"Advance":pt==="7 Days"?"7 Days Nett":pt==="30 Days"?"30 Days Nett":pt;if(payEl.querySelector('option[value="'+mapped+'"]'))payEl.value=mapped;}populateAttnDrop(id);});
     setupSearch("j_vs","j_vs_d",function(c){return(c.types||[]).includes("vendor");},function(id,nm){if(!selVendors.find(function(v){return v.id===id;})){selVendors.push({id:id,name:nm});renderVTags();refreshLIVendors();}});
   });
   onValue(ref(db,'vendorInvoices'),function(snap){
@@ -1803,7 +1855,7 @@ window.printVPO=function(id,selectedItems){
     +'<button id="pb" onclick="window.print()">&#128424; Print / Save PDF</button>'
     +pages
     +"</body></html>";
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 </script>
 
@@ -2299,7 +2351,7 @@ window.printSOA = function() {
 
 <script>
 // ═══════════════════════════ SHARED HELPERS ═══════════════════════════
-function rcOpenBlob(html, ref) {
+function rcOpenBlob(html) {
   // Inject back button into HTML string before writing
   var backBtn='<button id="cb" onclick="window.close()" style="position:fixed;top:16px;left:16px;padding:10px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:-apple-system,sans-serif;z-index:9999">&#8592; Back</button>';
   var backStyle='<style>@media print{#cb{display:none}}</style>';
@@ -2310,14 +2362,6 @@ function rcOpenBlob(html, ref) {
   var w=window.open(url,'_blank');
   if(!w){alert('Popups are blocked. Please allow popups for this page and try again.');return;}
   if(w)w.addEventListener('load',function(){URL.revokeObjectURL(url);},false);
-  // Auto-copy job ref to clipboard after opening
-  if(ref){
-    try{
-      navigator.clipboard.writeText(ref).then(function(){
-        toast('📋 '+ref+' copied');
-      }).catch(function(){});
-    }catch(e){}
-  }
 }
 
 function rcBaseStyle(pbColor) {
@@ -2525,7 +2569,7 @@ window.generateCIPL = function() {
     +'<div style="margin-top:16px;border:1px solid #e0ddd6;padding:10px 14px;background:#fffdf5"><p style="font-size:11px;line-height:1.7;color:#444"><strong>1. Commercial Value of Items: NONE</strong><br>&nbsp;&nbsp;&nbsp;(Value stated above only for customs clearance purpose)</p><p style="font-size:11px;margin-top:4px;color:#444"><strong>2.</strong> Weight and Value estimated.</p></div>'
     +'<div class="sr"><div style="text-align:center;font-size:9pt"><div style="height:40px"></div><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Prepared by / Date: '+dateFmt+'</div></div><div style="text-align:center;font-size:9pt">For and on behalf of <strong>Raycontrol Pte. Ltd.</strong><br><br><br><div style="border-top:1px solid #000;padding-top:4px;min-width:180px">Authorised Signature / Company Stamp</div></div></div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
   // ── Save CIPL draft so fields persist next time ──
   try{if(window._dbUpdate&&window._dbRef&&window._db)window._dbUpdate(window._dbRef(window._db,'jobs/'+id),{ciplDraft:{consignee:consignee,addr:document.getElementById('cipl_addr').value.trim(),marks:marks,remarks:remarks,shipName:shipName,shipAddr:document.getElementById('cipl_ship_addr').value.trim(),pkgs:pkgs,l:cl,w:cw,h:ch2,gw:cgw,nw:cnw}});}catch(e){}
   document.getElementById('ciplModal').classList.remove('show');
@@ -2639,7 +2683,7 @@ window.generateDOWCC = function() {
     +'</div>'  // close doc-footer
     +'</div>'  // close doc-body
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
   document.getElementById('dowccModal').classList.remove('show');
 };
 
@@ -2840,7 +2884,7 @@ window.printOCData=function(id,selectedItems){
     +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+(j.payTerms||'30 DAYS NETT').toUpperCase()+'</b></div>'+(j.validity?'<div>VALID UNTIL : <b>'+fd(j.validity)+'</b></div>':'')+'</td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
     +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your order</em></div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 
 window.printQuoData = function(id, selectedItems, revNum){
@@ -2951,7 +2995,7 @@ window.printQuoData = function(id, selectedItems, revNum){
     +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+(j.payTerms||'30 DAYS NETT').toUpperCase()+'</b></div>'+(j.validity?'<div>VALID UNTIL : <b>'+fd(j.validity)+'</b></div>':'')+'</td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
     +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your support</em></div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 
 
@@ -3173,7 +3217,7 @@ window.printInvData=function(id,selectedItems,invType,invPct,payTermsOverride,bi
     +'<table class="fg"><tr><td style="vertical-align:bottom"><div class="tt">TERMS AND CONDITIONS</div>'+(j.delTime?'<div>DELIVERY TIME : <b>'+j.delTime.toUpperCase()+'</b></div>':'')+(j.delTerms?'<div>DELIVERY TERMS : <b>'+j.delTerms.toUpperCase()+'</b></div>':'')+'<div>PAYMENT: <b>'+((payTermsOverride||j.payTerms||'')).toUpperCase()+'</b></div></td><td style="text-align:right;vertical-align:bottom;font-size:9pt;padding-left:20px;min-width:220px">For Raycontrol Pte Ltd<br><img src="'+LSTAMP+'" style="height:60px;margin:2px 0;opacity:0.85"><br>'+(j.engineer||'')+(j.engineer?'<br>SERVICE ENGINEER':'')+'</td></tr></table>'
     +'<div class="bb">E.&amp; O.E.<br><em>Thank you for your support</em></div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 
 // ═══════════════════════════ TIMESHEET ═══════════════════════════
@@ -3191,7 +3235,7 @@ window.printTimesheet=function(id){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:16px"><div style="font-size:9.5pt"><div>Attended By</div><div style="height:50px"></div><div style="border-top:1px solid #000;padding-top:4px">Service Engineer</div></div><div style="font-size:9.5pt"><div>Verify by</div><div style="height:50px"></div><div style="border-top:1px solid #000;padding-top:4px">Name/Rank/Ship Stamp</div></div></div>'
     +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:8px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 
 // ═══════════════════════════ JOB/SPARE REQUISITION ═══════════════════════════
@@ -3211,7 +3255,7 @@ window.printRFQ=function(id){
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:8px"><div style="font-size:9.5pt;text-align:center"><div style="height:50px"></div><div>--------------------------</div><div>SERVICE ENGINEER</div></div><div style="font-size:9.5pt;text-align:center"><div style="height:50px"></div><div>--------------------------</div><div>NAME/RANK/SIGN/STAMP</div></div></div>'
     +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:8px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 
 // ═══════════════════════════ CUSTOMER FEEDBACK ═══════════════════════════
@@ -3232,7 +3276,7 @@ window.printFeedback=function(id){
     +'<div style="font-size:9.5pt;line-height:2.2;margin-top:8px"><div><strong>Feedback by [sign] :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Name :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Job Title :</strong>&nbsp;&nbsp;___________________________________</div><div><strong>Date :</strong>&nbsp;&nbsp;___________________________________</div></div>'
     +'<div style="border-top:1px solid #000;padding-top:5px;font-size:8pt;margin-top:14px;text-align:center">Maker Specialist Service for Tank Gauging, Hose crane, Winch and Steering Gear Hydraulics systems since 1981.</div>'
     +'</body></html>';
-  rcOpenBlob(html,j.ref);
+  rcOpenBlob(html);
 };
 </script>
 
