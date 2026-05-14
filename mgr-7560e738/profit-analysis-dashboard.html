@@ -979,10 +979,14 @@ function render(){
   (function(){
     var container=document.getElementById('monthlyDrilldown');
     if(!container)return;
-    // Group jd by invoice month
+    // Only show actually invoiced jobs — exclude WIP, pipeline, and jobs without an invoice date
+    var invoicedJd=jd.filter(function(x){
+      return ['invoice','soa','closed'].includes(x.j.status) && x.j.invoiceDate;
+    });
+    // Group by invoice month (strict — only invoiceDate, not fallback to job date)
     var byMonth={};
-    jd.forEach(function(x){
-      var ds=x.j.invoiceDate||x.j.date||'';
+    invoicedJd.forEach(function(x){
+      var ds=x.j.invoiceDate;
       if(!ds)return;
       var ym=ds.slice(0,7);
       if(!byMonth[ym])byMonth[ym]=[];
