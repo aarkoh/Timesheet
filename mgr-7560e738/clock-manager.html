@@ -298,6 +298,8 @@ let workers={}, log=[], pin='1234';
 let otRates={}, ovsRates={};
 try{otRates=JSON.parse(localStorage.getItem('wt_ot_rates')||'{}');}catch(e){otRates={};}
 try{ovsRates=JSON.parse(localStorage.getItem('wt_ovs_rates')||'{}');}catch(e){ovsRates={};}
+let otHoursOverride={};
+try{otHoursOverride=JSON.parse(localStorage.getItem('wt_ot_h_ovr')||'{}');}catch(e){otHoursOverride={};}
 function saveOTRates(){
   set(ref(db,'config/rates/ot'),otRates).catch(e=>console.error('saveOTRates',e));
   try{localStorage.removeItem('wt_ot_rates');}catch(e){} // clean up old localStorage
@@ -308,6 +310,17 @@ function saveOVSRates(){
 }
 window.setOTRate=function(w,val){otRates[w]=parseFloat(val)||0;saveOTRates();renderSummary();};
 window.setOVSRate=function(w,val){ovsRates[w]=parseFloat(val)||0;saveOVSRates();renderSummary();};
+function saveOTHoursOverride(){
+  localStorage.setItem('wt_ot_h_ovr',JSON.stringify(otHoursOverride));
+  set(ref(db,'config/otHoursOverride'),otHoursOverride).catch(e=>console.error('saveOTHoursOverride',e));
+}
+window.setOTHoursOverride=function(w,val,periodKey){
+  const k=w+'__'+periodKey;
+  if(val===''||val===null||isNaN(parseFloat(val))){delete otHoursOverride[k];}
+  else{otHoursOverride[k]=parseFloat(val);}
+  saveOTHoursOverride();
+  renderSummary();
+};
 
 // ── SG Public Holidays ────────────────────────────────────────
 // leaveMap: { 'YYYY-MM-DD': ['HS','MU',...] } for approved leave days
@@ -619,6 +632,7 @@ function renderSummary(){
   // Preserve any open worker detail rows across re-renders
   const _openDetails=new Set(WORKERS.filter(w=>{const r=document.getElementById('wdrow-'+w);return r&&r.style.display!=='none';}));
   const {start,end}=periodRange(),now=new Date();
+  const periodKey=start.toISOString().slice(0,10)+'_'+end.toISOString().slice(0,10);
   const entries=log.filter(e=>new Date(e.time)>=start&&new Date(e.time)<=end);
   const stats=WORKERS.map(w=>{
     const wd=workers[w]||{},isIn=wd.status==='in';
@@ -663,7 +677,10 @@ function renderSummary(){
     const ovsDays=ovsDaySet.size;
     const locs=[...new Set([...log.filter(e=>e.worker===w&&e.loc).map(e=>e.loc),...(wd.loc?[wd.loc]:[])])];
     const otRate=otRates[w]||0,ovsRate=ovsRates[w]||0;
-    const otH=parseFloat((otMins/60).toFixed(1)),normH=parseFloat(((mins-otMins)/60).toFixed(1));
+    const otHComputed=parseFloat((otMins/60).toFixed(1));
+    const otHKey=w+'__'+periodKey;
+    const otH=otHoursOverride[otHKey]!=null?otHoursOverride[otHKey]:otHComputed;
+    const normH=parseFloat(((mins/60)-otH).toFixed(1));
     return{w,hours:(mins/60).toFixed(1),normalHours:normH.toFixed(1),otHours:otH.toFixed(1),ovsDays,otRate,otCost:(otH*otRate),ovsRate,ovsCost:(ovsDays*ovsRate),locs,isIn,shifts};
   });
   const th=stats.reduce((a,s)=>a+parseFloat(s.hours),0).toFixed(1);
@@ -690,7 +707,7 @@ function renderSummary(){
         <td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.isIn?'#EAF3DE':'#eee'};color:${s.isIn?'#3B6D11':'#888'}">${s.isIn?'In':'Off'}</span></td>
         <td>${s.hours}h</td>
         <td>${s.normalHours}h</td>
-        <td style="color:${parseFloat(s.otHours)>0?'#A32D2D':'#888'};font-weight:${parseFloat(s.otHours)>0?'600':'400'}">${s.otHours}h</td>
+        <td><input type="number" min="0" step="0.5" value="${s.otHours}" placeholder="auto" onchange="setOTHoursOverride('${s.w}',this.value,'${periodKey}')" title="Edit to override calculated OT hours for this period. Leave blank to revert to auto-calculation." style="width:72px;padding:4px 6px;border:1px solid ${parseFloat(s.otHours)>0?'#f5b8b8':'#ddd'};border-radius:6px;font-size:12px;font-family:inherit;text-align:right;color:${parseFloat(s.otHours)>0?'#A32D2D':'inherit'};font-weight:${parseFloat(s.otHours)>0?'600':'400'};background:${otHoursOverride[s.w+'__'+periodKey]!=null?'#FAEEDA':''}"></td>
         <td><input type="number" min="0" step="0.5" value="${s.otRate||''}" placeholder="0.00" onchange="setOTRate('${s.w}',this.value)" style="width:72px;padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;text-align:right"></td>
         <td style="font-weight:${s.otCost>0?'600':'400'};color:${s.otCost>0?'#A32D2D':'#888'}">${s.otCost>0?'S$'+s.otCost.toFixed(2):'—'}</td>
         <td style="color:${s.ovsDays>0?'#185FA5':'#888'};font-weight:${s.ovsDays>0?'600':'400'}">${s.ovsDays}</td>
@@ -1160,6 +1177,11 @@ onAuthStateChanged(auth,async user=>{
         });
       }
     }
+    if(document.getElementById('tab-summary')?.classList.contains('active')) renderSummary();
+  });
+  // Load OT hours overrides from Firebase
+  onValue(ref(db,'config/otHoursOverride'),snap=>{
+    if(snap.exists()) otHoursOverride={...otHoursOverride,...snap.val()};
     if(document.getElementById('tab-summary')?.classList.contains('active')) renderSummary();
   });
 
