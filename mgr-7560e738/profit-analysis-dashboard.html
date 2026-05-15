@@ -328,6 +328,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
         <span class="mf-chip"    data-f="risk"  onclick="setMarginFilter('risk',this)">🟡 0–15%</span>
         <span class="mf-chip"    data-f="fair"  onclick="setMarginFilter('fair',this)">🔵 15–40%</span>
         <span class="mf-chip"    data-f="good"  onclick="setMarginFilter('good',this)">🟢 &gt; 40%</span>
+        <input id="jobsSearchQ" type="text" placeholder="🔍 Customer or vessel…" oninput="window.setJobSearch(this.value)" onclick="event.stopPropagation()" style="font-family:inherit;font-size:11px;padding:3px 8px;border:1px solid #ddd;border-radius:6px;width:160px;outline:none;margin-left:6px">
       </div>
       <span class="job-count-badge" id="jobCountBadge">—</span>
       <button class="sec-toggle" id="jobsToggleBtn" onclick="event.stopPropagation();toggleSection('jobs')">▼ Hide</button>
@@ -678,8 +679,22 @@ function passesFilter(m){
   return true;
 }
 
+var _jobsSearchQ='';
+window.setJobSearch=function(q){
+  _jobsSearchQ=(q||'').trim().toLowerCase();
+  if(_lastJd.length)renderJobsTable(_lastJd);
+};
+
 function renderJobsTable(data){
-  const filtered=data.filter(x=>passesFilter(x.margin));
+  _lastJd=data; // keep local cache in sync for margin filter re-renders
+  const q=_jobsSearchQ;
+  const filtered=data.filter(x=>{
+    if(!passesFilter(x.margin)) return false;
+    if(!q) return true;
+    const name=(x.j.customerName||'').toLowerCase();
+    const vessel=(x.j.vessel||x.j.equip||'').toLowerCase();
+    return name.includes(q)||vessel.includes(q);
+  });
   const badge=document.getElementById('jobCountBadge');
   if(badge) badge.textContent=filtered.length+' of '+data.length+' job'+(data.length!==1?'s':'');
   const tbody=document.getElementById('jobsBody');
