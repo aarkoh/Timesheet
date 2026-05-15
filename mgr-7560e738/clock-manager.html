@@ -438,6 +438,24 @@ function calcOTMins(inT, outT, tz) {
   }
   return ot;
 }
+// Resolve the correct timezone for a shift.
+// Priority: device tz (if overseas & device != SGT) > location-derived tz > SGT.
+// When a worker is overseas but their phone is still on Singapore time, trust GPS location.
+function resolveShiftTZ(inEntry, loc, overseas) {
+  const locTZ = overseas ? tzFromLoc(loc) : null;
+  const devTZ = inEntry && inEntry.tz;
+  if (overseas && locTZ && (!devTZ || devTZ === 'Asia/Singapore')) return locTZ;
+  return devTZ || locTZ || 'Asia/Singapore';
+}
+// Short display label for a timezone (e.g. 'Europe/Istanbul' -> 'TRT')
+function tzLabel(tz) {
+  if (!tz || tz === 'Asia/Singapore') return '';
+  try {
+    const abbr = new Intl.DateTimeFormat('en-GB', {timeZone: tz, timeZoneName:'short'})
+      .formatToParts(new Date()).find(p => p.type === 'timeZoneName');
+    return abbr ? abbr.value : tz.split('/').pop().replace(/_/g,' ');
+  } catch(e) { return tz.split('/').pop().replace(/_/g,' '); }
+}
 
 // ── Geo ───────────────────────────────────────────────────────
 function setGeoUI(cls,msg){document.getElementById('geoDot').className='gdot '+cls;document.getElementById('geoText').textContent=msg;}
@@ -649,8 +667,7 @@ function renderSummary(){
       mins+=(eOut-eIn)/60000;
       const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
       const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
-      // Use saved timezone from device (most accurate), fallback to location-derived tz
-      const shiftTZ = s.in.tz || (overseas ? tzFromLoc(loc) : 'Asia/Singapore');
+      const shiftTZ = resolveShiftTZ(s.in, loc, overseas);
       // Use manager's OT override if set, otherwise compute automatically
       if(s.in.otOverride != null){
         otMins += s.in.otOverride * 60;
@@ -746,14 +763,16 @@ window.toggleWorkerDetail=function(w){
   const shifts=(window._workerShifts||{})[w]||[];
   const wd=window._workerNames&&window._workerNames[w]?window._workerNames[w]:'';
   const label=wd?w+' — '+wd:w;
-  const fmtDate=function(iso){
+  const fmtDate=function(iso,tz){
+    tz=tz||'Asia/Singapore';
     if(!iso)return'—';
-    try{return new Date(iso).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});}
+    try{return new Date(iso).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:tz});}
     catch(e){return iso;}
   };
-  const fmtTime=function(iso){
+  const fmtTime=function(iso,tz){
+    tz=tz||'Asia/Singapore';
     if(!iso)return'—';
-    try{return new Date(iso).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});}
+    try{return new Date(iso).toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz});}
     catch(e){return iso;}
   };
   const durStr=function(inIso,outIso){
@@ -801,17 +820,22 @@ window.toggleWorkerDetail=function(w){
       // Shifts starting on this day
       starting.forEach(function(sh){
         const inEntry=sh.in,outEntry=sh.out;
-        const inTime=fmtTime(inEntry.time);
-        const edited=(inEntry.edited||(outEntry&&outEntry.edited))?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':'';
+        const shLoc=inEntry.loc||'';
+        const shOvs=inEntry.lat!=null?(isInSingapore(inEntry.lat,inEntry.lon)===false):(isLocSingapore(shLoc)===false);
+        const shTZ=resolveShiftTZ(inEntry,shLoc,shOvs);
+        const shBadge=shTZ&&shTZ!=='Asia/Singapore'?' <span style="font-size:10px;color:#185FA5;font-weight:600;background:#D2E3FC;padding:1px 5px;border-radius:8px;margin-left:3px">'+tzLabel(shTZ)+'</span>':'';
+        const inTime=fmtTime(inEntry.time,shTZ)+shBadge;
+        const edited=(inEntry.edited||(outEntry&&outEntry.edited))?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':''
+;
         let outDisplay;
         if(!outEntry){
           outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
         }else if(sgKey(outEntry.time)===dayKey){
-          // Clocks out same day — just show time
-          outDisplay=fmtTime(outEntry.time);
+          // Clocks out same day — just show time in shift timezone
+          outDisplay=fmtTime(outEntry.time,shTZ)+shBadge;
         }else{
-          // Clocks out on a later day — show date prominently
-          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time)+'</span> '+fmtTime(outEntry.time)+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+          // Clocks out on a later day — show date + time in shift timezone
+          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time,shTZ)+'</span> '+fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#A32D2D">↗</span>';
         }
         const dur=durStr(inEntry.time,outEntry?outEntry.time:null);
         const job=(outEntry&&outEntry.job)||inEntry.job||'—';
@@ -829,14 +853,18 @@ window.toggleWorkerDetail=function(w){
       // Continuation rows — shift started on an earlier day
       continuing.forEach(function(sh){
         const inEntry=sh.in,outEntry=sh.out;
-        const inDateStr=fmtDate(inEntry.time);
+        const shLoc=inEntry.loc||'';
+        const shOvs=inEntry.lat!=null?(isInSingapore(inEntry.lat,inEntry.lon)===false):(isLocSingapore(shLoc)===false);
+        const shTZ=resolveShiftTZ(inEntry,shLoc,shOvs);
+        const shBadge=shTZ&&shTZ!=='Asia/Singapore'?' <span style="font-size:10px;color:#185FA5;font-weight:600;background:#D2E3FC;padding:1px 5px;border-radius:8px;margin-left:3px">'+tzLabel(shTZ)+'</span>':'';
+        const inDateStr=fmtDate(inEntry.time,shTZ);
         let outDisplay;
         if(!outEntry){
           outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
         }else if(sgKey(outEntry.time)===dayKey){
-          outDisplay=fmtTime(outEntry.time)+' <span style="font-size:10px;color:#3B6D11">✓ ends</span>';
+          outDisplay=fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#3B6D11">✓ ends</span>';
         }else{
-          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time)+'</span> '+fmtTime(outEntry.time)+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time,shTZ)+'</span> '+fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#A32D2D">↗</span>';
         }
         const job=(outEntry&&outEntry.job)||inEntry.job||'—';
         const bg=rowNum%2===0?'#e8f0fe':'#dde8fd';rowNum++;
@@ -926,11 +954,12 @@ window.printWorkerSummary=function(workerName){
         const hrs=(durMins/60).toFixed(1);
         const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
         const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
-        const shiftTZ=s.in.tz||(overseas?tzFromLoc(loc):'Asia/Singapore');
+        const shiftTZ=resolveShiftTZ(s.in,loc,overseas);
         const otM=s.in.otOverride!=null?s.in.otOverride*60:calcOTMins(eIn,eOut,shiftTZ);
         const otH=(otM/60).toFixed(1);
-        const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
-        const outFmt=s.out?eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'(open)';
+        const dispTZ=shiftTZ||'Asia/Singapore';
+        const tzBadge=shiftTZ&&shiftTZ!=='Asia/Singapore'?' <span style="font-size:7.5pt;color:#185FA5;background:#D2E3FC;padding:0 4px;border-radius:4px">'+tzLabel(dispTZ)+'</span>':'';        const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge;
+        const outFmt=s.out?eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge:'(open)';
         const jobStr=s.in.job||'—';
         html+='<tr>'
           +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+inFmt+'</td>'
