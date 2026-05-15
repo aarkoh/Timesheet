@@ -890,7 +890,7 @@ window.toggleWorkerDetail=function(w){
     +(function(){
       const tzSet=new Set(shifts.map(sh=>{const l=sh.in.loc||'';const o=sh.in.lat!=null?(isInSingapore(sh.in.lat,sh.in.lon)===false):(isLocSingapore(l)===false);return resolveShiftTZ(sh.in,l,o);}));
       const nonSG=[...tzSet].filter(z=>z&&z!=='Asia/Singapore');
-      const tzNote=nonSG.length?(' · Times in worker's local timezone (<b>'+nonSG.map(tzLabel).join(', ')+'</b>)'):'';
+      const tzNote=nonSG.length?' · Times in worker’s local timezone (<b>'+nonSG.map(tzLabel).join(', ')+'</b>)':'';
       return '<div style="font-size:11px;color:#888;margin-bottom:6px">All calendar days shown · Blue = overnight shift · Faded = rest day'+tzNote+'</div>';
     })()
     +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
