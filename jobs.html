@@ -295,7 +295,10 @@ button:hover{background:#f0f0ee}
       <tbody id="liBody"></tbody>
     </table>
   </div>
-  <button onclick="addLI()" style="font-size:12px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;width:100%;margin-bottom:4px">+ Add line item</button>
+  <div style="display:flex;gap:8px;margin-bottom:4px">
+    <button onclick="addLI()" style="font-size:12px;border-style:dashed;color:#185FA5;border-color:#B5D4F4;flex:1">+ Add line item</button>
+    <button onclick="window.openStockPicker()" style="font-size:12px;border:1px solid #B5D4F4;background:#E6F1FB;color:#185FA5;border-radius:8px;padding:6px 14px;cursor:pointer;white-space:nowrap;font-family:inherit">&#128230; From stock</button>
+  </div>
   <div style="font-size:11px;color:#854F0B;margin-bottom:0.75rem">* Cost price is internal only — not shown on customer quotation</div>
   <div class="ms">Charges</div>
   <div class="fr2">
@@ -706,6 +709,33 @@ window.setStatus=async function(id,s){
     // Clean up flat statusDates/x keys from local copy
     SO.forEach(function(st){delete jobs[id]['statusDates/'+st];});
     exposeGlobals();
+    // ── Auto-deduct stock when DO is issued ──
+    if(s==='do_wcc'){
+      var j=jobs[id]||{};
+      var lineItems=j.lineItems||[];
+      var stockItems=window._stockItems||{};
+      var now=new Date().toISOString();
+      var deductions=lineItems.filter(function(it){return it.stockItemId&&parseFloat(it.qty)>0;});
+      if(deductions.length){
+        for(var di=0;di<deductions.length;di++){
+          var it=deductions[di];
+          var sid=it.stockItemId;
+          var sItem=stockItems[sid];
+          if(!sItem)continue;
+          var qty=parseFloat(it.qty)||0;
+          var qtyBefore=parseFloat(sItem.qty)||0;
+          var qtyAfter=Math.max(0,qtyBefore-qty);
+          var entry={itemId:sid,itemName:sItem.name||it.desc,sku:sItem.sku||'',worker:'System (DO)',type:'out',qty:qty,unit:sItem.unit||it.unit||'pcs',qtyBefore:qtyBefore,qtyAfter:qtyAfter,job:j.ref||id,notes:'Auto-deducted — DO issued for job '+( j.ref||id),time:now,localTime:new Date().toLocaleString('en-GB',{timeZone:'Asia/Singapore',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}),tz:'Asia/Singapore'};
+          try{
+            await push(ref(db,'stock/movements'),entry);
+            await update(ref(db,'stock/items/'+sid),{qty:qtyAfter,lastUpdated:now,lastWorker:'System (DO '+( j.ref||id)+')'});
+            // Update local cache
+            if(window._stockItems&&window._stockItems[sid])window._stockItems[sid].qty=qtyAfter;
+          }catch(se){console.warn('Stock deduct failed for '+sid,se);}
+        }
+        toast('Stock deducted for '+deductions.length+' item'+(deductions.length>1?'s':'')+' ✓');
+      }
+    }
     toast("Status → "+SL[s]);
     openDetail(id);
   }catch(e){toast("Error: "+e.message);}
@@ -939,7 +969,8 @@ function getLIs(){
       custDisc:parseFloat((document.getElementById('lcd_'+n)||{value:''}).value)||0,
       costCur:ccsel?ccsel.value:'SGD',
       vendorId:vsel?vsel.value:'',
-      vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||''):''
+      vendorName:vsel&&vsel.value?((selVendors.find(function(v){return v.id===vsel.value;})||{}).name||''):'',
+      stockItemId:(document.getElementById('lc_'+n)||{getAttribute:function(){return null;}}).getAttribute('data-stock-id')||''
     };
     // Collect sub-items
     var children=[];
@@ -1064,6 +1095,109 @@ window.pickAttn=function(lbl){
   if(drop){drop.style.display='none';}
 };
 
+/* ── Stock catalog picker ── */
+window.openStockPicker=function(){
+  document.getElementById('stockPickerSearch').value='';
+  window.renderStockPickerBody('');
+  document.getElementById('stockPickerModal').classList.add('show');
+};
+
+window.filterStockItems=function(q){
+  window.renderStockPickerBody(q);
+};
+
+window.renderStockPickerBody=function(q){
+  var items=window._stockItems||{};
+  var ql=(q||'').trim().toLowerCase();
+  var tbody=document.getElementById('stockPickerBody');
+  if(!tbody)return;
+  var entries=Object.entries(items).filter(function(e){
+    var it=e[1];
+    if(!ql)return true;
+    return [(it.name||''),(it.sku||''),(it.category||''),(it.make||''),(it.model||'')].some(function(f){return f.toLowerCase().includes(ql);});
+  });
+  if(!entries.length){
+    tbody.innerHTML='<tr><td colspan="6" style="padding:20px;text-align:center;color:#888">No items found.</td></tr>';
+    return;
+  }
+  var fmt2=function(n){return n!=null&&!isNaN(n)?parseFloat(n).toFixed(2):'—';};
+  tbody.innerHTML=entries.map(function(e){
+    var id=e[0],it=e[1];
+    var qty=parseFloat(it.qty)||0;
+    var min=parseFloat(it.minQty)||0;
+    var low=min>0&&qty<=min;
+    var qtyBadge=low
+      ?'<span style="background:#FAEEDA;color:#854F0B;padding:2px 7px;border-radius:20px;font-weight:600">'+qty+' '+(it.unit||'')+'</span>'
+      :'<span style="color:#1a1a1a">'+qty+' '+(it.unit||'')+'</span>';
+    return '<tr style="border-top:1px solid #f0ede6">'
+      +'<td style="padding:8px 8px"><div style="font-weight:600">'+escHtml(it.name||'')+'</div>'+(it.sku?'<div style="font-size:10px;color:#888">'+escHtml(it.sku)+'</div>':'')+'</td>'
+      +'<td style="padding:8px 8px;font-size:11px;color:#888">'+escHtml(it.category||'—')+'</td>'
+      +'<td style="padding:8px 8px;text-align:right">'+qtyBadge+'</td>'
+      +'<td style="padding:8px 8px;text-align:right">'+fmt2(it.cost)+'</td>'
+      +'<td style="padding:8px 8px;text-align:right">'+fmt2(it.sell)+'</td>'
+      +'<td style="padding:8px 8px"><button onclick="window.addFromStock(\''+id+'\')" style="font-size:12px;padding:4px 12px;background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4;border-radius:6px;cursor:pointer;font-family:inherit;white-space:nowrap">+ Add</button></td>'
+      +'</tr>';
+  }).join('');
+};
+
+window.addFromStock=function(itemId){
+  var it=(window._stockItems||{})[itemId];
+  if(!it){toast('Item not found');return;}
+  var desc=(it.name||'')+(it.make?' — '+it.make:'')+(it.model?' '+it.model:'');
+  var sell=parseFloat(it.sell)||0;
+  var cost=parseFloat(it.cost)||0;
+  // Add the line item (cost pre-filled from stock, sell price as the unit price)
+  window.addLI(desc,'1',it.unit||'pcs',sell>0?sell:'','',cost>0?cost:'','SGD');
+  // Lock the cost field and add shortfall warning on the newly added row
+  setTimeout(function(){
+    var n=liCount;
+    var costEl=document.getElementById('lc_'+n);
+    if(costEl){
+      costEl.setAttribute('readonly','readonly');
+      costEl.title='Cost from stock catalog — read only';
+      costEl.style.background='#f5f0e8';
+      costEl.style.cursor='not-allowed';
+      costEl.setAttribute('data-stock-id',itemId);
+    }
+    var costCurEl=document.getElementById('lcc_'+n);
+    if(costCurEl){costCurEl.setAttribute('disabled','disabled');costCurEl.style.background='#f5f0e8';}
+    // Add shortfall warning element below qty input
+    var qtyEl=document.getElementById('lq_'+n);
+    if(qtyEl&&!document.getElementById('sq_warn_'+n)){
+      var warn=document.createElement('div');
+      warn.id='sq_warn_'+n;
+      warn.style.cssText='font-size:10px;color:#854F0B;margin-top:2px;white-space:nowrap;display:none';
+      qtyEl.parentNode.appendChild(warn);
+      // Wire qty input to check shortfall
+      qtyEl.setAttribute('data-stock-id-warn',itemId);
+      qtyEl.addEventListener('input',function(){window.checkStockShortfall(n,itemId);});
+    }
+    window.checkStockShortfall(n,itemId);
+  },80);
+  document.getElementById('stockPickerModal').classList.remove('show');
+  toast('Added: '+it.name);
+};
+
+window.checkStockShortfall=function(n,itemId){
+  var warn=document.getElementById('sq_warn_'+n);
+  if(!warn)return;
+  var it=(window._stockItems||{})[itemId];
+  if(!it){warn.style.display='none';return;}
+  var inStock=parseFloat(it.qty)||0;
+  var qtyEl=document.getElementById('lq_'+n);
+  var jobQty=qtyEl?parseFloat(qtyEl.value)||0:0;
+  if(jobQty>inStock){
+    var short=jobQty-inStock;
+    warn.textContent='⚠ Only '+inStock+' in stock — '+short+' to source';
+    warn.style.display='block';
+  } else {
+    warn.style.display='none';
+  }
+};
+
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+
 function resetModal(){
   selVendors=[];liCount=0;subCounts={};
   document.getElementById("liBody").innerHTML="";
@@ -1113,6 +1247,13 @@ window.openEditJob=function(id){
   (j.lineItems||[]).forEach(function(it){
     window.addLI(it.desc,it.qty,it.unit,it.unitPrice,it.vendorId||it.vendor||"",it.costPrice||"",it.costCur||"SGD");
   if(it.custDisc){(function(idx,d){setTimeout(function(){var el=document.getElementById("lcd_"+idx);if(el){el.value=d;window.updateMarkup(idx);}},120);})(liCount,it.custDisc);}
+    if(it.stockItemId){(function(idx,sid){setTimeout(function(){
+      var costEl=document.getElementById('lc_'+idx);
+      if(costEl){costEl.setAttribute('readonly','readonly');costEl.title='Cost from stock catalog — read only';costEl.style.background='#f5f0e8';costEl.style.cursor='not-allowed';costEl.setAttribute('data-stock-id',sid);}
+      var curEl=document.getElementById('lcc_'+idx);
+      if(curEl){curEl.setAttribute('disabled','disabled');curEl.style.background='#f5f0e8';}
+      window.checkStockShortfall(idx,sid);
+    },150);})(liCount,it.stockItemId);}
     var pN=liCount;
     (it.children||[]).forEach(function(c){
       window.addSubLI(pN,c.desc,c.qty,c.unit,c.unitPrice,c.vendorId||c.vendor||"",c.costPrice||"",c.costCur||"SGD");
@@ -1171,6 +1312,9 @@ onAuthStateChanged(auth,function(user){
     exposeGlobals(); // keep window._contacts in sync
     setupSearch("j_cs","j_cs_d",function(c){return(c.types||[]).includes("customer");},function(id,nm){document.getElementById("j_cs_id").value=id;document.getElementById("j_cs_nm").textContent=nm;document.getElementById("j_cs_sel").style.display="flex";document.getElementById("j_cs").style.display="none";var ct=(contacts||{})[id];if(ct&&ct.paymentTerms){var pt=ct.paymentTerms;var payEl=document.getElementById("j_pay");var mapped=pt==="Advance"?"Advance":pt==="7 Days"?"7 Days Nett":pt==="30 Days"?"30 Days Nett":pt;if(payEl.querySelector('option[value="'+mapped+'"]'))payEl.value=mapped;}if(window.populateAttnDrop)window.populateAttnDrop(id);});
     setupSearch("j_vs","j_vs_d",function(c){return(c.types||[]).includes("vendor");},function(id,nm){if(!selVendors.find(function(v){return v.id===id;})){selVendors.push({id:id,name:nm});renderVTags();refreshLIVendors();}});
+  });
+  onValue(ref(db,'stock/items'),function(snap){
+    window._stockItems=snap.val()||{};
   });
   onValue(ref(db,'vendorInvoices'),function(snap){
     window._vendorInvoices=snap.val()||{};
@@ -2287,6 +2431,36 @@ window.printSOA = function() {
     <div class="cipl-mfoot">
       <button onclick="document.getElementById('dowccModal').classList.remove('show')">Cancel</button>
       <button class="bp" onclick="window.generateDOWCC()">&#128424; Generate PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ STOCK PICKER MODAL ═══════════════════════════ -->
+<div class="mbg" id="stockPickerModal">
+  <div class="modal" style="max-width:700px">
+    <h2>&#128230; Add from Stock Catalog</h2>
+    <div style="margin-bottom:12px">
+      <input type="text" id="stockPickerSearch" placeholder="Search by name, SKU or category…"
+        oninput="window.filterStockItems(this.value)"
+        style="width:100%;font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px">
+    </div>
+    <div style="overflow-x:auto;max-height:420px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#f5f8ff;position:sticky;top:0">
+          <th style="padding:6px 8px;text-align:left;font-weight:600;color:#888;border-bottom:1px solid #e0ddd6;min-width:160px">Item / SKU</th>
+          <th style="padding:6px 8px;text-align:left;font-weight:600;color:#888;border-bottom:1px solid #e0ddd6">Category</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;color:#888;border-bottom:1px solid #e0ddd6">In stock</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;color:#888;border-bottom:1px solid #e0ddd6">Cost (S$)</th>
+          <th style="padding:6px 8px;text-align:right;font-weight:600;color:#888;border-bottom:1px solid #e0ddd6">Std sell (S$)</th>
+          <th style="padding:6px 8px;border-bottom:1px solid #e0ddd6"></th>
+        </tr></thead>
+        <tbody id="stockPickerBody">
+          <tr><td colspan="6" style="padding:20px;text-align:center;color:#888">Loading stock…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mfoot" style="margin-top:12px">
+      <button onclick="document.getElementById('stockPickerModal').classList.remove('show')">Close</button>
     </div>
   </div>
 </div>
