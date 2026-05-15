@@ -787,8 +787,14 @@ function render(){
   const CONFIRMED=['customer_po','vendor_po','do_wcc','invoice','soa','closed'];
   const WIP_ST=['customer_po','vendor_po','do_wcc'];
 
-  const revenueEntries=Object.entries(jobs).filter(([,j])=>
-    !j.archived&&(accountingMode==='statutory'?INVOICED:CONFIRMED).includes(j.status));
+  const revenueEntries=Object.entries(jobs).filter(([,j])=>{
+    if(j.archived) return false;
+    const statuses=accountingMode==='statutory'?INVOICED:CONFIRMED;
+    if(!statuses.includes(j.status)) return false;
+    // Closed without invoice = lost quote (customer didn't award) — exclude from P&L
+    if(j.status==='closed' && !j.invoiceDate && !(j.statusDates&&j.statusDates.invoice)) return false;
+    return true;
+  });
   if(!revenueEntries.length){
     document.getElementById('jobsBody').innerHTML='<tr><td colspan="7" class="empty-state">No confirmed jobs found (quotes excluded).</td></tr>';
     document.getElementById('custRows').innerHTML='<div class="empty-state">No data.</div>';
