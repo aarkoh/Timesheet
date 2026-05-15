@@ -970,6 +970,8 @@ function render(){
   jd.forEach(function(x){
     var ds=x.j.invoiceDate||'';
     if(!ds) return;
+    // Chart must match drilldown: only count truly invoiced jobs so both totals agree
+    if(!INVOICED.includes(x.j.status)) return;
     var ym=ds.slice(0,7);
     ensureMonth(ym);
     mMap[ym].rev+=x.revSGD;
