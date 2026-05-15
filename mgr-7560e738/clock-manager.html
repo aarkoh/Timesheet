@@ -942,11 +942,17 @@ window.printWorkerSummary=function(workerName){
     const dispDate=new Date(dayKey+'T12:00:00+08:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});
     // Shifts starting on this calendar day
     const starting=validShifts.filter(s=>sgKeyP(s.in.time)===dayKey);
-    // Shifts from a prior day still running on this day
+    // Shifts from a prior day that GENUINELY crossed midnight in their local timezone
+    // (avoids false cont. rows for GMT+3 workers whose same-day shifts cross SGT midnight)
     const continuing=validShifts.filter(s=>{
       if(sgKeyP(s.in.time)>=dayKey)return false;
       const outT=s.out?new Date(s.out.time):nowP;
-      return outT>dayS;
+      if(outT<=dayS)return false;
+      const cLoc=s.in.loc||'';
+      const cOvs=s.in.lat!=null?(isInSingapore(s.in.lat,s.in.lon)===false):(isLocSingapore(cLoc)===false);
+      const cTZ=resolveShiftTZ(s.in,cLoc,cOvs);
+      const fmt2=function(dt){return new Date(dt).toLocaleDateString('en-CA',{timeZone:cTZ,year:'numeric',month:'2-digit',day:'2-digit'});};
+      return fmt2(s.in.time)!==fmt2(outT);
     });
     let html='';
     if(starting.length===0&&continuing.length===0){
@@ -968,8 +974,14 @@ window.printWorkerSummary=function(workerName){
         const otM=s.in.otOverride!=null?s.in.otOverride*60:calcOTMins(eIn,eOut,shiftTZ);
         const otH=(otM/60).toFixed(1);
         const dispTZ=shiftTZ||'Asia/Singapore';
-        const tzBadge=shiftTZ&&shiftTZ!=='Asia/Singapore'?' <span style="font-size:7.5pt;color:#185FA5;background:#D2E3FC;padding:0 4px;border-radius:4px">'+tzLabel(dispTZ)+'</span>':'';        const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge;
-        const outFmt=s.out?eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge:'(open)';
+        const tzBadge=shiftTZ&&shiftTZ!=='Asia/Singapore'?' <span style="font-size:7.5pt;color:#185FA5;background:#D2E3FC;padding:0 4px;border-radius:4px">'+tzLabel(dispTZ)+'</span>':'';
+        const localKey=function(dt){return new Date(dt).toLocaleDateString('en-CA',{timeZone:dispTZ,year:'numeric',month:'2-digit',day:'2-digit'});};
+        const sameLocalDay=s.out&&localKey(eIn)===localKey(eOut);
+        const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge;
+        // Clock-out: show date only if it falls on a different calendar day in the shift's timezone
+        const outFmt=!s.out?'(open)':sameLocalDay
+          ?eOut.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge
+          :eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:dispTZ})+tzBadge;
         const jobStr=s.in.job||'—';
         html+='<tr>'
           +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+inFmt+'</td>'
