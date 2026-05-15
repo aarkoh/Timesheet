@@ -1380,7 +1380,8 @@ setTimeout(()=>document.getElementById('loadingScreen').classList.add('hide'),10
       <input type="date" id="editLogDate" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
     </div>
     <div style="margin-bottom:.75rem">
-      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Time (24hr, Singapore time)</label>
+      <label style="font-size:12px;color:#888;display:block;margin-bottom:3px;font-weight:500">Time (24hr) — <span id="editLogTZLabel" style="color:#185FA5;font-weight:600">Singapore time</span></label>
+      <input type="hidden" id="editLogTZ" value="Asia/Singapore">
       <input type="time" id="editLogTime" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit;background:#f9f9f7">
     </div>
     <div style="margin-bottom:.75rem">
@@ -1418,14 +1419,25 @@ function openEditLog(id){
   var log2 = window._clockLog||[];
   var e = log2.find(function(x){return x.id===id;});
   if(!e){toast('Entry not found');return;}
-  // Convert UTC time to SGT for display
+  // Resolve the correct timezone for this entry (same logic as OT engine)
+  var eLoc = e.loc||'';
+  var eOvs = e.lat!=null ? (isInSingapore(e.lat,e.lon)===false) : (isLocSingapore(eLoc)===false);
+  var entryTZ = resolveShiftTZ(e, eLoc, eOvs);
+  // Convert UTC time to entry's local timezone for display
   var d = new Date(e.time);
-  var sgt = new Date(d.toLocaleString('en-US',{timeZone:'Asia/Singapore'}));
-  var yyyy = sgt.getFullYear();
-  var mm = String(sgt.getMonth()+1).padStart(2,'0');
-  var dd = String(sgt.getDate()).padStart(2,'0');
-  var hh = String(sgt.getHours()).padStart(2,'0');
-  var mi = String(sgt.getMinutes()).padStart(2,'0');
+  var parts = new Intl.DateTimeFormat('en-CA',{
+    timeZone: entryTZ,
+    year:'numeric', month:'2-digit', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', hour12:false
+  }).formatToParts(d);
+  var pMap = {};
+  parts.forEach(function(p){pMap[p.type]=p.value;});
+  var yyyy = pMap.year, mm = pMap.month, dd = pMap.day;
+  var hh = pMap.hour==='24'?'00':pMap.hour, mi = pMap.minute;
+  // Show timezone label in the modal
+  var tzDisplay = entryTZ==='Asia/Singapore' ? 'Singapore time' : (tzLabel(entryTZ)+' time ('+entryTZ.replace('_',' ')+')');
+  document.getElementById('editLogTZLabel').textContent = tzDisplay;
+  document.getElementById('editLogTZ').value = entryTZ;
   document.getElementById('editLogId').value = id;
   document.getElementById('editLogWorker').value = e.worker;
   document.getElementById('editLogType').value = e.type === 'in' ? 'Clock In' : 'Clock Out';
@@ -1509,16 +1521,27 @@ async function saveEditLog(){
   var timeVal = document.getElementById('editLogTime').value;
   var reason = document.getElementById('editLogReason').value.trim();
   if(!dateVal||!timeVal){toast('Enter date and time');return;}
-  // Convert SGT input back to UTC ISO string
-  var sgtStr = dateVal+'T'+timeVal+':00+08:00';
-  var utcTime = new Date(sgtStr).toISOString();
-  // Build updated localTime display string
-  var d = new Date(sgtStr);
-  var localTime = d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'})
-    +', '+timeVal+':00';
-  // Find the entry for context
+  // Find the entry to get its timezone
   var log2 = window._clockLog||[];
   var e = log2.find(function(x){return x.id===id;});
+  var eLoc2 = e ? (e.loc||'') : '';
+  var eOvs2 = e ? (e.lat!=null ? (isInSingapore(e.lat,e.lon)===false) : (isLocSingapore(eLoc2)===false)) : false;
+  var entryTZ2 = document.getElementById('editLogTZ').value || (e ? resolveShiftTZ(e,eLoc2,eOvs2) : 'Asia/Singapore');
+  // Convert local time in entry timezone back to UTC using Intl roundtrip
+  function localToUTC(dStr, tStr, tz) {
+    var fakeUTC = new Date(dStr+'T'+tStr+':00Z');
+    var lStr = fakeUTC.toLocaleString('en-US',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+    var mth=lStr.slice(0,2),dy=lStr.slice(3,5),yr=lStr.slice(6,10),hr=lStr.slice(12,14),mn=lStr.slice(15,17);
+    if(hr==='24')hr='00';
+    var localAsUTC = new Date(Date.UTC(+yr,+mth-1,+dy,+hr,+mn,0));
+    var offsetMs = fakeUTC - localAsUTC;
+    return new Date(fakeUTC.getTime()+offsetMs).toISOString();
+  }
+  var utcTime = localToUTC(dateVal, timeVal, entryTZ2);
+  // Build updated localTime display string (in entry's timezone)
+  var d = new Date(utcTime);
+  var localTime = d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:entryTZ2})
+    +', '+timeVal+':00';
   var jobVal = document.getElementById('editLogJob').value.trim() || document.getElementById('editLogJobInp').value.trim();
   var locVal = document.getElementById('editLogLoc').value.trim();
   var upd = {
