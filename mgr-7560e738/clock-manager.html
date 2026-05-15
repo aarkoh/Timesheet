@@ -802,11 +802,16 @@ window.toggleWorkerDetail=function(w){
     const displayDate=new Date(dayKey+'T12:00:00+08:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});
     // Shifts that begin on this calendar day
     const starting=shifts.filter(sh=>sgKey(sh.in.time)===dayKey);
-    // Shifts that began on an earlier day and are still active on this day
+    // Shifts that began on an earlier day AND genuinely crossed midnight in their local timezone
+    // (avoids spurious cont. rows for GMT+3 workers whose same-day shifts cross SGT midnight)
     const continuing=shifts.filter(sh=>{
       if(sgKey(sh.in.time)>=dayKey)return false;
       const outT=sh.out?new Date(sh.out.time):now2;
-      return outT>dayS;
+      if(outT<=dayS)return false;
+      const cLoc=sh.in.loc||'';
+      const cOvs=sh.in.lat!=null?(isInSingapore(sh.in.lat,sh.in.lon)===false):(isLocSingapore(cLoc)===false);
+      const cTZ=resolveShiftTZ(sh.in,cLoc,cOvs);
+      return fmtDate(sh.in.time,cTZ)!==fmtDate(outT,cTZ);
     });
     let html='';
     if(starting.length===0&&continuing.length===0){
@@ -830,12 +835,12 @@ window.toggleWorkerDetail=function(w){
         let outDisplay;
         if(!outEntry){
           outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
-        }else if(sgKey(outEntry.time)===dayKey){
-          // Clocks out same day — just show time in shift timezone
-          outDisplay=fmtTime(outEntry.time,shTZ)+shBadge;
+        }else if(fmtDate(outEntry.time,shTZ)===fmtDate(inEntry.time,shTZ)){
+          // Same calendar day in the SHIFT timezone — just show time, no date prefix
+          outDisplay=fmtTime(outEntry.time,shTZ);
         }else{
-          // Clocks out on a later day — show date + time in shift timezone
-          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time,shTZ)+'</span> '+fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+          // Different calendar day in shift timezone — show date + time (no badge, less noise)
+          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time,shTZ)+'</span> '+fmtTime(outEntry.time,shTZ)+' <span style="font-size:10px;color:#A32D2D">↗</span>';
         }
         const dur=durStr(inEntry.time,outEntry?outEntry.time:null);
         const job=(outEntry&&outEntry.job)||inEntry.job||'—';
@@ -861,10 +866,10 @@ window.toggleWorkerDetail=function(w){
         let outDisplay;
         if(!outEntry){
           outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
-        }else if(sgKey(outEntry.time)===dayKey){
-          outDisplay=fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#3B6D11">✓ ends</span>';
         }else{
-          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time,shTZ)+'</span> '+fmtTime(outEntry.time,shTZ)+shBadge+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+          // For cont. rows just show the end time; date only if it ends on a different local day
+          const endSameLocalDay=fmtDate(outEntry.time,shTZ)===displayDate||fmtDate(outEntry.time,shTZ)===new Date(dayKey+'T12:00:00+08:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:shTZ});
+          outDisplay=fmtTime(outEntry.time,shTZ)+' <span style="font-size:10px;color:#3B6D11">✓ ends</span>';
         }
         const job=(outEntry&&outEntry.job)||inEntry.job||'—';
         const bg=rowNum%2===0?'#e8f0fe':'#dde8fd';rowNum++;
@@ -882,7 +887,12 @@ window.toggleWorkerDetail=function(w){
   }).join('');
   inner.innerHTML='<div style="padding:8px 4px 4px">'
     +'<div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#444">'+label+' — '+shifts.length+' shift'+(shifts.length!==1?'s':'')+' in period</div>'
-    +'<div style="font-size:11px;color:#888;margin-bottom:6px">All calendar days shown · Blue = continuing shift · Faded = rest day</div>'
+    +(function(){
+      const tzSet=new Set(shifts.map(sh=>{const l=sh.in.loc||'';const o=sh.in.lat!=null?(isInSingapore(sh.in.lat,sh.in.lon)===false):(isLocSingapore(l)===false);return resolveShiftTZ(sh.in,l,o);}));
+      const nonSG=[...tzSet].filter(z=>z&&z!=='Asia/Singapore');
+      const tzNote=nonSG.length?(' · Times in worker's local timezone (<b>'+nonSG.map(tzLabel).join(', ')+'</b>)'):'';
+      return '<div style="font-size:11px;color:#888;margin-bottom:6px">All calendar days shown · Blue = overnight shift · Faded = rest day'+tzNote+'</div>';
+    })()
     +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#efefed">'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Date</th>'
