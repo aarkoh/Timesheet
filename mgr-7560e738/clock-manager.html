@@ -743,19 +743,9 @@ window.toggleWorkerDetail=function(w){
   row.style.display=open?'':'none';
   if(arr)arr.innerHTML=open?'&#9650;':'&#9660;';
   if(!open)return;
-  // Build detail table for this worker's shifts in the period
   const shifts=(window._workerShifts||{})[w]||[];
-  if(!shifts.length){inner.innerHTML='<div style="padding:10px 4px;font-size:12px;color:#aaa">No shifts in this period.</div>';return;}
   const wd=window._workerNames&&window._workerNames[w]?window._workerNames[w]:'';
   const label=wd?w+' — '+wd:w;
-  const fmt=function(iso){
-    if(!iso)return'—';
-    try{
-      const d=new Date(iso);
-      return d.toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'})
-        +' '+d.toLocaleTimeString('en-SG',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'Asia/Singapore'});
-    }catch(e){return iso;}
-  };
   const fmtDate=function(iso){
     if(!iso)return'—';
     try{return new Date(iso).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});}
@@ -773,26 +763,98 @@ window.toggleWorkerDetail=function(w){
     const h=Math.floor(mins/60),m=mins%60;
     return h+'h'+(m?(' '+m+'m'):'');
   };
-  const rows=shifts.map(function(sh,i){
-    const inEntry=sh.in,outEntry=sh.out;
-    const dateStr=fmtDate(inEntry.time);
-    const inTime=fmtTime(inEntry.time);
-    const outTime=outEntry?fmtTime(outEntry.time):'<span style="color:#3B6D11;font-weight:600">In</span>';
-    const dur=durStr(inEntry.time,outEntry?outEntry.time:null);
-    const job=(outEntry&&outEntry.job)||inEntry.job||'—';
-    const loc=inEntry.loc||'—';
-    const edited=(inEntry.edited||outEntry&&outEntry.edited)?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':'';
-    return '<tr style="background:'+(i%2===0?'#fff':'#f5f5f3')+'">'
-      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+dateStr+'</td>'
-      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+inTime+edited+'</td>'
-      +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+outTime+'</td>'
-      +'<td style="padding:5px 8px;font-size:12px">'+dur+'</td>'
-      +'<td style="padding:5px 8px;font-size:12px;color:#888">'+job+'</td>'
-      +'<td style="padding:5px 8px;font-size:11px;color:#aaa;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+loc+'">'+loc+'</td>'
-      +'</tr>';
+  // Get SGT calendar date key "YYYY-MM-DD" for any timestamp
+  function sgKey(dt){return new Date(dt).toLocaleDateString('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'});}
+  // Build list of every calendar day in the selected period
+  const {start,end}=periodRange();
+  const days=[];
+  let cur=sgKey(start);
+  const eKey=sgKey(end);
+  while(cur<=eKey){
+    days.push(cur);
+    const d=new Date(cur+'T12:00:00+08:00');
+    d.setDate(d.getDate()+1);
+    cur=sgKey(d);
+  }
+  const now2=new Date();
+  let rowNum=0;
+  const rows=days.map(function(dayKey){
+    const dayS=new Date(dayKey+'T00:00:00+08:00');
+    const displayDate=new Date(dayKey+'T12:00:00+08:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});
+    // Shifts that begin on this calendar day
+    const starting=shifts.filter(sh=>sgKey(sh.in.time)===dayKey);
+    // Shifts that began on an earlier day and are still active on this day
+    const continuing=shifts.filter(sh=>{
+      if(sgKey(sh.in.time)>=dayKey)return false;
+      const outT=sh.out?new Date(sh.out.time):now2;
+      return outT>dayS;
+    });
+    let html='';
+    if(starting.length===0&&continuing.length===0){
+      // Rest / no-shift day
+      const bg=rowNum%2===0?'#fff':'#f5f5f3';rowNum++;
+      html='<tr style="background:'+bg+'">'
+        +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap;color:#bbb">'+displayDate+'</td>'
+        +'<td style="padding:5px 8px;font-size:12px;color:#ddd;font-style:italic" colspan="5">—</td>'
+        +'</tr>';
+    }else{
+      // Shifts starting on this day
+      starting.forEach(function(sh){
+        const inEntry=sh.in,outEntry=sh.out;
+        const inTime=fmtTime(inEntry.time);
+        const edited=(inEntry.edited||(outEntry&&outEntry.edited))?'<span title="Edited" style="font-size:10px;color:#BA7517;margin-left:4px">✎</span>':'';
+        let outDisplay;
+        if(!outEntry){
+          outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
+        }else if(sgKey(outEntry.time)===dayKey){
+          // Clocks out same day — just show time
+          outDisplay=fmtTime(outEntry.time);
+        }else{
+          // Clocks out on a later day — show date prominently
+          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time)+'</span> '+fmtTime(outEntry.time)+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+        }
+        const dur=durStr(inEntry.time,outEntry?outEntry.time:null);
+        const job=(outEntry&&outEntry.job)||inEntry.job||'—';
+        const loc=inEntry.loc||'—';
+        const bg=rowNum%2===0?'#fff':'#f5f5f3';rowNum++;
+        html+='<tr style="background:'+bg+'">'
+          +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+displayDate+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+inTime+edited+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+outDisplay+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px">'+dur+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px;color:#888">'+job+'</td>'
+          +'<td style="padding:5px 8px;font-size:11px;color:#aaa;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+loc+'">'+loc+'</td>'
+          +'</tr>';
+      });
+      // Continuation rows — shift started on an earlier day
+      continuing.forEach(function(sh){
+        const inEntry=sh.in,outEntry=sh.out;
+        const inDateStr=fmtDate(inEntry.time);
+        let outDisplay;
+        if(!outEntry){
+          outDisplay='<span style="color:#3B6D11;font-weight:600">In</span>';
+        }else if(sgKey(outEntry.time)===dayKey){
+          outDisplay=fmtTime(outEntry.time)+' <span style="font-size:10px;color:#3B6D11">✓ ends</span>';
+        }else{
+          outDisplay='<span style="font-size:11px;font-weight:600;color:#A32D2D">'+fmtDate(outEntry.time)+'</span> '+fmtTime(outEntry.time)+' <span style="font-size:10px;color:#A32D2D">↗</span>';
+        }
+        const job=(outEntry&&outEntry.job)||inEntry.job||'—';
+        const bg=rowNum%2===0?'#e8f0fe':'#dde8fd';rowNum++;
+        html+='<tr style="background:'+bg+'">'
+          +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap;color:#555">'+displayDate+' <span style="font-size:10px;color:#185FA5;font-weight:600;background:#D2E3FC;padding:1px 5px;border-radius:8px">cont.</span></td>'
+          +'<td style="padding:5px 8px;font-size:11px;color:#888;font-style:italic">↳ from '+inDateStr+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px;white-space:nowrap">'+outDisplay+'</td>'
+          +'<td style="padding:5px 8px;font-size:12px;color:#999">—</td>'
+          +'<td style="padding:5px 8px;font-size:12px;color:#888">'+job+'</td>'
+          +'<td style="padding:5px 8px;font-size:11px;color:#aaa">—</td>'
+          +'</tr>';
+      });
+    }
+    return html;
   }).join('');
   inner.innerHTML='<div style="padding:8px 4px 4px">'
     +'<div style="font-size:12px;font-weight:600;margin-bottom:6px;color:#444">'+label+' — '+shifts.length+' shift'+(shifts.length!==1?'s':'')+' in period</div>'
+    +'<div style="font-size:11px;color:#888;margin-bottom:6px">All calendar days shown · Blue = continuing shift · Faded = rest day</div>'
     +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
     +'<thead><tr style="background:#efefed">'
     +'<th style="padding:5px 8px;text-align:left;font-size:11px;color:#888;font-weight:600;white-space:nowrap">Date</th>'
@@ -832,27 +894,70 @@ window.printWorkerSummary=function(workerName){
     return outT>=start&&inT<=end;
   });
 
-  const shiftRows=validShifts.map(function(s){
-    const inT=new Date(s.in.time),outT=s.out?new Date(s.out.time):now;
-    const eIn=inT<start?start:inT,eOut=outT>end?end:outT;
-    const durMins=(eOut-eIn)/60000;
-    const hrs=(durMins/60).toFixed(1);
-    const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
-    const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
-    const shiftTZ=s.in.tz||(overseas?tzFromLoc(loc):'Asia/Singapore');
-    const otM=s.in.otOverride!=null?s.in.otOverride*60:calcOTMins(eIn,eOut,shiftTZ);
-    const otH=(otM/60).toFixed(1);
-    const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
-    const outFmt=s.out?eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'(open)';
-    const jobStr=s.in.job||'—';
-    return '<tr>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+inFmt+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+outFmt+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right">'+hrs+'h</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right;color:'+(parseFloat(otH)>0?'#A32D2D':'#888')+'">'+otH+'h</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:center">'+(overseas?'Overseas':'SG')+'</td>'
-      +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:9pt;color:#555">'+jobStr+'</td>'
-    +'</tr>';
+  // Build calendar-day list for the print report (every day in period)
+  function sgKeyP(dt){return new Date(dt).toLocaleDateString('en-CA',{timeZone:'Asia/Singapore',year:'numeric',month:'2-digit',day:'2-digit'});}
+  const pDays=[];let pCur=sgKeyP(start);const pEKey=sgKeyP(end);
+  while(pCur<=pEKey){pDays.push(pCur);const pd=new Date(pCur+'T12:00:00+08:00');pd.setDate(pd.getDate()+1);pCur=sgKeyP(pd);}
+  const nowP=now;
+  const shiftRows=pDays.map(function(dayKey){
+    const dayS=new Date(dayKey+'T00:00:00+08:00');
+    const dispDate=new Date(dayKey+'T12:00:00+08:00').toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});
+    // Shifts starting on this calendar day
+    const starting=validShifts.filter(s=>sgKeyP(s.in.time)===dayKey);
+    // Shifts from a prior day still running on this day
+    const continuing=validShifts.filter(s=>{
+      if(sgKeyP(s.in.time)>=dayKey)return false;
+      const outT=s.out?new Date(s.out.time):nowP;
+      return outT>dayS;
+    });
+    let html='';
+    if(starting.length===0&&continuing.length===0){
+      // Rest day row
+      html='<tr style="background:#f9f9f9">'
+        +'<td style="padding:3px 6px;border-bottom:1px solid #eee;color:#bbb">'+dispDate+'</td>'
+        +'<td style="padding:3px 6px;border-bottom:1px solid #eee;color:#ddd;font-style:italic;font-size:8.5pt" colspan="5">—</td>'
+        +'</tr>';
+    }else{
+      // Shifts starting on this day
+      starting.forEach(function(s){
+        const inT=new Date(s.in.time),outT=s.out?new Date(s.out.time):nowP;
+        const eIn=inT<start?start:inT,eOut=outT>end?end:outT;
+        const durMins=(eOut-eIn)/60000;
+        const hrs=(durMins/60).toFixed(1);
+        const lat=s.in.lat,lon=s.in.lon,loc=s.in.loc||'';
+        const overseas=lat!=null?(isInSingapore(lat,lon)===false):(isLocSingapore(loc)===false);
+        const shiftTZ=s.in.tz||(overseas?tzFromLoc(loc):'Asia/Singapore');
+        const otM=s.in.otOverride!=null?s.in.otOverride*60:calcOTMins(eIn,eOut,shiftTZ);
+        const otH=(otM/60).toFixed(1);
+        const inFmt=eIn.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+        const outFmt=s.out?eOut.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'(open)';
+        const jobStr=s.in.job||'—';
+        html+='<tr>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+inFmt+'</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee">'+outFmt+'</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right">'+hrs+'h</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:right;color:'+(parseFloat(otH)>0?'#A32D2D':'#888')+'">'+otH+'h</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee;text-align:center">'+(overseas?'Overseas':'SG')+'</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #eee;font-size:9pt;color:#555">'+jobStr+'</td>'
+          +'</tr>';
+      });
+      // Continuation rows
+      continuing.forEach(function(s){
+        const inDate=new Date(s.in.time).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric',timeZone:'Asia/Singapore'});
+        const outT=s.out?new Date(s.out.time):nowP;
+        const outFmt=s.out?outT.toLocaleString('en-SG',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'(open)';
+        const jobStr=s.in.job||'—';
+        html+='<tr style="background:#f0f4ff">'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;font-size:8.5pt;color:#555">'+dispDate+' <span style="color:#185FA5">(cont. from '+inDate+')</span></td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;color:#aaa;font-style:italic;font-size:8.5pt">↳ ongoing</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;text-align:right;color:#aaa">—</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;text-align:right;color:#aaa">—</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;text-align:center;color:#aaa">—</td>'
+          +'<td style="padding:4px 6px;border-bottom:1px solid #e0e8ff;font-size:9pt;color:#aaa">'+jobStr+'</td>'
+          +'</tr>';
+      });
+    }
+    return html;
   }).join('');
 
   const totalPayable=(stats.otCost+stats.ovsCost).toFixed(2);
