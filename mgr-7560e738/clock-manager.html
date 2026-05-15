@@ -1429,10 +1429,8 @@ function openEditLog(id){
   var log2 = window._clockLog||[];
   var e = log2.find(function(x){return x.id===id;});
   if(!e){toast('Entry not found');return;}
-  // Resolve the correct timezone for this entry (same logic as OT engine)
-  var eLoc = e.loc||'';
-  var eOvs = e.lat!=null ? (isInSingapore(e.lat,e.lon)===false) : (isLocSingapore(eLoc)===false);
-  var entryTZ = resolveShiftTZ(e, eLoc, eOvs);
+  // Use the timezone stored on the entry (recorded from worker's device at clock-in time)
+  var entryTZ = e.tz || 'Asia/Singapore';
   // Convert UTC time to entry's local timezone for display
   var d = new Date(e.time);
   var parts = new Intl.DateTimeFormat('en-CA',{
@@ -1445,7 +1443,8 @@ function openEditLog(id){
   var yyyy = pMap.year, mm = pMap.month, dd = pMap.day;
   var hh = pMap.hour==='24'?'00':pMap.hour, mi = pMap.minute;
   // Show timezone label in the modal
-  var tzDisplay = entryTZ==='Asia/Singapore' ? 'Singapore time' : (tzLabel(entryTZ)+' time ('+entryTZ.replace('_',' ')+')');
+  var tzShort = entryTZ==='Asia/Singapore' ? '' : entryTZ.split('/').pop().replace(/_/g,' ');
+  var tzDisplay = entryTZ==='Asia/Singapore' ? 'Singapore time' : (tzShort+' time ('+entryTZ+')');
   document.getElementById('editLogTZLabel').textContent = tzDisplay;
   document.getElementById('editLogTZ').value = entryTZ;
   document.getElementById('editLogId').value = id;
@@ -1534,9 +1533,7 @@ async function saveEditLog(){
   // Find the entry to get its timezone
   var log2 = window._clockLog||[];
   var e = log2.find(function(x){return x.id===id;});
-  var eLoc2 = e ? (e.loc||'') : '';
-  var eOvs2 = e ? (e.lat!=null ? (isInSingapore(e.lat,e.lon)===false) : (isLocSingapore(eLoc2)===false)) : false;
-  var entryTZ2 = document.getElementById('editLogTZ').value || (e ? resolveShiftTZ(e,eLoc2,eOvs2) : 'Asia/Singapore');
+  var entryTZ2 = document.getElementById('editLogTZ').value || (e ? (e.tz||'Asia/Singapore') : 'Asia/Singapore');
   // Convert local time in entry timezone back to UTC using Intl roundtrip
   function localToUTC(dStr, tStr, tz) {
     var fakeUTC = new Date(dStr+'T'+tStr+':00Z');
