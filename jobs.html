@@ -77,6 +77,12 @@ button:hover{background:#f0f0ee}
 .lit{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
 .lit th{text-align:left;font-size:11px;font-weight:600;color:#888;padding:4px 5px;border-bottom:1px solid #e0ddd6;background:#f9f9f7;white-space:nowrap}
 .lit td{padding:3px 3px;vertical-align:middle}
+.li-drag-handle{display:block;cursor:grab;color:#ccc;font-size:15px;line-height:1;text-align:center;padding:1px 0;user-select:none;letter-spacing:-2px}
+.li-drag-handle:hover{color:#185FA5}
+.li-drag-handle:active{cursor:grabbing}
+tr.li-dragging>td{opacity:0.3}
+tr.li-drop-above>td{box-shadow:inset 0 2px 0 #185FA5}
+tr.li-drop-below>td{box-shadow:inset 0 -2px 0 #185FA5}
 .lit input{width:100%;padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;background:#fff}
 .lit input:focus{outline:none;border-color:#185FA5}
 .lamt{padding:5px 6px;background:#f9f9f7;border:1px solid #f0ede6;border-radius:6px;font-size:12px;font-weight:500;text-align:right;min-width:70px;display:block}
@@ -771,7 +777,10 @@ window.addLI=function(desc,qty,unit,price,vendor,cost,costCur){
   liCount++;var n=liCount;
   var tr=document.createElement("tr");tr.id="li_"+n;
   var vopts=selVendors.map(function(v){return '<option value="'+v.id+'"'+(vendor===v.id?' selected':'')+'>'+v.name+'</option>';}).join('');
-  tr.innerHTML='<td style="text-align:center;color:#888;font-size:11px">'+n+"</td>"
+  tr.innerHTML='<td style="text-align:center;color:#888;font-size:11px;padding:2px 0">'
+    +'<span class="li-drag-handle" draggable="true" title="Drag to reorder">⋮⋮</span>'
+    +'<div class="li-num" style="font-size:10px;color:#bbb;line-height:1.4">'+n+'</div>'
+    +'</td>'
     +'<td><textarea id="ld_'+n+'" placeholder="Description" rows="2" style="min-width:180px;width:100%;padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical">'+desc+'</textarea></td>'
     +'<td><input type="number" value="'+qty+'" placeholder="1" min="0" step="0.01" id="lq_'+n+'" data-n="'+n+'" oninput="window.calcLI(this.dataset.n)" style="width:48px;text-align:right"></td>'
     +'<td><input type="text" value="'+unit+'" id="lu_'+n+'" style="width:52px"></td>'
@@ -951,6 +960,85 @@ window.removeLI=function(n){
   var tr=document.getElementById("li_"+n);if(tr)tr.remove();
 };
 window.removeSubLI=function(id){var tr=document.getElementById('li_'+id);if(tr)tr.remove();};
+/* ══ LINE ITEM DRAG-AND-DROP ══════════════════════════════════════════════ */
+function liGetSubRows(n){
+  var rows=[];var sc=subCounts[String(n)]||0;
+  for(var i=1;i<=sc;i++){var el=document.getElementById('li_'+n+'_'+i);if(el)rows.push(el);}
+  return rows;
+}
+function updateLINumbers(){
+  var i=0;
+  Array.from(document.querySelectorAll('#liBody tr')).forEach(function(tr){
+    var raw=tr.id.replace('li_','');
+    if(raw.indexOf('_')===-1){
+      i++;
+      var num=tr.querySelector('.li-num');if(num)num.textContent=i;
+    } else {
+      var parts=raw.split('_');var s=parts[parts.length-1];
+      var td=tr.querySelector('td:first-child');if(td)td.childNodes[td.childNodes.length-1].textContent=i+'.'+s;
+    }
+  });
+}
+(function(){
+  var body=document.getElementById('liBody');
+  if(!body)return;
+  var dragSrc=null,dragRows=[],dropTarget=null,dropBefore=true;
+
+  body.addEventListener('dragstart',function(e){
+    if(!e.target.classList.contains('li-drag-handle'))return;
+    var tr=e.target.closest('tr');if(!tr)return;
+    var n=tr.id.replace('li_','');if(n.indexOf('_')!==-1)return;
+    dragSrc=tr;
+    dragRows=[tr].concat(liGetSubRows(n));
+    e.dataTransfer.effectAllowed='move';
+    e.dataTransfer.setData('text/plain',n);
+    // Apply fade AFTER browser snapshots the drag image
+    setTimeout(function(){dragRows.forEach(function(r){r.classList.add('li-dragging');});},0);
+  });
+
+  body.addEventListener('dragend',function(){
+    dragRows.forEach(function(r){r.classList.remove('li-dragging');});
+    if(dropTarget){dropTarget.classList.remove('li-drop-above','li-drop-below');dropTarget=null;}
+    dragSrc=null;dragRows=[];
+  });
+
+  body.addEventListener('dragover',function(e){
+    e.preventDefault();
+    if(!dragSrc)return;
+    var tr=e.target.closest('tr');
+    if(!tr||dragRows.indexOf(tr)!==-1)return;
+    var n=tr.id.replace('li_','');
+    var parentTr=(n.indexOf('_')!==-1)?document.getElementById('li_'+n.split('_')[0]):tr;
+    if(!parentTr||dragRows.indexOf(parentTr)!==-1)return;
+    if(dropTarget&&dropTarget!==parentTr)dropTarget.classList.remove('li-drop-above','li-drop-below');
+    var rect=parentTr.getBoundingClientRect();
+    dropBefore=(e.clientY<rect.top+rect.height/2);
+    dropTarget=parentTr;
+    parentTr.classList.toggle('li-drop-above',dropBefore);
+    parentTr.classList.toggle('li-drop-below',!dropBefore);
+    e.dataTransfer.dropEffect='move';
+  });
+
+  body.addEventListener('dragleave',function(e){
+    if(!body.contains(e.relatedTarget)){
+      if(dropTarget){dropTarget.classList.remove('li-drop-above','li-drop-below');dropTarget=null;}
+    }
+  });
+
+  body.addEventListener('drop',function(e){
+    e.preventDefault();
+    if(!dragSrc||!dropTarget)return;
+    var targetN=dropTarget.id.replace('li_','');
+    var targetSubs=liGetSubRows(targetN);
+    var insertRef=dropBefore?dropTarget:(targetSubs.length?targetSubs[targetSubs.length-1].nextSibling:dropTarget.nextSibling);
+    dragRows.forEach(function(r){body.insertBefore(r,insertRef);});
+    dropTarget.classList.remove('li-drop-above','li-drop-below');
+    dropTarget=null;
+    updateLINumbers();
+  });
+})();
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
 function getLIs(){
   // Collect only top-level rows (no underscore after the number), then gather their sub-rows
   var result=[];
